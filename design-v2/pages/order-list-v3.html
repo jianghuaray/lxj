@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工单列表 - 乐修匠社区维修管理系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS Reset & Variables ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #FDFCF8;
+  --fg: #2C2C24;
+  --primary: #4A7FB5;
+  --primary-fg: #FFFFFF;
+  --secondary: #E8B84B;
+  --secondary-fg: #FFFFFF;
+  --accent: #E6DCCD;
+  --accent-fg: #4A4A40;
+  --muted: #F0EBE5;
+  --muted-fg: #78786C;
+  --border: #DED8CF;
+  --destructive: #D4726A;
+  --card-bg: #FEFEFA;
+  --shadow-soft: 0 4px 20px -2px rgba(74, 127, 181, 0.15);
+  --shadow-float: 0 10px 40px -10px rgba(232, 184, 75, 0.2);
+  --shadow-hover: 0 20px 40px -10px rgba(74, 127, 181, 0.15);
+  --nav-width: 220px;
+  --topbar-height: 56px;
+  --font-display: 'Fraunces', 'PingFang SC', 'Microsoft YaHei', serif;
+  --font-body: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+/* ===== Paper Texture (Critical!) ===== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+/* ===== Layout ===== */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+/* ===== Left Sidebar ===== */
+.sidebar {
+  width: var(--nav-width);
+  min-width: var(--nav-width);
+  height: 100vh;
+  background: rgba(253,252,248,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(222,216,207,0.5);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  z-index: 10;
+  position: relative;
+}
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  margin-bottom: 8px;
+}
+.logo-img {
+  height: 36px;
+  width: auto;
+  flex-shrink: 0;
+}
+.logo-text h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--fg);
+  line-height: 1.2;
+}
+.logo-text p {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted-fg);
+  margin-top: 2px;
+}
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin: 0 12px;
+  padding: 0 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: var(--muted-fg);
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+}
+.nav-item:hover {
+  background: rgba(230,220,205,0.3);
+}
+.nav-item.active {
+  background: rgba(74,127,181,0.1);
+  color: var(--primary);
+  font-weight: 600;
+}
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+}
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+.sidebar-footer {
+  padding: 0 20px;
+  font-size: 11px;
+  color: var(--muted-fg);
+  font-weight: 400;
+  opacity: 0.7;
+}
+/* ===== Main Content ===== */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg);
+}
+/* Background blobs */
+.main-content::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: var(--primary);
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  filter: blur(80px);
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+}
+.main-content::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: -30px;
+  width: 160px;
+  height: 160px;
+  background: var(--secondary);
+  border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+  filter: blur(60px);
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+/* ===== Top Bar ===== */
+.topbar {
+  height: var(--topbar-height);
+  min-height: var(--topbar-height);
+  background: rgba(253,252,248,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(222,216,207,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: relative;
+  z-index: 5;
+}
+.breadcrumb {
+  font-size: 13px;
+  color: var(--muted-fg);
+  font-weight: 400;
+}
+.breadcrumb span { opacity: 0.5; }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.notification-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  transition: all 0.3s ease;
+  position: relative;
+}
+.notification-btn:hover { background: rgba(74,127,181,0.08); }
+.notification-btn .badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--destructive);
+}
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+/* ===== Page Content Area ===== */
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 28px 20px;
+  position: relative;
+  z-index: 1;
+}
+.page-content::-webkit-scrollbar { width: 6px; }
+.page-content::-webkit-scrollbar-track { background: transparent; }
+.page-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+/* ===== Page Header ===== */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.page-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--fg);
+}
+.btn-new-order {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+.btn-new-order:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-hover);
+}
+.btn-new-order:active { transform: scale(0.95); }
+.btn-new-order svg { width: 18px; height: 18px; stroke-width: 2; }
+/* ===== Stats Cards ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(222,216,207,0.5);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.stat-card:nth-child(1) { border-radius: 24px 16px 24px 16px; }
+.stat-card:nth-child(2) { border-radius: 16px 24px 16px 24px; }
+.stat-card:nth-child(3) { border-radius: 24px 24px 16px 16px; }
+.stat-card:nth-child(4) { border-radius: 16px 16px 24px 24px; }
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(74,127,181,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.stat-card:hover .stat-icon {
+  background: var(--primary);
+  color: white;
+}
+.stat-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+.stat-info { flex: 1; }
+.stat-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--fg);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-fg);
+  margin-top: 2px;
+}
+.stat-trend {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.stat-trend.up { color: var(--primary); }
+.stat-trend.down { color: var(--destructive); }
+/* ===== Status Tabs ===== */
+.status-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--muted-fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.status-tab:hover { background: rgba(230,220,205,0.3); }
+.status-tab.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(74,127,181,0.15);
+  color: var(--primary);
+}
+.status-tab.active .tab-count {
+  background: rgba(255,255,255,0.25);
+  color: white;
+}
+/* ===== Filter Toolbar ===== */
+.filter-toolbar {
+  background: rgba(240,235,229,0.5);
+  border-radius: 24px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.filter-input {
+  flex: 1;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
+  padding: 0 18px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg);
+  outline: none;
+  transition: all 0.3s ease;
+}
+.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
+.filter-input:focus {
+  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
+  border-color: rgba(74,127,181,0.3);
+  background: rgba(255,255,255,0.8);
+}
+.filter-select {
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
+  padding: 0 16px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+.filter-select:focus {
+  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
+  border-color: rgba(74,127,181,0.3);
+}
+.btn-query {
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.btn-query:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-hover);
+}
+.btn-query:active { transform: scale(0.95); }
+.btn-reset {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 2px solid var(--secondary);
+  background: transparent;
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.btn-reset:hover {
+  background: rgba(232,184,75,0.08);
+  transform: scale(1.05);
+}
+.btn-reset:active { transform: scale(0.95); }
+/* ===== Data Table ===== */
+.table-container {
+  background: var(--card-bg);
+  border: 1px solid rgba(222,216,207,0.5);
+  border-radius: 24px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.data-table thead th {
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-fg);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: transparent;
+}
+.data-table thead th:first-child { padding-left: 24px; }
+.data-table thead th:last-child { padding-right: 24px; text-align: center; }
+.data-table tbody tr {
+  height: 48px;
+  transition: background 0.3s ease;
+}
+.data-table tbody tr:hover { background: rgba(240,235,229,0.4); }
+.data-table tbody tr.overdue { background: rgba(212,114,106,0.06); }
+.data-table tbody tr.overdue:hover { background: rgba(212,114,106,0.1); }
+.data-table tbody td {
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.data-table tbody td:first-child { padding-left: 24px; }
+.data-table tbody td:last-child { padding-right: 24px; text-align: center; }
+.order-id { font-weight: 600; color: var(--primary); cursor: pointer; }
+.order-id:hover { text-decoration: underline; }
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-badge.pending-dispatch { background: rgba(74,127,181,0.12); color: #4A7FB5; }
+.status-badge.dispatched { background: rgba(232,184,75,0.12); color: #B8922E; }
+.status-badge.in-progress { background: rgba(232,184,75,0.2); color: #9A7A1F; }
+.status-badge.completed { background: rgba(74,127,181,0.15); color: #3D6A9A; }
+.status-badge.followed-up { background: rgba(74,127,181,0.1); color: #4A7FB5; }
+.status-badge.cancelled { background: rgba(212,114,106,0.1); color: #D4726A; }
+.status-badge.consultation { background: rgba(120,120,108,0.1); color: #78786C; }
+/* Action buttons */
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.action-btn:hover { background: rgba(74,127,181,0.08); color: #3D6A9A; }
+.action-btn + .action-btn { margin-left: 4px; }
+.action-btn.danger { color: var(--destructive); }
+.action-btn.danger:hover { background: rgba(212,114,106,0.08); }
+/* ===== Pagination ===== */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+.pagination-info {
+  font-size: 13px;
+  color: var(--muted-fg);
+}
+.pagination-info select {
+  border: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--muted-fg);
+  cursor: pointer;
+  outline: none;
+}
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--muted-fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.page-btn:hover { background: rgba(230,220,205,0.4); }
+.page-btn.active {
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-soft);
+}
+.page-btn.nav-arrow { padding: 0 10px; }
+.page-btn svg { width: 16px; height: 16px; stroke-width: 2; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- ===== Left Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-img" src="../assets/logo.png" alt="乐修匠">
+      <div class="logo-text">
+        <h1>乐修匠</h1>
+        <p>社区维修管理系统</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        <span>工单管理</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>客户管理</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>师傅管理</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>社区管理</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span>数据统计</span>
+      </a>
+      <a class="nav-item" href="#">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>系统设置</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">v2.1.0</div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="main-content">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="breadcrumb">首页 <span>/</span> 工单管理 <span>/</span> 工单列表</div>
+      <div class="topbar-right">
+        <button class="notification-btn" title="通知">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="badge"></span>
+        </button>
+        <div class="user-info">
+          <div class="user-avatar">管</div>
+          <span class="user-name">管理员</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content">
+      <!-- Page Header -->
+      <div class="page-header">
+        <h2 class="page-title">工单列表</h2>
+        <button class="btn-new-order">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          新建工单
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">128</div>
+            <div class="stat-label">全部工单</div>
+            <div class="stat-trend up">+12.5% 较上月</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">23</div>
+            <div class="stat-label">待处理</div>
+            <div class="stat-trend down">-3.2% 较上月</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">89</div>
+            <div class="stat-label">已完成</div>
+            <div class="stat-trend up">+8.1% 较上月</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="stat-info">
+            <div class="stat-value">5</div>
+            <div class="stat-label">超期工单</div>
+            <div class="stat-trend down">+2 较昨日</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Tabs -->
+      <div class="status-tabs">
+        <button class="status-tab active">全部 <span class="tab-count">128</span></button>
+        <button class="status-tab">待派单 <span class="tab-count">8</span></button>
+        <button class="status-tab">已派单 <span class="tab-count">15</span></button>
+        <button class="status-tab">已完成 <span class="tab-count">89</span></button>
+        <button class="status-tab">已回访 <span class="tab-count">2</span></button>
+        <button class="status-tab">已取消 <span class="tab-count">1</span></button>
+        <button class="status-tab">咨询单 <span class="tab-count">1</span></button>
+      </div>
+
+      <!-- Filter Toolbar -->
+      <div class="filter-toolbar">
+        <input class="filter-input" type="text" placeholder="搜索订单号、客户姓名、地址...">
+        <select class="filter-select">
+          <option value="">问题分类</option>
+          <option>水电维修</option>
+          <option>下水疏通</option>
+          <option>家电维修</option>
+          <option>家具门窗</option>
+          <option>测漏防水</option>
+        </select>
+        <select class="filter-select">
+          <option value="">所属区域</option>
+          <option>新城区</option>
+          <option>未央区</option>
+          <option>高新区</option>
+          <option>灞桥区</option>
+        </select>
+        <button class="btn-query">查询</button>
+        <button class="btn-reset">重置</button>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:14%">订单号</th>
+              <th style="width:8%">客户</th>
+              <th style="width:8%">区域</th>
+              <th style="width:10%">问题分类</th>
+              <th style="width:10%">维修师傅</th>
+              <th style="width:9%">状态</th>
+              <th style="width:10%">维修金额</th>
+              <th style="width:10%">创建时间</th>
+            </tr>
+          </thead>
+          <tbody id="orderTableBody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar">
+        <div class="pagination-info">
+          共 <strong>128</strong> 条记录，每页
+          <select>
+            <option>12</option>
+            <option>20</option>
+            <option>50</option>
+          </select>
+          条
+        </div>
+        <div class="pagination-buttons">
+          <button class="page-btn nav-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">...</button>
+          <button class="page-btn">11</button>
+          <button class="page-btn nav-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ===== Sample Data =====
+const orders = [
+  { id:'202604300001', customer:'张三', area:'新城区', category:'水电维修', master:'韩胜涛', appointTime:'2026-04-30 09:00', status:'待派单', created:'2026-04-29 14:22', amount:'-', overdue:false },
+  { id:'202604300002', customer:'李四', area:'未央区', category:'下水疏通', master:'李朝', appointTime:'2026-04-30 10:30', status:'已派单', created:'2026-04-29 16:05', amount:'-', overdue:false },
+  { id:'202604300003', customer:'王五', area:'高新区', category:'家电维修', master:'巴焱', appointTime:'2026-04-28 14:00', status:'已派单', created:'2026-04-27 09:30', amount:'-', overdue:true },
+  { id:'202604300004', customer:'赵六', area:'灞桥区', category:'家具门窗', master:'郭富杰', appointTime:'2026-04-29 15:00', status:'已完成', created:'2026-04-28 11:18', amount:'¥280', overdue:false },
+  { id:'202604300005', customer:'钱七', area:'新城区', category:'测漏防水', master:'张华', appointTime:'2026-04-30 08:00', status:'已完成', created:'2026-04-29 08:45', amount:'¥580', overdue:false },
+  { id:'202604300006', customer:'孙八', area:'未央区', category:'水电维修', master:'韩胜涛', appointTime:'2026-04-27 11:00', status:'已回访', created:'2026-04-26 17:20', amount:'¥150', overdue:false },
+  { id:'202604300007', customer:'周九', area:'高新区', category:'下水疏通', master:'李朝', appointTime:'2026-04-30 14:00', status:'待派单', created:'2026-04-30 07:10', amount:'-', overdue:false },
+  { id:'202604300008', customer:'吴十', area:'灞桥区', category:'家电维修', master:'巴焱', appointTime:'2026-04-28 09:00', status:'已取消', created:'2026-04-27 20:33', amount:'-', overdue:false },
+  { id:'202604300009', customer:'郑十一', area:'新城区', category:'水电维修', master:'郭富杰', appointTime:'2026-04-26 16:00', status:'已派单', created:'2026-04-25 13:50', amount:'-', overdue:true },
+  { id:'202604300010', customer:'冯十二', area:'未央区', category:'家具门窗', master:'张华', appointTime:'2026-04-30 11:00', status:'已派单', created:'2026-04-29 10:05', amount:'-', overdue:false },
+  { id:'202604300011', customer:'陈十三', area:'高新区', category:'测漏防水', master:'韩胜涛', appointTime:'2026-04-30 15:30', status:'待派单', created:'2026-04-30 08:22', amount:'-', overdue:false },
+  { id:'202604300012', customer:'褚十四', area:'灞桥区', category:'下水疏通', master:'--', appointTime:'--', status:'咨询单', created:'2026-04-30 09:15', amount:'-', overdue:false },
+];
+
+const statusMap = {
+  '待派单': 'pending-dispatch',
+  '已派单': 'dispatched',
+  '已完成': 'completed',
+  '已回访': 'followed-up',
+  '已取消': 'cancelled',
+  '咨询单': 'consultation',
+};
+
+function renderTable() {
+  const tbody = document.getElementById('orderTableBody');
+  tbody.innerHTML = orders.map(o => {
+    const cls = o.overdue ? ' class="overdue"' : '';
+    const statusCls = statusMap[o.status] || '';
+    const amountStyle = o.amount !== '-' ? ' style="color:var(--primary);font-weight:600;"' : ' style="color:var(--muted-fg);"';
+    return `<tr${cls}>
+      <td><span class="order-id">${o.id}</span></td>
+      <td>${o.customer}</td>
+      <td>${o.area}</td>
+      <td>${o.category}</td>
+      <td>${o.master}</td>
+      <td><span class="status-badge ${statusCls}">${o.status}</span></td>
+      <td${amountStyle}>${o.amount}</td>
+      <td>${o.created}</td>
+    </tr>`;
+  }).join('');
+}
+
+function viewOrder(id) { console.log('查看工单:', id); }
+
+// Tab switching
+document.querySelectorAll('.status-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Pagination
+document.querySelectorAll('.page-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    if (this.textContent === '...') return;
+    document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Init
+renderTable();
+</script>
+</body>
+</html>
