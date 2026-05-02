@@ -9,7 +9,6 @@ const workOrderRoutes = require('./routes/workOrders');
 const customerRoutes = require('./routes/customers');
 const technicianRoutes = require('./routes/technicians');
 const callbackRoutes = require('./routes/callbacks');
-const complaintRoutes = require('./routes/complaints');
 const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
@@ -26,7 +25,6 @@ app.use('/api/orders', workOrderRoutes);       // Frontend uses /api/orders
 app.use('/api/customers', customerRoutes);
 app.use('/api/technicians', technicianRoutes);
 app.use('/api/callbacks', callbackRoutes);
-app.use('/api/complaints', complaintRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);             // User management
 app.use('/api/settings', settingsRoutes);       // System settings & logs

@@ -605,8 +605,15 @@ button {
 }
 
 .filter-select-el {
-  width: 128px;
+  width: 200px;
+  box-sizing: border-box;
   flex: none;
+}
+
+.filter-select-el .el-input,
+.filter-select-el .el-input__wrapper {
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 .page-size-select {

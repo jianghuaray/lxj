@@ -287,8 +287,7 @@ function getLogTypeText(type) {
     dispatch: '派单',
     complete: '完成',
     callback: '回访',
-    cancel: '取消',
-    complaint: '投诉'
+    cancel: '取消'
   }
   return map[type] || type
 }
@@ -472,7 +471,6 @@ onMounted(() => {
 .status-badge.type-complete { background: rgba(74,140,100,0.12); color: #4A8C64; }
 .status-badge.type-callback { background: rgba(74,180,180,0.12); color: #3A8A8A; }
 .status-badge.type-cancel { background: rgba(212,114,106,0.1); color: #D4726A; }
-.status-badge.type-complaint { background: rgba(212,114,106,0.1); color: #D4726A; }
 
 /* ===== Action Buttons ===== */
 .action-btn { background: none; border: none; color: var(--primary); font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: all 0.3s ease; }
@@ -506,6 +504,20 @@ onMounted(() => {
 .filter-toolbar { background: rgba(240,235,229,0.5); border-radius: 24px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; transition: all 0.2s ease; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
 .filter-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
+
+.filter-select-el {
+  width: 200px !important;
+  :deep(.el-input__wrapper) {
+    border-radius: 999px !important;
+    height: 40px !important;
+    padding: 0 44px 0 16px !important;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 16px center !important;
+    background-color: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+  }
+}
 .filter-input { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; transition: all 0.2s ease; }
 .filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
 .filter-input:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); background: rgba(255,255,255,0.8); }

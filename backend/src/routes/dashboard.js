@@ -5,8 +5,7 @@ const {
   Construction,
   CallbackRecord,
   Technician,
-  Customer,
-  Complaint
+  Customer
 } = require('../models');
 const { auth } = require('../middleware/auth');
 
@@ -72,9 +71,6 @@ router.get('/', auth, async (req, res) => {
     // Pending callback count
     const pendingCallbackCount = await WorkOrder.count({ where: { status: 'completed' } });
 
-    // Pending complaint count
-    const pendingComplaintCount = await Complaint.count({ where: { status: { [Op.in]: ['pending', 'processing'] } } });
-
     // Today orders
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayOrders = await WorkOrder.count({
@@ -92,7 +88,6 @@ router.get('/', auth, async (req, res) => {
       avgSatisfaction: avgSatisfaction?.dataValues.avg ? parseFloat(avgSatisfaction.dataValues.avg).toFixed(1) : 0,
       totalRevenue: totalRevenue || 0,
       pendingCallbackCount,
-      pendingComplaintCount,
       pendingCount
     });
   } catch (error) {

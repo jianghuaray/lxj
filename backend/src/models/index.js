@@ -6,7 +6,6 @@ const Technician = require('./Technician');
 const WorkOrder = require('./WorkOrder');
 const Construction = require('./Construction');
 const CallbackRecord = require('./CallbackRecord');
-const Complaint = require('./Complaint');
 const Settings = require('./Settings');
 const OperationLog = require('./OperationLog');
 
@@ -15,10 +14,6 @@ const OperationLog = require('./OperationLog');
 // 用户与工单的关系
 User.hasMany(WorkOrder, { foreignKey: 'receiver_id', as: 'receivedOrders' });
 WorkOrder.belongsTo(User, { foreignKey: 'receiver_id', as: 'receiver' });
-
-// 用户与投诉的关系
-User.hasMany(Complaint, { foreignKey: 'handler_id', as: 'handledComplaints' });
-Complaint.belongsTo(User, { foreignKey: 'handler_id', as: 'handler' });
 
 // 用户与回访记录的关系
 User.hasMany(CallbackRecord, { foreignKey: 'callback_by', as: 'callbacks' });
@@ -40,10 +35,6 @@ Construction.belongsTo(WorkOrder, { foreignKey: 'order_id', as: 'order' });
 WorkOrder.hasOne(CallbackRecord, { foreignKey: 'order_id', as: 'callback' });
 CallbackRecord.belongsTo(WorkOrder, { foreignKey: 'order_id', as: 'order' });
 
-// 工单与投诉的关系
-WorkOrder.hasMany(Complaint, { foreignKey: 'order_id', as: 'complaints' });
-Complaint.belongsTo(WorkOrder, { foreignKey: 'order_id', as: 'order' });
-
 // 用户与操作日志的关系
 User.hasMany(OperationLog, { foreignKey: 'operator_id', as: 'operationLogs' });
 OperationLog.belongsTo(User, { foreignKey: 'operator_id', as: 'operator' });
@@ -56,7 +47,6 @@ module.exports = {
   WorkOrder,
   Construction,
   CallbackRecord,
-  Complaint,
   Settings,
   OperationLog
 };

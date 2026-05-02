@@ -153,7 +153,6 @@
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submitCallback" :loading="submitLoading">提交回访</el-button>
-        <el-button type="danger" v-if="!callbackForm.isSatisfied" @click="convertToComplaint">转为投诉</el-button>
       </template>
     </el-dialog>
   </div>
@@ -257,21 +256,6 @@ async function submitCallback() {
     ElMessage.error('提交失败')
   } finally {
     submitLoading.value = false
-  }
-}
-
-async function convertToComplaint() {
-  try {
-    await api.post('/complaints', {
-      orderId: currentCallback.value.orderId,
-      source: 'callback',
-      content: callbackForm.value.otherFeedback || '回访客户不满意，转为投诉'
-    })
-    ElMessage.success('已转为投诉工单')
-    dialogVisible.value = false
-    await fetchCallbacks()
-  } catch (error) {
-    ElMessage.error('操作失败')
   }
 }
 
@@ -476,6 +460,20 @@ onMounted(() => { fetchCallbacks() })
 .filter-select:focus {
   box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
   border-color: var(--primary);
+}
+
+.filter-select-el {
+  width: 200px !important;
+  :deep(.el-input__wrapper) {
+    border-radius: 999px !important;
+    height: 40px !important;
+    padding: 0 44px 0 16px !important;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 16px center !important;
+    background-color: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+  }
 }
 .btn-query {
   height: 36px;

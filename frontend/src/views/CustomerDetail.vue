@@ -231,7 +231,7 @@ const showLevelDialog = ref(false)
 const saveLoading = ref(false)
 const newTag = ref('')
 
-const availableTags = ['价格敏感', '周末预约', '老人独居', '多次投诉', '高价值客户', '某小区业主', '新客户', '回头客']
+const availableTags = ['价格敏感', '周末预约', '老人独居', '高价值客户', '某小区业主', '新客户', '回头客']
 
 const levelHistory = ref([
   { date: '2025-08-15', description: '注册为普通客户' },
@@ -264,7 +264,7 @@ function getLevelRule(level) {
   const map = {
     normal: '默认等级，所有新注册客户',
     vip: '累计消费超过¥3,000自动升级',
-    blacklist: '恶意投诉或欠费客户'
+    blacklist: '恶意欠费客户'
   }
   return map[level] || '默认等级，所有新注册客户'
 }

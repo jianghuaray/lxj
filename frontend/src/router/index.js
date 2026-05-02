@@ -72,12 +72,6 @@ const router = createRouter({
           meta: { title: '回访管理' }
         },
         {
-          path: 'complaints',
-          name: 'complaints',
-          component: () => import('@/views/ComplaintList.vue'),
-          meta: { title: '投诉管理' }
-        },
-        {
           path: 'system',
           name: 'system',
           component: () => import('@/views/SystemSettings.vue'),

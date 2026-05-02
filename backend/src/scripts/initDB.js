@@ -1,6 +1,6 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { sequelize, User, Technician, Customer, WorkOrder, Construction, CallbackRecord, Complaint, Settings, OperationLog } = require('../models');
+const { sequelize, User, Technician, Customer, WorkOrder, Construction, CallbackRecord, Settings, OperationLog } = require('../models');
 
 const initDB = async () => {
   try {
@@ -230,19 +230,6 @@ const initDB = async () => {
             callback_at: new Date(now.getTime() - Math.random() * 86400000 * 5)
           });
         }
-      }
-
-      // 如果有不满意的，创建投诉
-      if (Math.random() > 0.9) {
-        await Complaint.create({
-          order_id: order.id,
-          source: Math.random() > 0.5 ? 'direct' : 'callback',
-          content: '客户对服务不满意，需要处理',
-          handler_id: 1,
-          status: ['pending', 'processing', 'resolved'][Math.floor(Math.random() * 3)],
-          result: '已与客户沟通，客户表示理解',
-          resolved_at: Math.random() > 0.5 ? new Date() : null
-        });
       }
     }
 
