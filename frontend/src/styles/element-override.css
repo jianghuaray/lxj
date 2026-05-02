@@ -433,14 +433,34 @@ a:hover {
 }
 
 /* ---- 日历面板（teleport 到 body，必须全局样式） ---- */
-.el-date-picker.el-popper,
-.el-picker-panel {
+.el-date-picker.el-popper {
   background: #FEFEFA !important;
   border: 1px solid rgba(222, 216, 207, 0.5) !important;
   border-radius: 16px !important;
   box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
   font-family: 'Nunito', 'PingFang SC', sans-serif !important;
   color: #2C2C24 !important;
+  overflow: hidden !important;
+}
+
+.el-date-picker.el-popper .el-picker-panel {
+  background: transparent !important;
+  border: none !important;
+  border-radius: inherit !important;
+  box-shadow: none !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  color: #2C2C24 !important;
+  overflow: hidden !important;
+}
+
+.el-date-picker.el-popper .el-picker-panel__body-wrapper,
+.el-date-picker.el-popper .el-picker-panel__body {
+  border-radius: inherit !important;
+}
+
+.el-date-picker.el-popper .el-popper__arrow::before {
+  background: #FEFEFA !important;
+  border-color: rgba(222, 216, 207, 0.5) !important;
 }
 
 /* 日期单元格 */
