@@ -49,17 +49,15 @@
 
         <div class="form-field">
           <label class="form-label">区域<span class="required">*</span></label>
-          <select class="form-select" v-model="form.area">
-            <option value="" disabled>请选择所在区域</option>
-            <option v-for="area in areas" :key="area" :value="area">{{ area }}</option>
-          </select>
+          <el-select v-model="form.area" class="form-select-el" placeholder="请选择所在区域">
+            <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+          </el-select>
         </div>
         <div class="form-field">
           <label class="form-label">来源渠道</label>
-          <select class="form-select" v-model="form.sourceChannel">
-            <option value="" disabled>请选择来源渠道</option>
-            <option v-for="ch in sourceChannels" :key="ch" :value="ch">{{ ch }}</option>
-          </select>
+          <el-select v-model="form.sourceChannel" class="form-select-el" placeholder="请选择来源渠道">
+            <el-option v-for="ch in sourceChannels" :key="ch" :label="ch" :value="ch" />
+          </el-select>
         </div>
         <div class="form-field full-width">
           <label class="form-label">详细住址<span class="required">*</span></label>
@@ -73,10 +71,9 @@
       <div class="form-grid">
         <div class="form-field">
           <label class="form-label">问题分类<span class="required">*</span></label>
-          <select class="form-select" v-model="form.problemCategory">
-            <option value="" disabled>请选择问题分类</option>
-            <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-          </select>
+          <el-select v-model="form.problemCategory" class="form-select-el" placeholder="请选择问题分类">
+            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+          </el-select>
         </div>
         <div class="form-field"></div>
         <div class="form-field full-width">
@@ -233,22 +230,24 @@ async function submitAndDispatch() {
 .btn-cancel {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 22px;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: transparent;
   color: var(--muted-fg);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 .btn-cancel:hover {
   border-color: var(--muted-fg);
   color: var(--fg);
-  background: rgba(222, 216, 207, 0.15);
+  background: rgba(222,216,207,0.15);
 }
 
 .form-card {
@@ -306,17 +305,17 @@ async function submitAndDispatch() {
 .form-input,
 .form-select {
   width: 100%;
-  height: 48px;
-  padding: 0 20px;
+  height: 40px;
+  padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid rgba(222, 216, 207, 0.8);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
   font-family: var(--font-body);
   font-weight: 400;
   font-size: 14px;
   color: var(--fg);
   outline: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -341,10 +340,10 @@ async function submitAndDispatch() {
 .form-textarea {
   width: 100%;
   height: 100px;
-  padding: 14px 20px;
-  border-radius: 24px;
-  border: 1px solid rgba(222, 216, 207, 0.8);
-  background: rgba(255, 255, 255, 0.5);
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
   font-family: var(--font-body);
   font-weight: 400;
   font-size: 14px;
@@ -353,7 +352,7 @@ async function submitAndDispatch() {
   resize: vertical;
   min-height: 80px;
   line-height: 1.6;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -399,21 +398,27 @@ async function submitAndDispatch() {
 }
 
 .vip-badge {
-  font-size: 11px;
-  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: rgba(232, 184, 75, 0.15);
+  background: rgba(232,184,75,0.15);
   color: #B8922E;
   font-weight: 600;
+  font-size: 12px;
 }
 
 .blacklist-badge {
-  font-size: 11px;
-  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: rgba(212, 114, 106, 0.15);
+  background: rgba(212,114,106,0.1);
   color: var(--destructive);
   font-weight: 600;
+  font-size: 12px;
 }
 
 .match-info {

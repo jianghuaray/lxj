@@ -42,15 +42,13 @@
 
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
-      <select class="filter-select" v-model="specialtyFilter" @change="fetchTechnicians">
-        <option value="">全部类型</option>
-        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-      </select>
-      <select class="filter-select" v-model="statusFilter" @change="fetchTechnicians">
-        <option value="">全部状态</option>
-        <option value="1">启用</option>
-        <option value="0">停用</option>
-      </select>
+      <el-select v-model="specialtyFilter" class="filter-select-el" placeholder="全部类型" clearable @change="fetchTechnicians">
+        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+      </el-select>
+      <el-select v-model="statusFilter" class="filter-select-el" placeholder="全部状态" clearable @change="fetchTechnicians">
+        <el-option label="启用" value="1" />
+        <el-option label="停用" value="0" />
+      </el-select>
       <div class="search-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input type="text" class="filter-search" v-model="searchQuery" placeholder="按姓名/电话搜索" @keyup.enter="fetchTechnicians" />
@@ -132,11 +130,11 @@
     <div class="pagination-bar" v-if="technicians.length > 0">
       <div class="pagination-info">
         共 <strong>{{ total }}</strong> 位师傅，每页
-        <select v-model="pageSize" @change="fetchTechnicians">
-          <option :value="12">12</option>
-          <option :value="20">20</option>
-          <option :value="50">50</option>
-        </select>
+        <el-select v-model="pageSize" class="page-size-select" @change="fetchTechnicians">
+          <el-option :value="12" label="12" />
+          <el-option :value="20" label="20" />
+          <el-option :value="50" label="50" />
+        </el-select>
         条
       </div>
       <div class="pagination-buttons">
@@ -160,9 +158,9 @@
     <el-dialog v-model="showSettlementDialog" title="师傅对账结算" width="700px" :border-radius="'24px'">
       <div class="settlement-header">
         <span class="settlement-name">{{ settlementTech.name }} - 月度结算</span>
-        <select class="filter-select" v-model="settlementMonth" @change="fetchSettlement" style="width:auto;">
-          <option v-for="m in recentMonths" :key="m.value" :value="m.value">{{ m.label }}</option>
-        </select>
+        <el-select v-model="settlementMonth" class="filter-select-el" @change="fetchSettlement">
+          <el-option v-for="m in recentMonths" :key="m.value" :label="m.label" :value="m.value" />
+        </el-select>
       </div>
       <div class="settlement-summary">
         <div class="summary-item">
@@ -479,45 +477,45 @@ onMounted(() => {
 }
 
 .filter-select {
-  height: 38px;
-  padding: 0 32px 0 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
+  height: 40px;
+  padding: 0 36px 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
   color: var(--fg);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378786C' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
-  transition: all 0.3s ease;
+  background-position: right 14px center;
+  transition: all 0.2s ease;
 
   &:hover { border-color: var(--primary); }
-  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.1); }
+  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.15); }
 }
 
 .filter-search {
-  height: 38px;
-  padding: 0 14px 0 38px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
+  height: 40px;
+  padding: 0 16px 0 38px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
   color: var(--fg);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   outline: none;
   width: 220px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 
   &::placeholder { color: var(--muted-fg); }
   &:hover { border-color: var(--primary); }
-  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.1); }
+  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.15); }
 }
 
 .search-wrapper {
@@ -536,35 +534,39 @@ onMounted(() => {
 }
 
 .btn-filter {
-  height: 38px;
+  height: 36px;
   padding: 0 20px;
-  border-radius: 12px;
-  border: none;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
 
   &.primary {
     background: var(--primary);
+    border-color: var(--primary);
     color: white;
     box-shadow: var(--shadow-soft);
 
     &:hover {
-      box-shadow: var(--shadow-hover);
-      transform: translateY(-1px);
+      background: #3D6FA0;
+      border-color: #3D6FA0;
+      box-shadow: var(--shadow-soft);
     }
   }
 
   &.secondary {
-    background: var(--muted);
-    color: var(--muted-fg);
+    background: transparent;
+    border-color: var(--secondary);
+    color: var(--secondary);
 
-    &:hover { background: var(--accent); }
+    &:hover { background: rgba(232,184,75,0.08); }
   }
 }
 

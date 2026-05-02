@@ -21,21 +21,31 @@
 
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
-      <input class="filter-input" type="date" v-model="filters.startDate">
+      <el-date-picker
+        v-model="filters.startDate"
+        class="filter-date"
+        type="date"
+        value-format="YYYY-MM-DD"
+        placeholder="请选择日期"
+      />
       <span style="color:var(--muted-fg);font-size:13px;">至</span>
-      <input class="filter-input" type="date" v-model="filters.endDate">
-      <select class="filter-select" v-model="filters.status">
-        <option value="">投诉状态</option>
-        <option value="pending">待处理</option>
-        <option value="processing">处理中</option>
-        <option value="resolved">已解决</option>
-        <option value="closed">已关闭</option>
-      </select>
-      <select class="filter-select" v-model="filters.source">
-        <option value="">投诉来源</option>
-        <option value="direct">客户主动</option>
-        <option value="callback">回访转入</option>
-      </select>
+      <el-date-picker
+        v-model="filters.endDate"
+        class="filter-date"
+        type="date"
+        value-format="YYYY-MM-DD"
+        placeholder="请选择日期"
+      />
+      <el-select v-model="filters.status" class="filter-select-el" placeholder="投诉状态" clearable>
+        <el-option label="待处理" value="pending" />
+        <el-option label="处理中" value="processing" />
+        <el-option label="已解决" value="resolved" />
+        <el-option label="已关闭" value="closed" />
+      </el-select>
+      <el-select v-model="filters.source" class="filter-select-el" placeholder="投诉来源" clearable>
+        <el-option label="客户主动" value="direct" />
+        <el-option label="回访转入" value="callback" />
+      </el-select>
       <input class="filter-input filter-search" type="text" v-model="searchQuery" placeholder="搜索编号、订单号、客户姓名..." @keyup.enter="fetchComplaints">
       <button class="btn-query" @click="fetchComplaints">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
@@ -114,11 +124,11 @@
     <div class="pagination-bar">
       <div class="pagination-info">
         共 <strong>{{ pagination.total || 0 }}</strong> 条记录，每页
-        <select v-model="pagination.pageSize" @change="fetchComplaints">
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
+        <el-select v-model="pagination.pageSize" class="page-size-select" @change="fetchComplaints">
+          <el-option :value="10" label="10" />
+          <el-option :value="20" label="20" />
+          <el-option :value="50" label="50" />
+        </el-select>
         条
       </div>
       <div class="pagination-buttons">
@@ -406,43 +416,57 @@ onMounted(() => { fetchComplaints() })
   flex-wrap: wrap;
 }
 .filter-input {
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(222,216,207,0.8);
-  background: rgba(255,255,255,0.5);
-  padding: 0 18px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--fg);
-  outline: none;
-  transition: all 0.3s ease;
-}
-.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
-.filter-input:focus {
-  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
-  border-color: rgba(74,127,181,0.3);
-  background: rgba(255,255,255,0.8);
-}
-.filter-input[type="date"] {
-  width: 155px;
-  cursor: pointer;
-}
-.filter-input[type="date"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.5;
-}
-.filter-select {
-  height: 44px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(222,216,207,0.8);
   background: rgba(255,255,255,0.5);
   padding: 0 16px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--fg);
+  outline: none;
+  transition: all 0.2s ease;
+}
+.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
+.filter-input:focus {
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.8);
+}
+.filter-input[type="date"] {
+  width: 160px;
+  cursor: pointer;
+  padding-right: 16px;
+}
+.filter-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.5;
+  width: 14px;
+  height: 14px;
+}
+.filter-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}
+.filter-date {
+  width: 160px !important;
+  flex: none;
+}
+.filter-select-el {
+  width: 128px;
+  flex: none;
+}
+.filter-select {
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
+  padding: 0 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
   color: var(--fg);
   outline: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -451,52 +475,50 @@ onMounted(() => { fetchComplaints() })
   padding-right: 36px;
 }
 .filter-select:focus {
-  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
-  border-color: rgba(74,127,181,0.3);
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
 }
 .filter-search {
   flex: 1;
   min-width: 160px;
 }
 .btn-query {
-  height: 44px;
-  padding: 0 24px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 1.5px solid var(--primary);
   background: var(--primary);
   color: white;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-query:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-hover);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
-.btn-query:active { transform: scale(0.95); }
 .btn-reset {
-  height: 44px;
+  height: 36px;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--secondary);
+  border: 1.5px solid var(--secondary);
   background: transparent;
   color: var(--secondary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-reset:hover {
   background: rgba(232,184,75,0.08);
-  transform: scale(1.05);
 }
-.btn-reset:active { transform: scale(0.95); }
 
 /* ===== Data Table ===== */
 .table-container {
@@ -654,15 +676,17 @@ onMounted(() => { fetchComplaints() })
 .pagination-info {
   font-size: 13px;
   color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.pagination-info select {
-  border: none;
-  background: transparent;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--muted-fg);
-  cursor: pointer;
-  outline: none;
+.page-size-select {
+  width: 74px;
+}
+.page-size-select :deep(.el-input__wrapper) {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
 }
 .pagination-buttons {
   display: flex;

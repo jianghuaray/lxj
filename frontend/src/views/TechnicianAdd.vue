@@ -175,7 +175,7 @@ onMounted(() => { fetchTechnician() })
 .form-label { font-family: var(--font-body); font-weight: 600; font-size: 13px; color: #5C5A50; }
 .form-label .required { color: var(--destructive); margin-left: 2px; }
 
-.form-input { width: 100%; height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 14px; font-weight: 400; color: var(--fg); outline: none; transition: all 0.3s ease; }
+.form-input { width: 100%; height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 14px; font-weight: 400; color: var(--fg); outline: none; transition: all 0.2s ease; }
 .form-input::placeholder { color: var(--muted-fg); opacity: 0.6; }
 .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,127,181,0.15); background: rgba(255,255,255,0.8); }
 
@@ -187,23 +187,23 @@ onMounted(() => { fetchTechnician() })
 .form-textarea::placeholder { color: var(--muted-fg); opacity: 0.6; }
 .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,127,181,0.15); background: rgba(255,255,255,0.8); }
 
-.status-toggle { display: flex; gap: 8px; height: 48px; }
-.status-btn { flex: 1; height: 48px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--muted-fg); cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.status-toggle { display: flex; gap: 8px; height: 40px; }
+.status-btn { flex: 1; height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--muted-fg); cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .status-btn:hover { border-color: var(--border); background: rgba(255,255,255,0.7); }
 .status-btn.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(74,127,181,0.25); }
 .status-btn svg { width: 16px; height: 16px; }
 
 .skill-tags { display: flex; flex-wrap: wrap; gap: 10px; }
-.skill-tag { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 999px; background: rgba(222,216,207,0.5); color: #8B7E6A; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; user-select: none; border: 1px solid transparent; }
+.skill-tag { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border-radius: 999px; background: rgba(222,216,207,0.5); color: #8B7E6A; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; user-select: none; border: 1px solid transparent; }
 .skill-tag:hover { background: rgba(222,216,207,0.8); transform: translateY(-1px); }
 .skill-tag.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 2px 8px rgba(74,127,181,0.25); }
 .skill-tag svg { width: 16px; height: 16px; opacity: 0.7; transition: opacity 0.3s ease; }
 .skill-tag.selected svg { opacity: 1; }
 
 .action-bar { display: flex; align-items: center; justify-content: flex-end; padding: 16px 0 0; }
-.btn-save { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 120px; height: 48px; border-radius: 999px; border: none; background: var(--primary); color: white; font-family: var(--font-body); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 14px rgba(74,127,181,0.3); }
-.btn-save:hover { background: #3D6FA3; box-shadow: 0 6px 20px rgba(74,127,181,0.4); transform: translateY(-1px); }
-.btn-save:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(74,127,181,0.3); }
+.btn-save { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 120px; height: 36px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-soft); }
+.btn-save:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
+.btn-save:active { background: #3D6FA0; border-color: #3D6FA0; }
 .btn-save svg { width: 18px; height: 18px; }
 
 @media (max-width: 768px) {

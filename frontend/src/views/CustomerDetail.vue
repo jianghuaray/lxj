@@ -393,22 +393,23 @@ onMounted(() => {
 .btn-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
-  background: rgba(74,127,181,0.08);
+  border: 1.5px solid var(--primary);
+  background: transparent;
   color: var(--primary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
 }
 .btn-back:hover {
-  background: rgba(74,127,181,0.15);
-  transform: translateX(-2px);
+  background: rgba(74,127,181,0.08);
 }
 .btn-back svg { width: 16px; height: 16px; stroke-width: 2; }
 .page-title {
@@ -425,35 +426,38 @@ onMounted(() => {
 .btn-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 9px 22px;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  border: none;
+  border: 1.5px solid transparent;
 }
 .btn-pill svg { width: 16px; height: 16px; stroke-width: 2; }
 .btn-pill.primary {
   background: var(--primary);
+  border-color: var(--primary);
   color: white;
   box-shadow: var(--shadow-soft);
 }
 .btn-pill.primary:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-hover);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
 .btn-pill.secondary-outline {
   background: transparent;
-  border: 2px solid var(--secondary);
+  border-color: var(--secondary);
   color: var(--secondary);
 }
 .btn-pill.secondary-outline:hover {
   background: rgba(232,184,75,0.08);
-  transform: scale(1.05);
 }
 
 /* ===== 2. Customer Overview Card ===== */
@@ -697,7 +701,8 @@ onMounted(() => {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 14px;
+  height: 26px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
@@ -707,7 +712,9 @@ onMounted(() => {
 .status-badge.completed { background: rgba(74,127,181,0.15); color: #3D6A9A; }
 .category-pill {
   display: inline-flex;
-  padding: 3px 12px;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
   border-radius: 999px;
   background: rgba(74,127,181,0.1);
   color: var(--primary);
@@ -850,9 +857,10 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 16px;
+  height: 28px;
+  padding: 0 12px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: default;
   transition: all 0.3s ease;

@@ -176,13 +176,12 @@
     <div v-if="activeTab === 'logs'" class="tab-panel" id="panel-logs">
       <!-- Filter Toolbar -->
       <div class="filter-toolbar">
-        <select class="filter-select" v-model="logOperator">
-          <option value="">全部操作人</option>
-          <option v-for="user in operatorList" :key="user.username" :value="user.username">{{ user.realName }}</option>
-        </select>
-        <input type="date" class="filter-input" v-model="startDate" />
+        <el-select v-model="logOperator" class="filter-select-el" placeholder="全部操作人" clearable>
+          <el-option v-for="user in operatorList" :key="user.username" :label="user.realName" :value="user.username" />
+        </el-select>
+        <el-date-picker v-model="startDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
         <span style="color:var(--muted-fg);font-size:13px;">至</span>
-        <input type="date" class="filter-input" v-model="endDate" />
+        <el-date-picker v-model="endDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
         <button class="btn-query" @click="fetchLogs">查询</button>
       </div>
 
@@ -505,14 +504,13 @@ onMounted(() => {
 
 /* ===== Filter Toolbar ===== */
 .filter-toolbar { background: rgba(240,235,229,0.5); border-radius: 24px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 13px; color: var(--fg); outline: none; cursor: pointer; transition: all 0.3s ease; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
-.filter-select:focus { box-shadow: 0 0 0 2px rgba(74,127,181,0.2); border-color: rgba(74,127,181,0.3); }
-.filter-input { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 18px; font-family: var(--font-body); font-size: 13px; color: var(--fg); outline: none; transition: all 0.3s ease; }
+.filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; transition: all 0.2s ease; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+.filter-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
+.filter-input { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; transition: all 0.2s ease; }
 .filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
-.filter-input:focus { box-shadow: 0 0 0 2px rgba(74,127,181,0.2); border-color: rgba(74,127,181,0.3); background: rgba(255,255,255,0.8); }
-.btn-query { height: 40px; padding: 0 24px; border-radius: 999px; border: none; background: var(--primary); color: white; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.3s ease; white-space: nowrap; }
-.btn-query:hover { transform: scale(1.05); box-shadow: var(--shadow-hover); }
-.btn-query:active { transform: scale(0.95); }
+.filter-input:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); background: rgba(255,255,255,0.8); }
+.btn-query { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; white-space: nowrap; }
+.btn-query:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
 
 /* Log order id link */
 .log-order-id { font-weight: 600; color: var(--primary); cursor: pointer; }

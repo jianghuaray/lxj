@@ -24,22 +24,20 @@
 
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
-      <input class="filter-input" type="date" v-model="filters.startDate" style="width:160px;flex:none" />
+      <el-date-picker v-model="filters.startDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
       <span style="color:var(--muted-fg);font-size:13px;white-space:nowrap">至</span>
-      <input class="filter-input" type="date" v-model="filters.endDate" style="width:160px;flex:none" />
-      <select class="filter-select" v-model="filters.area">
-        <option value="">全部区域</option>
-        <option>新城区</option>
-        <option>未央区</option>
-        <option>高新区</option>
-        <option>灞桥区</option>
-      </select>
-      <select class="filter-select" v-model="filters.status">
-        <option value="">全部状态</option>
-        <option value="pending">待回访</option>
-        <option value="done">已回访</option>
-        <option value="skip">无需回访</option>
-      </select>
+      <el-date-picker v-model="filters.endDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
+      <el-select v-model="filters.area" class="filter-select-el" placeholder="全部区域" clearable>
+        <el-option label="新城区" value="新城区" />
+        <el-option label="未央区" value="未央区" />
+        <el-option label="高新区" value="高新区" />
+        <el-option label="灞桥区" value="灞桥区" />
+      </el-select>
+      <el-select v-model="filters.status" class="filter-select-el" placeholder="全部状态" clearable>
+        <el-option label="待回访" value="pending" />
+        <el-option label="已回访" value="done" />
+        <el-option label="无需回访" value="skip" />
+      </el-select>
       <input class="filter-input" type="text" v-model="searchQuery" placeholder="搜索订单号、客户姓名、联系方式..." @keyup.enter="fetchCallbacks" />
       <button class="btn-query" @click="fetchCallbacks">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
@@ -101,11 +99,11 @@
     <div class="pagination-bar">
       <div class="pagination-info">
         共 <strong>{{ pagination.total || 0 }}</strong> 条记录，每页
-        <select v-model="pagination.pageSize" @change="fetchCallbacks">
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
+        <el-select v-model="pagination.pageSize" class="page-size-select" @change="fetchCallbacks">
+          <el-option :value="10" label="10" />
+          <el-option :value="20" label="20" />
+          <el-option :value="50" label="50" />
+        </el-select>
         条
       </div>
       <div class="pagination-buttons">
@@ -347,11 +345,12 @@ onMounted(() => { fetchCallbacks() })
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 18px;
+  height: 36px;
+  padding: 0 18px;
   border-radius: 999px;
   font-size: 13px;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: default;
 }
 .stat-pill .pill-dot {
@@ -381,6 +380,37 @@ onMounted(() => { fetchCallbacks() })
 }
 .stat-pill.red .pill-dot { background: var(--destructive); }
 
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-badge.pending { background: rgba(74,127,181,0.12); color: #4A7FB5; }
+.status-badge.done { background: rgba(74,158,100,0.12); color: #4A9E64; }
+.status-badge.skip { background: rgba(120,120,108,0.1); color: #78786C; }
+
+/* Overdue day badge */
+.day-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.day-badge.normal { background: rgba(74,127,181,0.08); color: var(--muted-fg); }
+.day-badge.warn { background: rgba(232,184,75,0.12); color: #B8922E; }
+.day-badge.danger { background: rgba(212,114,106,0.1); color: var(--destructive); }
+
 /* ===== Filter Toolbar ===== */
 .filter-toolbar {
   background: rgba(240,235,229,0.5);
@@ -393,35 +423,49 @@ onMounted(() => { fetchCallbacks() })
 }
 .filter-input {
   flex: 1;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(222,216,207,0.8);
-  background: rgba(255,255,255,0.5);
-  padding: 0 18px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--fg);
-  outline: none;
-  transition: all 0.3s ease;
-}
-.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
-.filter-input:focus {
-  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
-  border-color: rgba(74,127,181,0.3);
-  background: rgba(255,255,255,0.8);
-}
-.filter-select {
-  height: 44px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(222,216,207,0.8);
   background: rgba(255,255,255,0.5);
   padding: 0 16px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--fg);
+  outline: none;
+  transition: all 0.2s ease;
+}
+.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
+.filter-input:focus {
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.8);
+}
+.filter-input[type="date"] {
+  width: 160px;
+  cursor: pointer;
+  padding-right: 16px;
+}
+.filter-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.5;
+  width: 14px;
+  height: 14px;
+}
+.filter-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}
+.filter-select {
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
+  padding: 0 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
   color: var(--fg);
   outline: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -430,48 +474,46 @@ onMounted(() => { fetchCallbacks() })
   padding-right: 36px;
 }
 .filter-select:focus {
-  box-shadow: 0 0 0 2px rgba(74,127,181,0.2);
-  border-color: rgba(74,127,181,0.3);
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
 }
 .btn-query {
-  height: 44px;
-  padding: 0 24px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 1.5px solid var(--primary);
   background: var(--primary);
   color: white;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-query:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-hover);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
-.btn-query:active { transform: scale(0.95); }
 .btn-reset {
-  height: 44px;
+  height: 36px;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--secondary);
+  border: 1.5px solid var(--secondary);
   background: transparent;
   color: var(--secondary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-reset:hover {
   background: rgba(232,184,75,0.08);
-  transform: scale(1.05);
 }
-.btn-reset:active { transform: scale(0.95); }
 
 /* ===== Data Table ===== */
 .table-container {
@@ -523,36 +565,8 @@ onMounted(() => { fetchCallbacks() })
 }
 .order-id:hover { text-decoration: underline; }
 
-/* Status badges */
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.status-badge.pending { background: rgba(74,127,181,0.12); color: #4A7FB5; }
-.status-badge.done { background: rgba(74,158,100,0.12); color: #4A9E64; }
-.status-badge.skip { background: rgba(120,120,108,0.1); color: #78786C; }
-
-/* Overdue day badge */
-.day-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.day-badge.normal { background: rgba(74,127,181,0.08); color: var(--muted-fg); }
-.day-badge.warn { background: rgba(232,184,75,0.12); color: #B8922E; }
-.day-badge.danger { background: rgba(212,114,106,0.1); color: var(--destructive); }
-
-/* Action buttons */
+/* ===== Pagination ===== */
+/* ===== Action buttons ===== */
 .action-btn {
   background: none;
   border: none;
@@ -563,7 +577,7 @@ onMounted(() => { fetchCallbacks() })
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 .action-btn:hover { background: rgba(74,127,181,0.08); color: #3D6A9A; }
 .action-btn + .action-btn { margin-left: 4px; }
@@ -572,8 +586,10 @@ onMounted(() => { fetchCallbacks() })
 .action-btn.primary-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 5px 14px;
+  height: 28px;
+  padding: 0 14px;
   border-radius: 999px;
   background: rgba(74,127,181,0.12);
   color: var(--primary);
@@ -643,4 +659,157 @@ onMounted(() => { fetchCallbacks() })
 
 .empty-cell { text-align: center !important; padding: 48px 24px !important; }
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--muted-fg); font-size: 14px; }
+</style>
+
+<style>
+/* ===== 评分样式 ===== */
+.rate-input {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.rate-star {
+  font-size: 24px;
+  color: var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rate-star.active {
+  color: var(--secondary);
+}
+
+/* ===== Element Plus 组件覆盖样式 ===== */
+/* Dialog */
+.el-dialog {
+  border-radius: 24px !important;
+  background: var(--card-bg) !important;
+}
+.el-dialog__title {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+}
+.el-form-item__label {
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+/* Radio Group */
+.el-radio-group {
+  display: flex;
+  gap: 24px !important;
+}
+.el-radio {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: var(--font-body) !important;
+}
+.el-radio__inner {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--border) !important;
+}
+.el-radio__inner:hover {
+  border-color: var(--primary) !important;
+}
+.el-radio__input.is-checked .el-radio__inner {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Select */
+.el-select .el-input__wrapper {
+  border-radius: 999px !important;
+  height: 40px !important;
+  padding: 0 44px 0 16px !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  background-color: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(222,216,207,0.8) !important;
+}
+
+.el-select-dropdown__item {
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: var(--font-body) !important;
+}
+.el-select-dropdown__item:hover {
+  background: rgba(74,127,181,0.08) !important;
+}
+.el-select-dropdown__item.is-selected {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+  background: rgba(74,127,181,0.06) !important;
+}
+
+/* Input */
+.el-input__wrapper {
+  border-radius: 999px !important;
+  height: 40px !important;
+  background-color: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(222,216,207,0.8) !important;
+}
+.el-input__wrapper:focus-within {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15) !important;
+}
+
+/* Textarea */
+.el-textarea__inner {
+  border-radius: 16px !important;
+  background: rgba(255,255,255,0.5) !important;
+  border: 1px solid rgba(222,216,207,0.8) !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+.el-textarea__inner:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15) !important;
+}
+
+/* Button */
+.el-button {
+  height: 36px !important;
+  padding: 0 20px !important;
+  border-radius: 999px !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border: 1.5px solid transparent !important;
+}
+.el-button--primary {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: white !important;
+}
+.el-button--primary:hover {
+  background: #3D6FA0 !important;
+  border-color: #3D6FA0 !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+.el-button--default {
+  background: transparent !important;
+  border-color: var(--border) !important;
+  color: var(--muted-fg) !important;
+}
+.el-button--default:hover {
+  background: rgba(230,220,205,0.4) !important;
+  border-color: var(--border) !important;
+  color: var(--fg) !important;
+}
+.el-button--danger {
+  background: transparent !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+.el-button--danger:hover {
+  background: rgba(212,114,106,0.08) !important;
+  border-color: var(--destructive) !important;
+}
 </style>

@@ -144,19 +144,18 @@
           </div>
           <div class="field-row">
             <span class="field-label">区域</span>
-            <select class="pill-select" v-model="customerEditForm.area">
-              <option value="">请选择</option>
-              <option value="未央区">未央区</option>
-              <option value="雁塔区">雁塔区</option>
-              <option value="碑林区">碑林区</option>
-              <option value="莲湖区">莲湖区</option>
-              <option value="新城区">新城区</option>
-              <option value="灞桥区">灞桥区</option>
-              <option value="长安区">长安区</option>
-              <option value="高新区">高新区</option>
-              <option value="曲江新区">曲江新区</option>
-              <option value="经开区">经开区</option>
-            </select>
+            <el-select v-model="customerEditForm.area" class="pill-select-el" placeholder="请选择" clearable>
+              <el-option label="未央区" value="未央区" />
+              <el-option label="雁塔区" value="雁塔区" />
+              <el-option label="碑林区" value="碑林区" />
+              <el-option label="莲湖区" value="莲湖区" />
+              <el-option label="新城区" value="新城区" />
+              <el-option label="灞桥区" value="灞桥区" />
+              <el-option label="长安区" value="长安区" />
+              <el-option label="高新区" value="高新区" />
+              <el-option label="曲江新区" value="曲江新区" />
+              <el-option label="经开区" value="经开区" />
+            </el-select>
           </div>
           <div class="field-row">
             <span class="field-label">住址</span>
@@ -164,29 +163,27 @@
           </div>
           <div class="field-row">
             <span class="field-label">来源渠道</span>
-            <select class="pill-select" v-model="customerEditForm.sourceChannel">
-              <option value="">请选择</option>
-              <option value="电话咨询">电话咨询</option>
-              <option value="微信">微信</option>
-              <option value="物业推荐">物业推荐</option>
-              <option value="老客户推荐">老客户推荐</option>
-              <option value="线上平台">线上平台</option>
-              <option value="社区宣传">社区宣传</option>
-              <option value="其他">其他</option>
-            </select>
+            <el-select v-model="customerEditForm.sourceChannel" class="pill-select-el" placeholder="请选择" clearable>
+              <el-option label="电话咨询" value="电话咨询" />
+              <el-option label="微信" value="微信" />
+              <el-option label="物业推荐" value="物业推荐" />
+              <el-option label="老客户推荐" value="老客户推荐" />
+              <el-option label="线上平台" value="线上平台" />
+              <el-option label="社区宣传" value="社区宣传" />
+              <el-option label="其他" value="其他" />
+            </el-select>
           </div>
           <div class="field-row">
             <span class="field-label">问题分类</span>
-            <select class="pill-select" v-model="customerEditForm.problemCategory">
-              <option value="">请选择</option>
-              <option value="水电维修">水电维修</option>
-              <option value="门窗维修">门窗维修</option>
-              <option value="墙面问题">墙面问题</option>
-              <option value="下水疏通">下水疏通</option>
-              <option value="家电维修">家电维修</option>
-              <option value="锁具维修">锁具维修</option>
-              <option value="其他">其他</option>
-            </select>
+            <el-select v-model="customerEditForm.problemCategory" class="pill-select-el" placeholder="请选择" clearable>
+              <el-option label="水电维修" value="水电维修" />
+              <el-option label="门窗维修" value="门窗维修" />
+              <el-option label="墙面问题" value="墙面问题" />
+              <el-option label="下水疏通" value="下水疏通" />
+              <el-option label="家电维修" value="家电维修" />
+              <el-option label="锁具维修" value="锁具维修" />
+              <el-option label="其他" value="其他" />
+            </el-select>
           </div>
           <div class="field-row">
             <span class="field-label">问题描述</span>
@@ -240,14 +237,20 @@
             </div>
             <div class="form-group">
               <label class="form-label">施工完成时间</label>
-              <input type="datetime-local" class="pill-input" v-model="constructionEditForm.completedAt" />
+              <el-date-picker
+                v-model="constructionEditForm.completedAt"
+                class="pill-select-el"
+                type="datetime"
+                value-format="YYYY-MM-DDTHH:mm"
+                format="YYYY-MM-DD HH:mm"
+                placeholder="请选择施工完成时间"
+              />
             </div>
             <div class="form-group">
               <label class="form-label">维修师傅</label>
-              <select class="pill-select" v-model="constructionEditForm.technicianId">
-                <option value="">请选择师傅</option>
-                <option v-for="tech in availableTechnicians" :key="tech.id" :value="tech.id">{{ tech.name }}</option>
-              </select>
+              <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable>
+                <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
+              </el-select>
             </div>
             <div class="form-grid-2col">
               <div class="form-group">
@@ -341,10 +344,9 @@
         <div class="edit-form" v-if="editingConstruction">
           <div class="form-group">
             <label class="form-label">维修师傅</label>
-            <select class="pill-select" v-model="constructionEditForm.technicianId">
-              <option value="">请选择师傅</option>
-              <option v-for="tech in availableTechnicians" :key="tech.id" :value="tech.id">{{ tech.name }}</option>
-            </select>
+            <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable>
+              <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
+            </el-select>
           </div>
           <div class="form-group">
             <label class="form-label">总费用（师傅报价）</label>
@@ -445,11 +447,10 @@
         <div class="edit-form" v-if="editingCallback">
           <div class="form-group">
             <label class="form-label">是否满意</label>
-            <select class="pill-select" v-model="callbackEditForm.isSatisfied">
-              <option value="">请选择</option>
-              <option :value="true">满意</option>
-              <option :value="false">不满意</option>
-            </select>
+            <el-select v-model="callbackEditForm.isSatisfied" class="pill-select-el" placeholder="请选择" clearable>
+              <el-option label="满意" :value="true" />
+              <el-option label="不满意" :value="false" />
+            </el-select>
           </div>
           <div class="form-group">
             <label class="form-label">满意度评分</label>
@@ -470,12 +471,11 @@
           </div>
           <div class="form-group">
             <label class="form-label">回访方式</label>
-            <select class="pill-select" v-model="callbackEditForm.callbackMethod">
-              <option value="">请选择</option>
-              <option value="phone">电话</option>
-              <option value="wechat">微信</option>
-              <option value="visit">上门</option>
-            </select>
+            <el-select v-model="callbackEditForm.callbackMethod" class="pill-select-el" placeholder="请选择" clearable>
+              <el-option label="电话" value="phone" />
+              <el-option label="微信" value="wechat" />
+              <el-option label="上门" value="visit" />
+            </el-select>
           </div>
           <div class="form-group">
             <label class="form-label">其他评价</label>
@@ -976,9 +976,10 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 16px;
+  height: 26px;
+  padding: 0 14px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
 .status-pill.pending-dispatch {
@@ -1021,41 +1022,41 @@ onMounted(() => {
 .btn-outline {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 11px 24px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
   background: transparent;
   font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  border: 1.5px solid transparent;
 }
 .btn-outline svg { width: 16px; height: 16px; stroke-width: 2; }
 .btn-outline.primary {
-  border: 2px solid var(--primary);
+  border-color: var(--primary);
   color: var(--primary);
 }
 .btn-outline.primary:hover {
   background: rgba(74,127,181,0.08);
-  transform: scale(1.03);
 }
 .btn-outline.danger {
-  border: 2px solid var(--destructive);
+  border-color: var(--destructive);
   color: var(--destructive);
 }
 .btn-outline.danger:hover {
   background: rgba(212,114,106,0.08);
-  transform: scale(1.03);
 }
 .btn-outline.gray {
-  border: 2px solid var(--border);
+  border-color: var(--border);
   color: var(--muted-fg);
 }
 .btn-outline.gray:hover {
   background: rgba(230,220,205,0.4);
-  transform: scale(1.03);
 }
 .btn-followup {
   display: flex;
@@ -1063,9 +1064,10 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 11px 24px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 1.5px solid var(--primary);
   background: var(--primary);
   color: white;
   font-family: var(--font-body);
@@ -1073,12 +1075,13 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   margin-bottom: 16px;
 }
 .btn-followup:hover {
-  transform: scale(1.03);
-  box-shadow: var(--shadow-hover);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
 .btn-followup svg { width: 16px; height: 16px; stroke-width: 2; }
 
@@ -1254,12 +1257,15 @@ onMounted(() => {
 }
 .category-pill {
   display: inline-flex;
-  padding: 2px 12px;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
   border-radius: 999px;
   background: rgba(74,127,181,0.1);
   color: var(--primary);
   font-size: 12px;
   font-weight: 600;
+  gap: 6px;
 }
 
 .pill-input,
@@ -1271,10 +1277,10 @@ onMounted(() => {
   border: 1px solid rgba(222,216,207,0.8);
   background: rgba(255,255,255,0.5);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg);
   outline: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   -webkit-appearance: none;
   appearance: none;
 }
@@ -1299,12 +1305,12 @@ onMounted(() => {
   border: 1px solid rgba(222,216,207,0.8);
   background: rgba(255,255,255,0.5);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg);
   outline: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   resize: vertical;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 .pill-textarea:focus {
   border-color: var(--primary);
@@ -1495,21 +1501,24 @@ onMounted(() => {
 
 .radio-group {
   display: flex;
-  gap: 12px;
+  gap: 24px;
+  align-items: center;
 }
 .radio-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--fg);
 }
 .radio-item input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  background: transparent;
   accent-color: var(--primary);
-  width: 16px;
-  height: 16px;
   cursor: pointer;
 }
 

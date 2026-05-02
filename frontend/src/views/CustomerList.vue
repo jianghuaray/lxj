@@ -55,16 +55,14 @@
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
       <input class="filter-input" v-model="searchQuery" placeholder="搜索姓名/手机号/地址" @keyup.enter="fetchCustomers" @input="debouncedSearch" />
-      <select class="filter-select" v-model="levelFilter" @change="fetchCustomers">
-        <option value="">全部等级</option>
-        <option value="normal">普通客户</option>
-        <option value="vip">VIP客户</option>
-        <option value="blacklist">黑名单</option>
-      </select>
-      <select class="filter-select" v-model="areaFilter" @change="fetchCustomers">
-        <option value="">全部区域</option>
-        <option v-for="area in areas" :key="area" :value="area">{{ area }}</option>
-      </select>
+      <el-select v-model="levelFilter" class="filter-select-el" placeholder="全部等级" clearable @change="fetchCustomers">
+        <el-option label="普通客户" value="normal" />
+        <el-option label="VIP客户" value="vip" />
+        <el-option label="黑名单" value="blacklist" />
+      </el-select>
+      <el-select v-model="areaFilter" class="filter-select-el" placeholder="全部区域" clearable @change="fetchCustomers">
+        <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+      </el-select>
       <button class="btn-query" @click="fetchCustomers">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
     </div>
@@ -125,11 +123,11 @@
     <div class="pagination-bar">
       <div class="pagination-info">
         共 <strong>{{ pagination.total }}</strong> 条记录，每页
-        <select v-model="pagination.pageSize" @change="pagination.page = 1; fetchCustomers()">
-          <option>12</option>
-          <option>20</option>
-          <option>50</option>
-        </select>
+        <el-select v-model="pagination.pageSize" class="page-size-select" @change="pagination.page = 1; fetchCustomers()">
+          <el-option :value="12" label="12" />
+          <el-option :value="20" label="20" />
+          <el-option :value="50" label="50" />
+        </el-select>
         条
       </div>
       <div class="pagination-buttons">
@@ -159,10 +157,9 @@
           <el-input v-model="form.phone" placeholder="请输入电话" />
         </el-form-item>
         <el-form-item label="区域">
-          <select class="native-select" v-model="form.area">
-            <option value="">请选择区域</option>
-            <option v-for="area in areas" :key="area" :value="area">{{ area }}</option>
-          </select>
+          <el-select v-model="form.area" placeholder="请选择区域" clearable style="width:100%">
+            <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+          </el-select>
         </el-form-item>
         <el-form-item label="详细地址">
           <el-input v-model="form.address" placeholder="请输入地址" />
@@ -331,9 +328,8 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .customer-list-page { position: relative; z-index: 1; }
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .page-title { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--fg); margin: 0; }
-.btn-new-order { display: inline-flex; align-items: center; gap: 6px; padding: 10px 24px; border-radius: 999px; border: none; background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.3s ease; }
-.btn-new-order:hover { transform: scale(1.05); box-shadow: var(--shadow-hover); }
-.btn-new-order:active { transform: scale(0.95); }
+.btn-new-order { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; }
+.btn-new-order:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
 .btn-new-order svg { width: 18px; height: 18px; stroke-width: 2; }
 
 /* Stats Cards */
@@ -359,17 +355,15 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .stat-trend.down { color: var(--destructive); }
 
 .filter-toolbar { background: rgba(240,235,229,0.5); border-radius: 24px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.filter-input { flex: 1; height: 44px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 18px; font-family: var(--font-body); font-size: 13px; color: var(--fg); outline: none; transition: all 0.3s ease; min-width: 200px; }
+.filter-input { flex: 1; height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; transition: all 0.2s ease; min-width: 200px; }
 .filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
-.filter-input:focus { box-shadow: 0 0 0 2px rgba(74,127,181,0.2); border-color: rgba(74,127,181,0.3); background: rgba(255,255,255,0.8); }
-.filter-select { height: 44px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; padding-right: 36px; font-family: var(--font-body); font-size: 13px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: all 0.3s ease; min-width: 120px; }
-.filter-select:focus { box-shadow: 0 0 0 2px rgba(74,127,181,0.2); border-color: rgba(74,127,181,0.3); }
-.btn-query { height: 44px; padding: 0 24px; border-radius: 999px; border: none; background: var(--primary); color: white; font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.3s ease; white-space: nowrap; }
-.btn-query:hover { transform: scale(1.05); box-shadow: var(--shadow-hover); }
-.btn-query:active { transform: scale(0.95); }
-.btn-reset { height: 44px; padding: 0 20px; border-radius: 999px; border: 2px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; white-space: nowrap; }
-.btn-reset:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
-.btn-reset:active { transform: scale(0.95); }
+.filter-input:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); background: rgba(255,255,255,0.8); }
+.filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; padding-right: 36px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: all 0.2s ease; min-width: 120px; }
+.filter-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
+.btn-query { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; white-space: nowrap; }
+.btn-query:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
+.btn-reset { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.btn-reset:hover { background: rgba(232,184,75,0.08); }
 
 .table-container { background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; margin-bottom: 16px; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -383,14 +377,14 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .data-table tbody td:last-child { padding-right: 24px; text-align: center; }
 
 /* Customer level badges */
-.level-badge { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.level-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 14px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .level-badge.normal { background: rgba(120,120,108,0.1); color: #78786C; }
 .level-badge.vip { background: rgba(232,184,75,0.15); color: #B8922E; }
 .level-badge.blacklist { background: rgba(212,114,106,0.1); color: #D4726A; }
 
 /* Tag badges */
 .tags-cell { display: flex; gap: 4px; flex-wrap: wrap; }
-.tag-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; margin: 1px 2px; }
+.tag-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; margin: 1px 2px; }
 .tag-badge.tag-owner { background: rgba(74,127,181,0.08); color: #4A7FB5; }
 .tag-badge.tag-price { background: rgba(232,184,75,0.1); color: #B8922E; }
 .tag-badge.tag-weekend { background: rgba(120,120,108,0.08); color: #78786C; }
@@ -416,6 +410,6 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .empty-cell { text-align: center !important; padding: 48px 24px !important; }
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--muted-fg); font-size: 14px; }
 
-.native-select { width: 100%; height: 44px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 13px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: all 0.3s ease; }
-.native-select:focus { box-shadow: 0 0 0 2px rgba(74,127,181,0.2); border-color: rgba(74,127,181,0.3); }
+.native-select { width: 100%; height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; transition: all 0.2s ease; }
+.native-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
 </style>

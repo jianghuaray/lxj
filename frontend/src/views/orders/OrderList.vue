@@ -94,14 +94,12 @@
         @keyup.enter="fetchOrders"
         @input="debouncedSearch"
       />
-      <select class="filter-select" v-model="categoryFilter" @change="fetchOrders">
-        <option value="">问题分类</option>
-        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-      </select>
-      <select class="filter-select" v-model="areaFilter" @change="fetchOrders">
-        <option value="">所属区域</option>
-        <option v-for="area in areas" :key="area" :value="area">{{ area }}</option>
-      </select>
+      <el-select v-model="categoryFilter" class="filter-select-el" placeholder="问题分类" clearable @change="fetchOrders">
+        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+      </el-select>
+      <el-select v-model="areaFilter" class="filter-select-el" placeholder="所属区域" clearable @change="fetchOrders">
+        <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+      </el-select>
       <button class="btn-query" @click="fetchOrders">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
     </div>
@@ -161,11 +159,11 @@
     <div class="pagination-bar">
       <div class="pagination-info">
         共 <strong>{{ pagination.total }}</strong> 条记录，每页
-        <select v-model="pagination.pageSize" @change="pagination.page = 1; fetchOrders()">
-          <option>12</option>
-          <option>20</option>
-          <option>50</option>
-        </select>
+        <el-select v-model="pagination.pageSize" class="page-size-select" @change="pagination.page = 1; fetchOrders()">
+          <el-option :value="12" label="12" />
+          <el-option :value="20" label="20" />
+          <el-option :value="50" label="50" />
+        </el-select>
         条
       </div>
       <div class="pagination-buttons">
@@ -436,10 +434,12 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .btn-new-order {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 24px;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 1.5px solid var(--primary);
   background: var(--primary);
   color: white;
   font-family: var(--font-body);
@@ -447,14 +447,12 @@ onUnmounted(() => { debouncedSearch.cancel() })
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 .btn-new-order:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-hover);
-}
-.btn-new-order:active {
-  transform: scale(0.95);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
 .btn-new-order svg {
   width: 18px;
@@ -615,36 +613,36 @@ onUnmounted(() => { debouncedSearch.cancel() })
 
 .filter-input {
   flex: 1;
-  height: 44px;
+  height: 40px;
   border-radius: 999px;
-  border: 1px solid rgba(222, 216, 207, 0.8);
-  background: rgba(255, 255, 255, 0.5);
-  padding: 0 18px;
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
+  padding: 0 16px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg);
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 .filter-input::placeholder {
   color: var(--muted-fg);
   opacity: 0.7;
 }
 .filter-input:focus {
-  box-shadow: 0 0 0 2px rgba(74, 127, 181, 0.2);
-  border-color: rgba(74, 127, 181, 0.3);
-  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
+  background: rgba(255,255,255,0.8);
 }
 
 .filter-select {
-  height: 44px;
+  height: 40px;
   border-radius: 999px;
-  border: 1px solid rgba(222, 216, 207, 0.8);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5);
   padding: 0 16px;
   padding-right: 36px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--fg);
   outline: none;
   cursor: pointer;
@@ -653,57 +651,51 @@ onUnmounted(() => { debouncedSearch.cancel() })
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   min-width: 120px;
 }
 .filter-select:focus {
-  box-shadow: 0 0 0 2px rgba(74, 127, 181, 0.2);
-  border-color: rgba(74, 127, 181, 0.3);
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.15);
+  border-color: var(--primary);
 }
 
 .btn-query {
-  height: 44px;
-  padding: 0 24px;
+  height: 36px;
+  padding: 0 20px;
   border-radius: 999px;
-  border: none;
+  border: 1.5px solid var(--primary);
   background: var(--primary);
   color: white;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-query:hover {
-  transform: scale(1.05);
-  box-shadow: var(--shadow-hover);
-}
-.btn-query:active {
-  transform: scale(0.95);
+  background: #3D6FA0;
+  border-color: #3D6FA0;
+  box-shadow: var(--shadow-soft);
 }
 
 .btn-reset {
-  height: 44px;
+  height: 36px;
   padding: 0 20px;
   border-radius: 999px;
-  border: 2px solid var(--secondary);
+  border: 1.5px solid var(--secondary);
   background: transparent;
   color: var(--secondary);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
 }
 .btn-reset:hover {
-  background: rgba(232, 184, 75, 0.08);
-  transform: scale(1.05);
-}
-.btn-reset:active {
-  transform: scale(0.95);
+  background: rgba(232,184,75,0.08);
 }
 
 /* Data Table */
@@ -783,7 +775,8 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 14px;
+  height: 26px;
+  padding: 0 14px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;

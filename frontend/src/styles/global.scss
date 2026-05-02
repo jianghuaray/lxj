@@ -332,3 +332,536 @@ h1, h2, h3, h4 {
   opacity: 0.05;
   border-radius: 50% 50% 40% 60% / 50% 40% 60% 50%;
 }
+
+/* ==================================================
+ * Page Component Overrides (component-spec-v3)
+ * Keep native page controls aligned with Element Plus.
+ * ================================================== */
+
+input,
+select,
+textarea,
+button {
+  font-family: var(--font-body);
+}
+
+.form-input,
+.filter-input,
+.filter-search,
+.input-field,
+.pagination-info select,
+.settlement-header select {
+  height: 40px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(222, 216, 207, 0.8) !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  color: var(--fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+.form-input,
+.filter-input,
+.filter-search,
+.input-field {
+  padding: 0 16px !important;
+}
+
+.form-input::placeholder,
+.filter-input::placeholder,
+.filter-search::placeholder,
+.input-field::placeholder,
+.form-textarea::placeholder {
+  color: var(--muted-fg) !important;
+  opacity: 0.7 !important;
+}
+
+.form-input:focus,
+.filter-input:focus,
+.filter-search:focus,
+.input-field:focus,
+.filter-select:focus,
+.form-select:focus,
+.pagination-info select:focus,
+.settlement-header select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.filter-select,
+.form-select,
+.pagination-info select,
+.settlement-header select {
+  height: 40px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(222, 216, 207, 0.8) !important;
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  color: var(--fg) !important;
+  cursor: pointer !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  outline: none !important;
+  padding: 0 36px 0 16px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 100px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(222, 216, 207, 0.8) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  color: var(--fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  outline: none !important;
+  padding: 12px 16px !important;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+
+.form-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.btn,
+.btn-add,
+.btn-back,
+.btn-cancel,
+.btn-filter,
+.btn-followup,
+.btn-new-order,
+.btn-outline,
+.btn-pill,
+.btn-query,
+.btn-reset,
+.btn-save,
+.action-btn.primary-pill,
+.action-btn-pill,
+.status-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  border-radius: 999px !important;
+  font-family: var(--font-body) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.btn:hover:not(:disabled),
+.btn-add:hover,
+.btn-back:hover,
+.btn-cancel:hover,
+.btn-filter:hover,
+.btn-followup:hover,
+.btn-new-order:hover,
+.btn-outline:hover,
+.btn-pill:hover,
+.btn-query:hover,
+.btn-reset:hover,
+.btn-save:hover,
+.action-btn.primary-pill:hover,
+.action-btn-pill:hover,
+.status-btn:hover {
+  transform: scale(1.02);
+}
+
+.btn:active:not(:disabled),
+.btn-add:active,
+.btn-back:active,
+.btn-cancel:active,
+.btn-filter:active,
+.btn-followup:active,
+.btn-new-order:active,
+.btn-outline:active,
+.btn-pill:active,
+.btn-query:active,
+.btn-reset:active,
+.btn-save:active,
+.action-btn.primary-pill:active,
+.action-btn-pill:active,
+.status-btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary,
+.btn-add,
+.btn-followup,
+.btn-new-order,
+.btn-pill.primary,
+.btn-query,
+.btn-save,
+.action-btn.primary-pill,
+.action-btn-pill,
+.status-btn.active {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-fg) !important;
+  box-shadow: 0 4px 14px -2px rgba(74, 127, 181, 0.4) !important;
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-add:hover,
+.btn-followup:hover,
+.btn-new-order:hover,
+.btn-pill.primary:hover,
+.btn-query:hover,
+.btn-save:hover,
+.action-btn.primary-pill:hover,
+.action-btn-pill:hover {
+  background: #3D6FA0 !important;
+  border-color: #3D6FA0 !important;
+}
+
+.btn-secondary,
+.btn-cancel,
+.btn-pill.secondary-outline,
+.btn-reset {
+  background: transparent !important;
+  border: 1.5px solid var(--secondary) !important;
+  color: var(--secondary) !important;
+}
+
+.btn-secondary:hover:not(:disabled),
+.btn-cancel:hover,
+.btn-pill.secondary-outline:hover,
+.btn-reset:hover {
+  background: rgba(232, 184, 75, 0.08) !important;
+  border-color: #C99A35 !important;
+  color: #C99A35 !important;
+}
+
+.btn-outline,
+.btn-filter.secondary,
+.action-btn,
+.action-link {
+  border-radius: 999px !important;
+  color: var(--primary) !important;
+}
+
+.action-btn,
+.action-link {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+}
+
+.action-btn:hover,
+.action-link:hover,
+.btn-filter.secondary:hover,
+.btn-outline.primary:hover {
+  background: rgba(74, 127, 181, 0.08) !important;
+  color: #3D6A9A !important;
+}
+
+.action-btn.danger,
+.action-link.danger,
+.btn-outline.danger {
+  color: var(--destructive) !important;
+}
+
+.action-btn.danger:hover,
+.action-link.danger:hover,
+.btn-outline.danger:hover {
+  background: rgba(212, 114, 106, 0.08) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+.btn:disabled,
+.btn-save:disabled,
+.page-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.filter-toolbar {
+  background: rgba(240, 235, 229, 0.5) !important;
+  border: 1px solid rgba(222, 216, 207, 0.35);
+  border-radius: 24px !important;
+  box-shadow: none;
+}
+
+.filter-date {
+  width: 160px !important;
+  flex: none;
+}
+
+.filter-select-el {
+  width: 128px;
+  flex: none;
+}
+
+.page-size-select {
+  width: 74px;
+  vertical-align: middle;
+}
+
+.page-size-select .el-input__wrapper {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+}
+
+.form-select-el,
+.pill-select-el {
+  width: 100%;
+}
+
+.form-card,
+.table-container,
+.table-card,
+.table-wrapper,
+.stat-card,
+.tech-card,
+.level-card,
+.tag-card {
+  background: var(--card-bg) !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.form-card,
+.table-container,
+.table-card,
+.table-wrapper,
+.level-card,
+.tag-card {
+  border-radius: 24px 16px 24px 16px !important;
+}
+
+.stat-card:nth-child(odd),
+.tech-card.odd {
+  border-radius: 24px 16px 24px 16px !important;
+}
+
+.stat-card:nth-child(even),
+.tech-card.even {
+  border-radius: 16px 24px 16px 24px !important;
+}
+
+.form-card:hover,
+.table-wrapper:hover,
+.stat-card:hover,
+.tech-card:hover,
+.level-card:hover,
+.tag-card:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+
+.section-title,
+.card-title {
+  color: var(--fg) !important;
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+}
+
+.form-label {
+  color: var(--accent-fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+.required,
+.form-label .required {
+  color: var(--destructive) !important;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.data-table thead th {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(222, 216, 207, 0.7) !important;
+  color: var(--muted-fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.data-table tbody tr {
+  transition: background 0.2s ease !important;
+}
+
+.data-table tbody tr:hover {
+  background: rgba(240, 235, 229, 0.4) !important;
+}
+
+.data-table tbody td {
+  color: var(--fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+}
+
+.badge,
+.status-badge,
+.status-pill,
+.level-badge,
+.customer-badge,
+.tag,
+.tag-badge,
+.tag-pill,
+.tag-item,
+.skill-tag,
+.vip-badge,
+.blacklist-badge,
+.match-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px !important;
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+}
+
+.status-badge,
+.status-pill,
+.level-badge,
+.customer-badge {
+  min-height: 26px;
+  padding: 0 14px !important;
+  font-size: 12px !important;
+}
+
+.tag,
+.tag-badge,
+.tag-pill,
+.tag-item,
+.skill-tag,
+.match-tag {
+  min-height: 26px;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+}
+
+.status-badge.pending,
+.status-badge.pending-dispatch,
+.status-pill.pending-dispatch,
+.badge-pending {
+  background: rgba(74, 127, 181, 0.12) !important;
+  color: var(--primary) !important;
+}
+
+.status-badge.dispatched,
+.status-pill.dispatched,
+.badge-dispatched {
+  background: rgba(232, 184, 75, 0.15) !important;
+  color: #B8922E !important;
+}
+
+.status-badge.completed,
+.status-badge.resolved,
+.status-pill.completed,
+.badge-completed {
+  background: rgba(44, 44, 36, 0.1) !important;
+  color: var(--fg) !important;
+}
+
+.status-badge.followed-up,
+.status-pill.followed-up,
+.badge-reviewed {
+  background: rgba(74, 127, 181, 0.08) !important;
+  color: #6A9EC7 !important;
+}
+
+.status-badge.cancelled,
+.status-badge.closed,
+.status-pill.cancelled,
+.badge-cancelled,
+.blacklist-badge {
+  background: rgba(212, 114, 106, 0.12) !important;
+  color: var(--destructive) !important;
+}
+
+.status-badge.consultation,
+.status-pill.consultation,
+.badge-consult,
+.level-badge.normal {
+  background: rgba(120, 120, 108, 0.12) !important;
+  color: var(--muted-fg) !important;
+}
+
+.level-badge.vip,
+.vip-badge {
+  background: rgba(232, 184, 75, 0.18) !important;
+  color: #9A7A1E !important;
+}
+
+.level-badge.blacklist {
+  background: rgba(212, 114, 106, 0.12) !important;
+  color: var(--destructive) !important;
+}
+
+.tag-badge,
+.tag-pill,
+.tag-default,
+.tag-item,
+.skill-tag,
+.match-tag {
+  background: var(--muted) !important;
+  color: var(--accent-fg) !important;
+}
+
+.tag-active,
+.tag-item.active,
+.skill-tag.selected,
+.tech-card.selected {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-fg) !important;
+}
+
+.pagination-bar {
+  color: var(--muted-fg);
+  font-family: var(--font-body);
+}
+
+.page-btn {
+  min-width: 36px !important;
+  height: 36px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--muted-fg) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease !important;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(230, 220, 205, 0.4) !important;
+  color: var(--primary) !important;
+}
+
+.page-btn.active {
+  background: var(--primary) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.empty-state {
+  color: var(--muted-fg) !important;
+  font-family: var(--font-body) !important;
+}

@@ -1,0 +1,1155 @@
+/*
+ * ============================================================
+ *  Element Plus 主题覆盖 CSS
+ *  适用于 Vue 3 + Element Plus 项目
+ * ============================================================
+ *
+ *  使用说明：
+ *  1. 在 main.js 中导入：
+ *     import './styles/element-override.css'
+ *
+ *  2. 必须在 Element Plus 样式之后导入，例如：
+ *     import 'element-plus/dist/index.css'
+ *     import './styles/element-override.css'
+ *
+ *  3. 不要在 Vue 组件的 <style scoped> 中写这些样式！
+ *     el-select-dropdown、el-picker-panel、el-popover 等组件
+ *     默认 teleport 到 body 上，scoped 样式无法匹配到它们。
+ *
+ *  4. 如果使用 Vite，确保 CSS 注入顺序正确。
+ *     Vite 会按 import 顺序注入 <style> 标签，
+ *     所以只要 import 顺序对就没问题。
+ *
+ * ============================================================
+ */
+
+
+/* ============================================================
+   0. 设计系统 CSS 变量
+   ============================================================ */
+:root {
+  /* 基础色板 */
+  --bg: #FDFCF8;
+  --fg: #2C2C24;
+  --primary: #4A7FB5;
+  --primary-fg: #FFFFFF;
+  --secondary: #E8B84B;
+  --secondary-fg: #FFFFFF;
+  --accent: #E6DCCD;
+  --accent-fg: #4A4A40;
+  --muted: #F0EBE5;
+  --muted-fg: #78786C;
+  --border: #DED8CF;
+  --destructive: #D4726A;
+  --card-bg: #FEFEFA;
+
+  /* 阴影 */
+  --shadow-soft: 0 4px 20px -2px rgba(74, 127, 181, 0.15);
+  --shadow-float: 0 10px 40px -10px rgba(232, 184, 75, 0.2);
+  --shadow-hover: 0 20px 40px -10px rgba(74, 127, 181, 0.15);
+
+  /* 字体 */
+  --font-display: 'Fraunces', 'PingFang SC', 'Microsoft YaHei', serif;
+  --font-body: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+
+/* ============================================================
+   1. 全局基础
+   ============================================================ */
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--primary);
+  opacity: 0.8;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-fg);
+}
+
+
+/* ============================================================
+   2. Element Plus CSS 变量覆盖
+   ============================================================ */
+:root {
+  /* 主色 */
+  --el-color-primary: #4A7FB5;
+  --el-color-primary-light-3: #6B9AC8;
+  --el-color-primary-light-5: #8DB4D6;
+  --el-color-primary-light-7: #AECDE3;
+  --el-color-primary-light-8: #C0D9EA;
+  --el-color-primary-light-9: #D2E5F1;
+  --el-color-primary-dark-2: #3B6591;
+
+  /* 危险色 */
+  --el-color-danger: #D4726A;
+  --el-color-danger-light-3: #DF918B;
+  --el-color-danger-light-5: #E5ADA9;
+  --el-color-danger-light-7: #EBC9C7;
+  --el-color-danger-light-8: #F0D8D6;
+  --el-color-danger-light-9: #F4E7E6;
+  --el-color-danger-dark-2: #AA5B55;
+
+  /* 警告色 */
+  --el-color-warning: #E8B84B;
+
+  /* 成功色 */
+  --el-color-success: #6BAF7A;
+
+  /* 字体 */
+  --el-font-family: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --el-font-size-base: 14px;
+
+  /* 圆角 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 999px;
+
+  /* 边框 */
+  --el-border-color: #DED8CF;
+  --el-border-color-light: #E8E3DB;
+  --el-border-color-lighter: #F0EBE5;
+  --el-border-color-extra-light: #F5F1EB;
+
+  /* 背景 */
+  --el-bg-color: #FEFEFA;
+  --el-bg-color-page: #FDFCF8;
+  --el-bg-color-overlay: #FEFEFA;
+
+  /* 文字 */
+  --el-text-color-primary: #2C2C24;
+  --el-text-color-regular: #4A4A40;
+  --el-text-color-secondary: #78786C;
+  --el-text-color-placeholder: #A8A89C;
+
+  /* 填充 */
+  --el-fill-color-blank: #FEFEFA;
+  --el-fill-color-light: #F0EBE5;
+  --el-fill-color-lighter: #F5F1EB;
+
+  /* 阴影 */
+  --el-box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15);
+  --el-box-shadow-light: 0 2px 12px -2px rgba(74, 127, 181, 0.1);
+  --el-box-shadow-lighter: 0 1px 8px -2px rgba(74, 127, 181, 0.08);
+
+  /* 遮罩 */
+  --el-mask-color: rgba(44, 44, 36, 0.5);
+
+  /* 禁用 */
+  --el-disabled-bg-color: #F0EBE5;
+  --el-disabled-text-color: #A8A89C;
+  --el-disabled-border-color: #E8E3DB;
+}
+
+
+/* ============================================================
+   3. 按钮 el-button
+   ============================================================ */
+.el-button {
+  border-radius: 999px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-weight: 500 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Primary 按钮 */
+.el-button--primary {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-fg) !important;
+  box-shadow: 0 4px 14px -2px rgba(74, 127, 181, 0.4) !important;
+}
+
+.el-button--primary:hover {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.el-button--primary:active {
+  transform: scale(0.98);
+}
+
+/* Default 按钮 */
+.el-button--default {
+  background: transparent !important;
+  border-color: var(--border) !important;
+  color: var(--fg) !important;
+}
+
+.el-button--default:hover {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background: rgba(74, 127, 181, 0.04) !important;
+  transform: scale(1.02);
+}
+
+.el-button--default:active {
+  transform: scale(0.98);
+}
+
+/* Danger 按钮 */
+.el-button--danger {
+  background: transparent !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+.el-button--danger:hover {
+  background: rgba(212, 114, 106, 0.06) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+  transform: scale(1.02);
+}
+
+.el-button--danger:active {
+  transform: scale(0.98);
+}
+
+.el-button--danger.is-plain {
+  background: rgba(212, 114, 106, 0.06) !important;
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}
+
+/* Text 按钮 */
+.el-button--text {
+  background: transparent !important;
+  border: none !important;
+  color: var(--primary) !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+.el-button--text:hover {
+  background: rgba(74, 127, 181, 0.06) !important;
+  transform: scale(1.02);
+}
+
+/* 通用 hover / active */
+.el-button:hover {
+  transform: scale(1.02);
+}
+
+.el-button:active {
+  transform: scale(0.98);
+}
+
+/* 小尺寸按钮 */
+.el-button--small {
+  height: 32px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+}
+
+
+/* ============================================================
+   4. 输入框 el-input
+   ============================================================ */
+.el-input__wrapper {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+  padding: 4px 16px !important;
+  transition: all 0.25s ease !important;
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(74, 127, 181, 0.3) inset !important;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #4A7FB5 inset, 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+}
+
+.el-input__inner {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 14px !important;
+  color: var(--fg) !important;
+}
+
+.el-input__inner::placeholder {
+  color: var(--muted-fg) !important;
+}
+
+/* suffix / prefix 图标 */
+.el-input__prefix .el-icon,
+.el-input__suffix .el-icon {
+  color: var(--muted-fg) !important;
+}
+
+/* disabled */
+.el-input.is-disabled .el-input__wrapper {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: var(--el-disabled-bg-color) !important;
+}
+
+/* textarea */
+.el-textarea__inner {
+  border-radius: 16px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 14px !important;
+  color: var(--fg) !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+  transition: all 0.25s ease !important;
+}
+
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px rgba(74, 127, 181, 0.3) inset !important;
+}
+
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px #4A7FB5 inset, 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+}
+
+.el-textarea.is-disabled .el-textarea__inner {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  background: var(--el-disabled-bg-color) !important;
+}
+
+
+/* ============================================================
+   5. 下拉选择框 el-select
+   ============================================================ */
+
+/* ---- 触发器（与 el-input 一致） ---- */
+.el-select .el-input__wrapper {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+  padding: 4px 16px !important;
+  transition: all 0.25s ease !important;
+}
+
+.el-select .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(74, 127, 181, 0.3) inset !important;
+}
+
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-select .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #4A7FB5 inset, 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+}
+
+/* ---- 下拉面板（teleport 到 body，必须全局样式） ---- */
+.el-select__popper.el-popper {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+  padding: 6px !important;
+}
+
+.el-select__popper .el-select-dropdown {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.el-select__popper .el-popper__arrow::before {
+  background: #FEFEFA !important;
+  border-color: rgba(222, 216, 207, 0.5) !important;
+}
+
+.el-select-dropdown__item {
+  border-radius: 999px !important;
+  padding: 0 16px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 14px !important;
+  color: #2C2C24 !important;
+  margin-bottom: 2px !important;
+}
+
+.el-select-dropdown__item:hover,
+.el-select-dropdown__item.hover {
+  background: rgba(74, 127, 181, 0.08) !important;
+}
+
+.el-select-dropdown__item.selected {
+  color: #4A7FB5 !important;
+  font-weight: 600 !important;
+  background: rgba(74, 127, 181, 0.06) !important;
+}
+
+.el-select-dropdown__item.is-disabled {
+  color: #A8A89C !important;
+  cursor: not-allowed !important;
+}
+
+
+/* ============================================================
+   6. 日期选择器 el-date-picker
+   ============================================================ */
+
+/* ---- 触发器（与 el-input 一致） ---- */
+.el-date-editor .el-input__wrapper {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+  padding: 4px 16px !important;
+  transition: all 0.25s ease !important;
+}
+
+.el-date-editor .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(74, 127, 181, 0.3) inset !important;
+}
+
+.el-date-editor .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #4A7FB5 inset, 0 0 0 3px rgba(74, 127, 181, 0.15) !important;
+}
+
+/* ---- 日历面板（teleport 到 body，必须全局样式） ---- */
+.el-date-picker.el-popper,
+.el-picker-panel {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  color: #2C2C24 !important;
+}
+
+/* 日期单元格 */
+.el-date-table td .el-date-table-cell__text {
+  border-radius: 999px !important;
+}
+
+.el-date-table td.available:hover {
+  color: #4A7FB5 !important;
+}
+
+.el-date-table td.current:not(.disabled) .el-date-table-cell__text {
+  background: #4A7FB5 !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+}
+
+.el-date-table td.today .el-date-table-cell__text {
+  color: #4A7FB5 !important;
+  font-weight: 600 !important;
+}
+
+.el-date-table td.next-month,
+.el-date-table td.prev-month {
+  color: #A8A89C !important;
+  opacity: 0.4 !important;
+}
+
+/* 头部年月 */
+.el-date-picker__header-label {
+  font-family: 'Fraunces', 'PingFang SC', serif !important;
+  font-weight: 700 !important;
+  color: #2C2C24 !important;
+}
+
+/* 年份/月份选择器面板 */
+.el-year-table td .el-year-table-cell__text,
+.el-month-table td .el-month-table-cell__text {
+  border-radius: 999px !important;
+}
+
+/* 时间选择器面板 */
+.el-time-panel {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+}
+
+
+/* ============================================================
+   7. 表格 el-table
+   ============================================================ */
+.el-table {
+  --el-table-border-color: #DED8CF;
+  --el-table-header-bg-color: transparent;
+  --el-table-header-text-color: #78786C;
+  --el-table-row-hover-bg-color: rgba(240, 235, 229, 0.4);
+  --el-table-text-color: #2C2C24;
+  --el-table-current-row-bg-color: rgba(74, 127, 181, 0.06);
+  font-family: 'Nunito', 'PingFang SC', sans-serif;
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+
+.el-table--border .el-table__inner-wrapper::after {
+  background-color: #DED8CF !important;
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: rgba(240, 235, 229, 0.2) !important;
+}
+
+.el-table__empty-text {
+  color: var(--muted-fg) !important;
+}
+
+
+/* ============================================================
+   8. 标签 el-tag
+   ============================================================ */
+.el-tag {
+  border-radius: 999px !important;
+  border: none !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-weight: 500 !important;
+  padding: 0 12px !important;
+  height: 26px !important;
+  line-height: 26px !important;
+}
+
+.el-tag--info {
+  background: rgba(230, 220, 205, 0.4) !important;
+  color: #4A4A40 !important;
+}
+
+.el-tag--primary {
+  background: rgba(74, 127, 181, 0.12) !important;
+  color: #4A7FB5 !important;
+}
+
+.el-tag--danger {
+  background: rgba(212, 114, 106, 0.1) !important;
+  color: #D4726A !important;
+}
+
+.el-tag--warning {
+  background: rgba(232, 184, 75, 0.12) !important;
+  color: #B8922E !important;
+}
+
+.el-tag--success {
+  background: rgba(107, 175, 122, 0.12) !important;
+  color: #4E8A5C !important;
+}
+
+.el-tag .el-tag__close {
+  color: inherit !important;
+  opacity: 0.6 !important;
+}
+
+.el-tag .el-tag__close:hover {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 999px !important;
+}
+
+
+/* ============================================================
+   9. 分页 el-pagination
+   ============================================================ */
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+  font-family: 'Nunito', 'PingFang SC', sans-serif;
+}
+
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .el-pager li {
+  border-radius: 999px !important;
+  min-width: 36px !important;
+  height: 36px !important;
+  font-weight: 500 !important;
+}
+
+.el-pagination .el-pager li.is-active {
+  background: #4A7FB5 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15) !important;
+}
+
+.el-pagination .el-pager li:hover {
+  color: #4A7FB5 !important;
+}
+
+.el-pagination .btn-prev:hover,
+.el-pagination .btn-next:hover {
+  color: #4A7FB5 !important;
+}
+
+/* 分页中的 el-select（每页条数选择） */
+.el-pagination .el-select .el-input__wrapper {
+  border-radius: 999px !important;
+}
+
+.el-pagination .el-pagination__total,
+.el-pagination .el-pagination__jump {
+  color: var(--muted-fg) !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+
+/* ============================================================
+   10. 对话框 el-dialog
+   ============================================================ */
+.el-dialog {
+  border-radius: 24px !important;
+  background: #FEFEFA !important;
+  box-shadow: 0 20px 60px -10px rgba(74, 127, 181, 0.2) !important;
+  overflow: hidden;
+}
+
+.el-dialog__header {
+  padding: 20px 24px 12px !important;
+}
+
+.el-dialog__title {
+  font-family: 'Fraunces', 'PingFang SC', serif !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  color: #2C2C24 !important;
+}
+
+.el-dialog__body {
+  padding: 12px 24px 24px !important;
+  color: #2C2C24 !important;
+}
+
+.el-dialog__headerbtn .el-dialog__close {
+  color: #78786C !important;
+}
+
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #2C2C24 !important;
+}
+
+.el-dialog__footer {
+  padding: 12px 24px 20px !important;
+  border-top: 1px solid var(--border) !important;
+}
+
+
+/* ============================================================
+   11. 表单 el-form
+   ============================================================ */
+.el-form-item__label {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #4A4A40 !important;
+}
+
+.el-form-item__error {
+  font-size: 12px !important;
+  color: var(--destructive) !important;
+}
+
+/* 必填星号 */
+.el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before {
+  color: var(--destructive) !important;
+}
+
+
+/* ============================================================
+   12. 卡片 el-card
+   ============================================================ */
+.el-card {
+  border-radius: 24px 16px 24px 16px !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  background: #FEFEFA !important;
+  box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15) !important;
+  color: var(--fg) !important;
+}
+
+.el-card__header {
+  border-bottom: 1px solid #DED8CF !important;
+  font-family: 'Fraunces', 'PingFang SC', serif;
+  font-weight: 700;
+}
+
+.el-card__body {
+  color: var(--fg) !important;
+}
+
+/* 无阴影变体 */
+.el-card.is-always-shadow,
+.el-card.is-hover-shadow:hover {
+  box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15) !important;
+}
+
+
+/* ============================================================
+   13. 消息提示 el-message / el-notification
+   ============================================================ */
+
+/* ---- el-message（teleport 到 body） ---- */
+.el-message {
+  border-radius: 16px !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  background: #FEFEFA !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+}
+
+.el-message .el-message__content {
+  color: var(--fg) !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+/* ---- el-notification（teleport 到 body） ---- */
+.el-notification {
+  border-radius: 16px !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  background: #FEFEFA !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+}
+
+.el-notification__title {
+  font-family: 'Fraunces', 'PingFang SC', serif !important;
+  font-weight: 700 !important;
+  color: var(--fg) !important;
+}
+
+.el-notification__content {
+  color: var(--muted-fg) !important;
+}
+
+
+/* ============================================================
+   14. 弹出框 el-popover / el-tooltip
+   ============================================================ */
+
+/* ---- el-popover（teleport 到 body） ---- */
+.el-popover.el-popper {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+  color: #2C2C24 !important;
+}
+
+.el-popover__title {
+  font-family: 'Fraunces', 'PingFang SC', serif !important;
+  font-weight: 700 !important;
+  color: #2C2C24 !important;
+}
+
+/* ---- el-tooltip（teleport 到 body） ---- */
+.el-tooltip__popper.is-dark {
+  background: var(--fg) !important;
+  border-radius: 8px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 13px !important;
+}
+
+.el-tooltip__popper.is-light {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 8px !important;
+  color: var(--fg) !important;
+  box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15) !important;
+}
+
+
+/* ============================================================
+   15. 单选框 el-radio
+   ============================================================ */
+.el-radio__input.is-checked .el-radio__inner {
+  background: #4A7FB5 !important;
+  border-color: #4A7FB5 !important;
+}
+
+.el-radio__input.is-checked + .el-radio__label {
+  color: #4A7FB5 !important;
+}
+
+.el-radio__inner {
+  border-color: #DED8CF !important;
+}
+
+.el-radio__label {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  color: var(--fg) !important;
+}
+
+/* 单选按钮组 */
+.el-radio-button__inner {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  border-color: var(--border) !important;
+}
+
+.el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: #4A7FB5 !important;
+  border-color: #4A7FB5 !important;
+  color: #fff !important;
+  box-shadow: -1px 0 0 0 #4A7FB5 !important;
+}
+
+
+/* ============================================================
+   16. 复选框 el-checkbox
+   ============================================================ */
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: #4A7FB5 !important;
+  border-color: #4A7FB5 !important;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #4A7FB5 !important;
+}
+
+.el-checkbox__inner {
+  border-color: #DED8CF !important;
+  border-radius: 4px !important;
+}
+
+.el-checkbox__label {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  color: var(--fg) !important;
+}
+
+/* 复选框按钮组 */
+.el-checkbox-button__inner {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  border-color: var(--border) !important;
+}
+
+.el-checkbox-button.is-checked .el-checkbox-button__inner {
+  background: #4A7FB5 !important;
+  border-color: #4A7FB5 !important;
+  color: #fff !important;
+  box-shadow: -1px 0 0 0 #4A7FB5 !important;
+}
+
+
+/* ============================================================
+   17. 开关 el-switch
+   ============================================================ */
+.el-switch.is-checked .el-switch__core {
+  background: #4A7FB5 !important;
+  border-color: #4A7FB5 !important;
+}
+
+.el-switch__core {
+  border-color: var(--border) !important;
+}
+
+
+/* ============================================================
+   18. 加载 el-loading
+   ============================================================ */
+.el-loading-spinner .circular .path {
+  stroke: #4A7FB5 !important;
+}
+
+.el-loading-spinner .el-loading-text {
+  color: #78786C !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+.el-loading-mask {
+  background-color: rgba(253, 252, 248, 0.8) !important;
+}
+
+
+/* ============================================================
+   19. 菜单 el-menu（侧边栏）
+   ============================================================ */
+.el-menu-item {
+  border-radius: 12px !important;
+  margin: 0 12px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-weight: 500 !important;
+  color: #78786C !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-menu-item:hover {
+  background: rgba(230, 220, 205, 0.3) !important;
+}
+
+.el-menu-item.is-active {
+  background: rgba(74, 127, 181, 0.1) !important;
+  color: #4A7FB5 !important;
+  font-weight: 600 !important;
+}
+
+/* 子菜单 */
+.el-sub-menu__title {
+  border-radius: 12px !important;
+  margin: 0 12px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-weight: 500 !important;
+  color: #78786C !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-sub-menu__title:hover {
+  background: rgba(230, 220, 205, 0.3) !important;
+}
+
+/* 水平菜单 */
+.el-menu--horizontal > .el-menu-item {
+  border-radius: 999px !important;
+  margin: 0 4px !important;
+  border-bottom: none !important;
+}
+
+.el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom: none !important;
+}
+
+
+/* ============================================================
+   20. 面包屑 el-breadcrumb
+   ============================================================ */
+.el-breadcrumb__inner {
+  color: #78786C !important;
+  font-weight: 500 !important;
+}
+
+.el-breadcrumb__inner.is-link:hover {
+  color: #4A7FB5 !important;
+}
+
+.el-breadcrumb__separator {
+  color: #DED8CF !important;
+}
+
+
+/* ============================================================
+   21. 补充：Tabs 标签页
+   ============================================================ */
+.el-tabs__item {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-weight: 500 !important;
+  color: var(--muted-fg) !important;
+  transition: color 0.25s ease !important;
+}
+
+.el-tabs__item:hover {
+  color: var(--primary) !important;
+}
+
+.el-tabs__item.is-active {
+  color: var(--primary) !important;
+  font-weight: 600 !important;
+}
+
+.el-tabs__active-bar {
+  background-color: var(--primary) !important;
+  border-radius: 999px !important;
+}
+
+.el-tabs__nav-wrap::after {
+  background-color: var(--border) !important;
+}
+
+
+/* ============================================================
+   22. 补充：Dropdown 下拉菜单
+   ============================================================ */
+.el-dropdown-menu {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px -10px rgba(232, 184, 75, 0.2) !important;
+  padding: 6px !important;
+}
+
+.el-dropdown-menu__item {
+  border-radius: 999px !important;
+  padding: 0 16px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  font-size: 14px !important;
+  color: #2C2C24 !important;
+  margin-bottom: 2px !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background: rgba(74, 127, 181, 0.08) !important;
+  color: #4A7FB5 !important;
+}
+
+.el-dropdown-menu__item--divided:before {
+  background-color: var(--border) !important;
+}
+
+
+/* ============================================================
+   23. 补充：Steps 步骤条
+   ============================================================ */
+.el-step__title.is-finish,
+.el-step__head.is-finish {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.el-step__head.is-finish .el-step__icon {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+.el-step__head.is-process .el-step__icon {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+.el-step__head.is-process {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.el-step__line {
+  background-color: var(--border) !important;
+}
+
+
+/* ============================================================
+   24. 补充：Transfer 穿梭框 / Tree 树形控件
+   ============================================================ */
+
+/* Tree */
+.el-tree-node__content:hover {
+  background: rgba(74, 127, 181, 0.06) !important;
+}
+
+.el-tree-node.is-current > .el-tree-node__content {
+  background: rgba(74, 127, 181, 0.1) !important;
+  color: var(--primary) !important;
+}
+
+.el-tree-node__label {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+
+/* ============================================================
+   25. 补充：Drawer 抽屉
+   ============================================================ */
+.el-drawer {
+  background: #FEFEFA !important;
+}
+
+.el-drawer__header {
+  color: var(--fg) !important;
+  font-family: 'Fraunces', 'PingFang SC', serif !important;
+  font-weight: 700 !important;
+  margin-bottom: 0 !important;
+  padding: 20px 24px 12px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.el-drawer__body {
+  padding: 16px 24px !important;
+  color: var(--fg) !important;
+}
+
+
+/* ============================================================
+   26. 补充：Alert 提示
+   ============================================================ */
+.el-alert {
+  border-radius: 16px !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+.el-alert--info.is-light {
+  background: rgba(230, 220, 205, 0.3) !important;
+  color: #4A4A40 !important;
+}
+
+.el-alert--success.is-light {
+  background: rgba(107, 175, 122, 0.1) !important;
+  color: #4E8A5C !important;
+}
+
+.el-alert--warning.is-light {
+  background: rgba(232, 184, 75, 0.1) !important;
+  color: #B8922E !important;
+}
+
+.el-alert--error.is-light {
+  background: rgba(212, 114, 106, 0.08) !important;
+  color: #D4726A !important;
+}
+
+
+/* ============================================================
+   27. 补充：Empty 空状态
+   ============================================================ */
+.el-empty__description p {
+  color: var(--muted-fg) !important;
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+}
+
+
+/* ============================================================
+   28. 补充：Skeleton 骨架屏
+   ============================================================ */
+.el-skeleton__item {
+  background: var(--muted) !important;
+}
+
+
+/* ============================================================
+   29. 补充：Backtop 回到顶部
+   ============================================================ */
+.el-backtop {
+  background: #FEFEFA !important;
+  border: 1px solid rgba(222, 216, 207, 0.5) !important;
+  box-shadow: 0 4px 20px -2px rgba(74, 127, 181, 0.15) !important;
+  border-radius: 999px !important;
+  color: var(--primary) !important;
+}
+
+.el-backtop:hover {
+  background: #FEFEFA !important;
+  color: var(--primary) !important;
+}
+
+
+/* ============================================================
+   30. 补充：Badge 标记
+   ============================================================ */
+.el-badge__content {
+  font-family: 'Nunito', 'PingFang SC', sans-serif !important;
+  border: none !important;
+}
+
+.el-badge__content--primary {
+  background: var(--primary) !important;
+}
