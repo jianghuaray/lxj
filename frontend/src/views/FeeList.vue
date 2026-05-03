@@ -179,6 +179,7 @@ import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
 import { formatTime } from '@/utils/format'
 import { useSettingsStore } from '@/stores/settings'
+import * as XLSX from 'xlsx'
 
 const settingsStore = useSettingsStore()
 
@@ -300,12 +301,71 @@ async function fetchTechnicians() {
   }
 }
 
-function exportExcel() {
+async function exportExcel() {
   ElMessage.info('正在导出Excel...')
-  // TODO: 实现导出功能
-  setTimeout(() => {
+  try {
+    // 获取所有符合条件的数据（不分页）
+    const params = {
+      page: 1,
+      pageSize: 9999,
+      statuses: ['completed', 'callback']
+    }
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.startDate = dateRange.value[0]
+      params.endDate = dateRange.value[1]
+    }
+    if (technicianFilter.value) params.technicianId = technicianFilter.value
+    if (areaFilter.value) params.area = areaFilter.value
+    if (categoryFilter.value) params.problemCategory = categoryFilter.value
+
+    const response = await api.get('/construction/fees', { params })
+    const data = response.data.items || []
+
+    if (!data.length) {
+      ElMessage.warning('暂无数据可导出')
+      return
+    }
+
+    // 构造 Excel 数据
+    const headers = ['订单号', '客户姓名', '维修师傅', '问题分类', '总费用', '应收服务费', '实收服务费', '材料成本', '楼管激励', '完成时间']
+    const rows = data.map(item => [
+      item.orderNo,
+      item.customerName,
+      item.technicianName,
+      item.problemCategory,
+      item.totalFee,
+      item.serviceFee,
+      item.receivedFee,
+      item.materialCost,
+      item.buildingManagerIncentive,
+      formatDate(item.completedAt)
+    ])
+
+    // 合计行
+    const summary = response.data.summary || {}
+    rows.push([
+      '合计', '', '', '',
+      summary.totalFee,
+      summary.serviceFee,
+      summary.receivedFee,
+      summary.materialCost,
+      summary.incentive,
+      ''
+    ])
+
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '维修费用')
+
+    // 文件名：维修费用_YYYYMMDD
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+    XLSX.writeFile(wb, `维修费用_${dateStr}.xlsx`)
     ElMessage.success('导出成功')
-  }, 1000)
+  } catch (error) {
+    console.error('导出失败', error)
+    ElMessage.error('导出失败，请重试')
+  }
 }
 
 // Mock data for demo
