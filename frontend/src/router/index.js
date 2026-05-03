@@ -72,12 +72,6 @@ const router = createRouter({
           meta: { title: '编辑师傅' }
         },
         {
-          path: 'callbacks',
-          name: 'callbacks',
-          component: () => import('@/views/CallbackList.vue'),
-          meta: { title: '回访管理' }
-        },
-        {
           path: 'fees',
           name: 'fees',
           component: () => import('@/views/FeeList.vue'),
