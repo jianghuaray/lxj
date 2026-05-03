@@ -90,6 +90,10 @@
       </el-select>
       <button class="btn-query" @click="fetchOrders">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
+      <button class="btn-export" style="margin-left:auto;" @click="exportOrders">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出Excel
+      </button>
     </div>
 
     <!-- Data Table -->
@@ -184,6 +188,7 @@ import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatTime } from '@/utils/format'
+import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 import { useSettingsStore } from '@/stores/settings'
 
 const settingsStore = useSettingsStore()
@@ -402,6 +407,46 @@ onMounted(() => {
   fetchTechnicians()
 })
 onUnmounted(() => { debouncedSearch.cancel() })
+
+async function exportOrders() {
+  try {
+    // 获取所有筛选条件下的数据（不分页）
+    const params = { page: 1, pageSize: 9999 }
+    // tabs 和特殊筛选互斥
+    if (activeTab.value) params.status = activeTab.value
+    if (specialFilter.value === 'overdue') params.overdue = 'true'
+    if (specialFilter.value === 'awaitCallback') params.awaitCallback = 'true'
+    if (specialFilter.value === 'pendingDispatch') params.pendingDispatch = 'true'
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (areaFilter.value) params.area = areaFilter.value
+    if (categoryFilter.value) params.problemCategory = categoryFilter.value
+    if (technicianFilter.value) params.technicianId = technicianFilter.value
+
+    const response = await api.get('/orders', { params })
+    const allOrders = response.data.items || response.data || []
+
+    // 表头
+    const headers = ['订单号', '客户', '区域', '问题分类', '维修师傅', '状态', '维修金额', '创建时间']
+
+    // 数据行
+    const data = allOrders.map(o => [
+      o.orderNo || '',
+      o.customerName || '',
+      o.area || '',
+      o.problemCategory || '',
+      o.technicianName || '',
+      getStatusText(o.status),
+      (o.totalFee || o.construction?.totalFee) ? `¥${o.totalFee || o.construction?.totalFee}` : '-',
+      formatDateForExport(o.createdAt)
+    ])
+
+    exportToExcel('工单列表', headers, data)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -723,6 +768,29 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .btn-reset:hover {
   background: rgba(232,184,75,0.08);
 }
+
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 1.5px solid var(--secondary);
+  background: transparent;
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.btn-export:hover {
+  background: rgba(232,184,75,0.08);
+  transform: scale(1.05);
+}
+.btn-export:active { transform: scale(0.95); }
 
 /* Data Table */
 .table-container {

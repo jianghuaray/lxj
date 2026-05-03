@@ -65,6 +65,10 @@
       </el-select>
       <button class="btn-query" @click="fetchCustomers">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
+      <button class="btn-export" style="margin-left:auto;" @click="exportCustomers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出Excel
+      </button>
     </div>
 
     <!-- Data Table -->
@@ -190,6 +194,7 @@ import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatDate } from '@/utils/format'
+import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
 const router = useRouter()
 const loading = ref(false)
@@ -406,6 +411,51 @@ onMounted(() => {
   fetchCustomers()
   loadStats()
 })
+async function exportCustomers() {
+  try {
+    // 获取所有筛选条件下的数据（不分页）
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (levelFilter.value) params.level = levelFilter.value
+    if (areaFilter.value) params.area = areaFilter.value
+    
+    const response = await api.get('/customers', { params })
+    let allCustomers = response.data.items || response.data || []
+    
+    // 如果是"本月新增"卡片，进行客户端筛选
+    if (activeCard.value === 'new') {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      allCustomers = allCustomers.filter(c => {
+        if (!c.createdAt) return false
+        return new Date(c.createdAt) >= startOfMonth
+      })
+    }
+    
+    // 表头
+    const headers = ['姓名', '手机号', '区域', '地址', '客户等级', '标签', '累计工单', '累计消费', '最近报修']
+    
+    // 数据行
+    const data = allCustomers.map(c => [
+      c.name || '',
+      c.phone || '',
+      c.area || '',
+      c.address || '',
+      getLevelText(c.level),
+      (c.tags || []).join('、'),
+      c.totalOrders || 0,
+      c.totalAmount || 0,
+      formatDateForExport(c.lastOrderAt)
+    ])
+    
+    exportToExcel('客户列表', headers, data)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
+}
+
 onUnmounted(() => { debouncedSearch.cancel() })
 </script>
 
@@ -510,6 +560,10 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .btn-query:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
 .btn-reset { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
 .btn-reset:hover { background: rgba(232,184,75,0.08); }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.btn-export:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-export:active { transform: scale(0.95); }
 
 .table-container { background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; margin-bottom: 16px; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }

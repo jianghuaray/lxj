@@ -61,6 +61,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         重置
       </button>
+      <button class="btn-export" style="margin-left:auto;" @click="exportTechnicians">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出Excel
+      </button>
     </div>
 
     <!-- Technician Card Grid -->
@@ -194,6 +198,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
+import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
 const settingsStore = useSettingsStore()
 
@@ -332,6 +337,40 @@ async function handleDelete(tech) {
     await fetchStats()
   } catch (error) {
     if (error !== 'cancel') ElMessage.error('删除失败')
+  }
+}
+
+async function exportTechnicians() {
+  try {
+    // 获取所有筛选条件下的数据（不分页）
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (specialtyFilter.value) params.specialty = specialtyFilter.value
+    
+    const response = await api.get('/technicians', { params })
+    const allTechnicians = response.data.items || response.data || []
+    
+    // 表头
+    const headers = ['姓名', '手机号', '专长', '状态', '抽成比例', '本月单量', '满意度', '营收']
+    
+    // 数据行
+    const data = allTechnicians.map(t => [
+      t.name || '',
+      t.phone || '',
+      (t.specialties || []).join('、'),
+      t.status === 1 ? '启用' : '停用',
+      `${Math.round((t.commission_rate || 0.3) * 100)}%`,
+      t.orderCount || 0,
+      t.avgSatisfaction || '-',
+      t.totalRevenue || 0
+    ])
+    
+    exportToExcel('师傅列表', headers, data)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
   }
 }
 
@@ -583,6 +622,10 @@ onMounted(() => {
     &:hover { background: rgba(232,184,75,0.08); }
   }
 }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.btn-export:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-export:active { transform: scale(0.95); }
 
 /* Technician Card Grid */
 .technician-grid {
