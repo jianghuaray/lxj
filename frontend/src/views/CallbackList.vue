@@ -464,15 +464,33 @@ onMounted(() => { fetchCallbacks() })
 
 .filter-select-el {
   width: 200px !important;
-  :deep(.el-input__wrapper) {
+  flex-shrink: 0;
+  :deep(.el-select__wrapper) {
     border-radius: 999px !important;
+    min-height: 40px !important;
     height: 40px !important;
-    padding: 0 44px 0 16px !important;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 16px center !important;
-    background-color: rgba(255,255,255,0.5) !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
     box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-select__placeholder) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__selected-item) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__suffix) {
+    right: 16px !important;
+  }
+  :deep(.el-select__caret) {
+    color: #78786C !important;
   }
 }
 .btn-query {
