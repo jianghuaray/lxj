@@ -82,6 +82,7 @@
         <div class="tech-contact">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           {{ tech.phone }}
+          <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
         </div>
         <div class="tech-skills">
           <span v-for="s in (tech.specialties || [])" :key="s" class="skill-tag">{{ s }}</span>
@@ -101,15 +102,11 @@
           </div>
         </div>
         <div class="tech-card-actions">
-          <button class="action-link primary" @click="$router.push(`/technicians/add?id=${tech.id}`)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            查看详情
-          </button>
           <button class="action-link muted" @click="showSettlement(tech)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             结算
           </button>
-          <button class="action-link muted" @click="$router.push(`/technicians/add?id=${tech.id}`)">
+          <button class="action-link muted" @click="$router.push(`/technicians/edit/${tech.id}`)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
             编辑
           </button>
@@ -675,6 +672,16 @@ onMounted(() => {
     height: 14px;
     flex-shrink: 0;
   }
+}
+
+.commission-badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--secondary);
+  background: rgba(232, 184, 75, 0.1);
+  padding: 2px 10px;
+  border-radius: 999px;
 }
 
 .tech-skills {

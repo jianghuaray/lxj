@@ -113,16 +113,18 @@ function toggleSpecialty(cat) {
 }
 
 async function fetchTechnician() {
-  if (route.params.id) {
+  // Check route params for edit mode (e.g., /technicians/edit/:id)
+  const techId = route.params.id || route.query.id
+  if (techId) {
     isEdit.value = true
     try {
-      const response = await api.get(`/technicians/${route.params.id}`)
+      const response = await api.get(`/technicians/${techId}`)
       const data = response.data
       form.value = {
         name: data.name,
         phone: data.phone,
         specialties: data.specialties || [],
-        commissionRate: data.commissionRate || 0.30,
+        commissionRate: data.commission_rate ? Math.round(data.commission_rate * 100) : 30,
         status: data.status ?? 1,
         remark: data.remark || ''
       }
@@ -136,8 +138,12 @@ async function submitForm() {
   try { await formRef.value.validate() } catch(e) { return }
   submitLoading.value = true
   try {
-    if (isEdit.value) {
-      await api.patch(`/technicians/${route.params.id}`, form.value)
+    // Determine the technician ID from route params or query
+    const techId = route.params.id || route.query.id
+    if (techId) {
+      // Log the data being sent (for debugging)
+      console.log('Saving technician:', techId, 'Data:', form.value)
+      await api.put(`/technicians/${techId}`, form.value)
       ElMessage.success('修改成功')
     } else {
       await api.post('/technicians', form.value)
@@ -145,7 +151,8 @@ async function submitForm() {
     }
     router.push('/technicians')
   } catch (error) {
-    ElMessage.error('操作失败')
+    console.error('保存失败:', error)
+    ElMessage.error(error.response?.data?.error || '操作失败')
   } finally {
     submitLoading.value = false
   }

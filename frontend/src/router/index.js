@@ -66,6 +66,12 @@ const router = createRouter({
           meta: { title: '添加师傅' }
         },
         {
+          path: 'technicians/edit/:id',
+          name: 'technician-edit',
+          component: () => import('@/views/TechnicianAdd.vue'),
+          meta: { title: '编辑师傅' }
+        },
+        {
           path: 'callbacks',
           name: 'callbacks',
           component: () => import('@/views/CallbackList.vue'),
