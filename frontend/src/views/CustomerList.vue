@@ -54,7 +54,11 @@
 
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
-      <input class="filter-input" v-model="searchQuery" placeholder="搜索姓名/手机号/地址" @keyup.enter="fetchCustomers" @input="debouncedSearch" />
+      <el-input v-model="searchQuery" class="filter-input-el" placeholder="搜索姓名/手机号/地址" clearable @keyup.enter="fetchCustomers" @input="debouncedSearch">
+        <template #prefix>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted-fg)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </template>
+      </el-input>
       <el-select v-model="levelFilter" class="filter-select-el" placeholder="全部等级" clearable @change="fetchCustomers">
         <el-option label="普通客户" value="normal" />
         <el-option label="VIP客户" value="vip" />
@@ -361,17 +365,62 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; padding-right: 36px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: all 0.2s ease; min-width: 120px; }
 .filter-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
 
-.filter-select-el {
-  width: 200px !important;
+.filter-input-el {
+  flex: 1;
+  min-width: 200px;
+  :deep(.el-input) {
+    height: 40px !important;
+  }
   :deep(.el-input__wrapper) {
     border-radius: 999px !important;
     height: 40px !important;
-    padding: 0 44px 0 16px !important;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 16px center !important;
-    background-color: rgba(255,255,255,0.5) !important;
+    min-height: 40px !important;
+    padding: 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
     box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-input__inner) {
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 14px !important;
+    color: var(--fg) !important;
+  }
+  :deep(.el-input__prefix-inner) {
+    color: var(--muted-fg) !important;
+  }
+}
+.filter-select-el {
+  width: 200px !important;
+  flex-shrink: 0;
+  :deep(.el-select__wrapper) {
+    border-radius: 999px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-select__placeholder) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__selected-item) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__suffix) {
+    right: 16px !important;
+  }
+  :deep(.el-select__caret) {
+    color: #78786C !important;
   }
 }
 .btn-query { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; white-space: nowrap; }
