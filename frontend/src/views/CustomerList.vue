@@ -10,44 +10,40 @@
 
     <!-- Stats Cards -->
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'all' }" @click="filterByCard('all')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.total }}</div>
           <div class="stat-label">客户总数</div>
-          <div class="stat-trend up">+8.3% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'vip' }" @click="filterByCard('vip')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.vip }}</div>
           <div class="stat-label">VIP客户</div>
-          <div class="stat-trend up">+5.4% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'new' }" @click="filterByCard('new')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.newThisMonth }}</div>
           <div class="stat-label">本月新增</div>
-          <div class="stat-trend up">+15.2% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'blacklist' }" @click="filterByCard('blacklist')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.blacklist }}</div>
           <div class="stat-label">黑名单客户</div>
-          <div class="stat-trend down">-2 较上月</div>
         </div>
       </div>
     </div>
@@ -206,6 +202,7 @@ const customers = ref([])
 const searchQuery = ref('')
 const levelFilter = ref('')
 const areaFilter = ref('')
+const activeCard = ref('all')
 const pagination = ref({ page: 1, pageSize: 12, total: 0 })
 
 const stats = ref({ total: 0, vip: 0, newThisMonth: 0, blacklist: 0 })
@@ -239,6 +236,27 @@ const displayPages = computed(() => {
 function getLevelText(level) {
   const map = { normal: '普通', vip: 'VIP', blacklist: '黑名单' }
   return map[level] || '普通'
+}
+
+function filterByCard(type) {
+  activeCard.value = type
+  pagination.value.page = 1
+  
+  // 根据卡片类型设置筛选条件
+  if (type === 'all') {
+    levelFilter.value = ''
+    fetchCustomers()
+  } else if (type === 'vip') {
+    levelFilter.value = 'vip'
+    fetchCustomers()
+  } else if (type === 'blacklist') {
+    levelFilter.value = 'blacklist'
+    fetchCustomers()
+  } else if (type === 'new') {
+    levelFilter.value = ''
+    // 本月新增需要特殊处理，获取所有数据后筛选
+    fetchNewCustomers()
+  }
 }
 
 function getTagClass(index) {
@@ -291,13 +309,74 @@ function resetFilters() {
   searchQuery.value = ''
   levelFilter.value = ''
   areaFilter.value = ''
+  activeCard.value = 'all'
   pagination.value.page = 1
   fetchCustomers()
+}
+
+async function fetchStats() {
+  try {
+    // 获取统计数据 - 请求大页码获取所有数据来计算统计
+    const response = await api.get('/customers', { params: { page: 1, pageSize: 9999 } })
+    const allCustomers = response.data.items || response.data || []
+    
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    stats.value.total = allCustomers.length
+    stats.value.vip = allCustomers.filter(c => c.level === 'vip').length
+    stats.value.blacklist = allCustomers.filter(c => c.level === 'blacklist').length
+    stats.value.newThisMonth = allCustomers.filter(c => {
+      if (!c.createdAt) return false
+      const createdAt = new Date(c.createdAt)
+      return createdAt >= startOfMonth
+    }).length
+  } catch (error) {
+    console.error('获取统计数据失败', error)
+  }
+}
+
+async function fetchNewCustomers() {
+  loading.value = true
+  try {
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (areaFilter.value) params.area = areaFilter.value
+    
+    const response = await api.get('/customers', { params })
+    const allCustomers = response.data.items || response.data || []
+    
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    // 筛选本月新增的客户
+    const newCustomers = allCustomers.filter(c => {
+      if (!c.createdAt) return false
+      const createdAt = new Date(c.createdAt)
+      return createdAt >= startOfMonth
+    })
+    
+    // 分页处理
+    const start = (pagination.value.page - 1) * pagination.value.pageSize
+    const end = start + pagination.value.pageSize
+    customers.value = newCustomers.slice(start, end)
+    pagination.value.total = newCustomers.length
+  } catch (error) {
+    ElMessage.error('获取客户列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 async function fetchCustomers() {
   loading.value = true
   try {
+    // 如果是"本月新增"卡片，使用特殊处理
+    if (activeCard.value === 'new') {
+      await fetchNewCustomers()
+      return
+    }
+    
     const params = { page: pagination.value.page, pageSize: pagination.value.pageSize }
     if (searchQuery.value) params.keyword = searchQuery.value
     if (levelFilter.value) params.level = levelFilter.value
@@ -305,17 +384,16 @@ async function fetchCustomers() {
     const response = await api.get('/customers', { params })
     customers.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || customers.value.length
-
-    // 计算统计
-    stats.value.total = pagination.value.total
-    stats.value.vip = customers.value.filter(c => c.level === 'vip').length
-    stats.value.blacklist = customers.value.filter(c => c.level === 'blacklist').length
-    stats.value.newThisMonth = Math.floor(Math.random() * 50 + 50) // 模拟数据
   } catch (error) {
     ElMessage.error('获取客户列表失败')
   } finally {
     loading.value = false
   }
+}
+
+// 获取统计数据
+async function loadStats() {
+  await fetchStats()
 }
 
 // Debounced search - wait 300ms after user stops typing
@@ -324,7 +402,10 @@ const debouncedSearch = debounce(() => {
   fetchCustomers()
 }, 300)
 
-onMounted(() => { fetchCustomers() })
+onMounted(() => { 
+  fetchCustomers()
+  loadStats()
+})
 onUnmounted(() => { debouncedSearch.cancel() })
 </script>
 
@@ -344,6 +425,8 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .stat-card:nth-child(3) { border-radius: 24px 24px 16px 16px; }
 .stat-card:nth-child(4) { border-radius: 16px 16px 24px 24px; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.stat-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(74,127,181,0.2); }
+.stat-card.active .stat-icon { background: var(--primary); color: white; }
 .stat-icon { width: 48px; height: 48px; border-radius: 50%; background: rgba(74,127,181,0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); transition: all 0.3s ease; flex-shrink: 0; }
 .stat-card:hover .stat-icon { background: var(--primary); color: white; }
 .stat-card:nth-child(2) .stat-icon { background: rgba(232,184,75,0.15); color: var(--secondary); }

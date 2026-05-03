@@ -13,22 +13,46 @@ const DEFAULTS = {
   cancelReasons: ['客户取消', '信息错误', '重复下单', '超出服务范围', '无法联系客户', '其他']
 };
 
-// Map frontend category names to DB category keys
-const CATEGORY_MAP = {
+// Map URL slug → DB category key (camelCase)
+const URL_TO_DB = {
   'service-types': 'serviceTypes',
   'areas': 'serviceAreas',
   'channels': 'sourceChannels',
   'cancel-reasons': 'cancelReasons'
 };
 
-// Ensure a settings category exists in DB, seed with defaults if not
-async function ensureCategory(category) {
-  let setting = await Settings.findOne({ where: { category } });
+// Map DB category key → Chinese label
+const DB_TO_LABEL = {
+  'serviceTypes': '服务类型',
+  'serviceAreas': '服务区域',
+  'sourceChannels': '来源渠道',
+  'cancelReasons': '取消原因'
+};
+
+// Ensure a settings row exists; seed with defaults if empty or missing
+async function ensureCategory(dbKey) {
+  // Look up by DB key first
+  let setting = await Settings.findOne({ where: { category: dbKey } });
+
+  // Migration: if not found, check if old data was stored under Chinese name
   if (!setting) {
-    setting = await Settings.create({
-      category,
-      values: DEFAULTS[category] || []
-    });
+    const oldLabel = DB_TO_LABEL[dbKey];
+    if (oldLabel) {
+      setting = await Settings.findOne({ where: { category: oldLabel } });
+      if (setting) {
+        // Migrate: fix category field to camelCase key
+        await setting.update({ category: dbKey, values: setting.values || DEFAULTS[dbKey] || [] });
+        return setting;
+      }
+    }
+    // Not found at all → create with defaults
+    setting = await Settings.create({ category: dbKey, values: DEFAULTS[dbKey] || [] });
+    return setting;
+  }
+
+  // Exists but values is empty → seed defaults
+  if (!setting.values || setting.values.length === 0) {
+    await setting.update({ values: DEFAULTS[dbKey] || [] });
   }
   return setting;
 }
@@ -43,181 +67,88 @@ async function logOperation(action, detail, operatorId, operatorName) {
   });
 }
 
-// ---- Service Types ----
-router.get('/service-types', auth, async (req, res) => {
-  try {
-    const setting = await ensureCategory('serviceTypes');
-    res.json({ items: setting.values });
-  } catch (error) {
-    console.error('获取服务类型失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+// ---- Generic CRUD handlers per category ----
+// urlSlug: URL path segment (e.g. 'service-types')
+// dbKey:   camelCase key in DB + DEFAULTS (e.g. 'serviceTypes')
+function registerCRUD(router, urlSlug, dbKey) {
+  const label = DB_TO_LABEL[dbKey] || dbKey;
 
-router.post('/service-types', auth, authAdmin, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: '请提供类型名称' });
+  // GET
+  router.get(`/${urlSlug}`, auth, async (req, res) => {
+    try {
+      const setting = await ensureCategory(dbKey);
+      res.json({ items: setting.values });
+    } catch (error) {
+      console.error(`获取${label}失败:`, error);
+      res.status(500).json({ error: '服务器错误' });
+    }
+  });
 
-    const setting = await ensureCategory('serviceTypes');
-    const values = setting.values || [];
-    if (values.includes(name)) return res.status(400).json({ error: '类型已存在' });
+  // POST (add)
+  router.post(`/${urlSlug}`, auth, authAdmin, async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name || !name.trim()) return res.status(400).json({ error: `请提供${label}名称` });
 
-    values.push(name);
-    await setting.update({ values });
-    await logOperation('添加服务类型', `添加: ${name}`, req.user?.id, req.user?.real_name);
-    res.status(201).json({ items: values });
-  } catch (error) {
-    console.error('添加服务类型失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+      const setting = await ensureCategory(dbKey);
+      const values = setting.values || [];
+      if (values.includes(name.trim())) return res.status(400).json({ error: `${label}已存在` });
 
-router.delete('/service-types/:name', auth, authAdmin, async (req, res) => {
-  try {
-    const name = decodeURIComponent(req.params.name);
-    const setting = await ensureCategory('serviceTypes');
-    const values = (setting.values || []).filter(t => t !== name);
-    await setting.update({ values });
-    await logOperation('删除服务类型', `删除: ${name}`, req.user?.id, req.user?.real_name);
-    res.json({ items: values });
-  } catch (error) {
-    console.error('删除服务类型失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+      values.push(name.trim());
+      await setting.update({ values });
+      await logOperation(`添加${label}`, `添加: ${name.trim()}`, req.user?.id, req.user?.real_name);
+      res.status(201).json({ items: values });
+    } catch (error) {
+      console.error(`添加${label}失败:`, error);
+      res.status(500).json({ error: '服务器错误' });
+    }
+  });
 
-// ---- Service Areas ----
-router.get('/areas', auth, async (req, res) => {
-  try {
-    const setting = await ensureCategory('serviceAreas');
-    res.json({ items: setting.values });
-  } catch (error) {
-    console.error('获取服务区域失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+  // PUT (edit / rename)
+  router.put(`/${urlSlug}/:name`, auth, authAdmin, async (req, res) => {
+    try {
+      const oldName = decodeURIComponent(req.params.name);
+      const { name } = req.body;
+      if (!name || !name.trim()) return res.status(400).json({ error: `请提供新的${label}名称` });
 
-router.post('/areas', auth, authAdmin, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: '请提供区域名称' });
+      const newName = name.trim();
+      const setting = await ensureCategory(dbKey);
+      const values = setting.values || [];
 
-    const setting = await ensureCategory('serviceAreas');
-    const values = setting.values || [];
-    if (values.includes(name)) return res.status(400).json({ error: '区域已存在' });
+      if (!values.includes(oldName)) return res.status(404).json({ error: '项目不存在' });
+      if (oldName !== newName && values.includes(newName)) return res.status(400).json({ error: `新${label}名称已存在` });
 
-    values.push(name);
-    await setting.update({ values });
-    await logOperation('添加服务区域', `添加: ${name}`, req.user?.id, req.user?.real_name);
-    res.status(201).json({ items: values });
-  } catch (error) {
-    console.error('添加服务区域失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+      const newValues = values.map(v => v === oldName ? newName : v);
+      await setting.update({ values: newValues });
+      await logOperation(`修改${label}`, `${oldName} → ${newName}`, req.user?.id, req.user?.real_name);
+      res.json({ items: newValues });
+    } catch (error) {
+      console.error(`修改${label}失败:`, error);
+      res.status(500).json({ error: '服务器错误' });
+    }
+  });
 
-router.delete('/areas/:name', auth, authAdmin, async (req, res) => {
-  try {
-    const name = decodeURIComponent(req.params.name);
-    const setting = await ensureCategory('serviceAreas');
-    const values = (setting.values || []).filter(a => a !== name);
-    await setting.update({ values });
-    await logOperation('删除服务区域', `删除: ${name}`, req.user?.id, req.user?.real_name);
-    res.json({ items: values });
-  } catch (error) {
-    console.error('删除服务区域失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+  // DELETE
+  router.delete(`/${urlSlug}/:name`, auth, authAdmin, async (req, res) => {
+    try {
+      const name = decodeURIComponent(req.params.name);
+      const setting = await ensureCategory(dbKey);
+      const values = (setting.values || []).filter(t => t !== name);
+      await setting.update({ values });
+      await logOperation(`删除${label}`, `删除: ${name}`, req.user?.id, req.user?.real_name);
+      res.json({ items: values });
+    } catch (error) {
+      console.error(`删除${label}失败:`, error);
+      res.status(500).json({ error: '服务器错误' });
+    }
+  });
+}
 
-// ---- Source Channels ----
-router.get('/channels', auth, async (req, res) => {
-  try {
-    const setting = await ensureCategory('sourceChannels');
-    res.json({ items: setting.values });
-  } catch (error) {
-    console.error('获取来源渠道失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-router.post('/channels', auth, authAdmin, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: '请提供渠道名称' });
-
-    const setting = await ensureCategory('sourceChannels');
-    const values = setting.values || [];
-    if (values.includes(name)) return res.status(400).json({ error: '渠道已存在' });
-
-    values.push(name);
-    await setting.update({ values });
-    await logOperation('添加来源渠道', `添加: ${name}`, req.user?.id, req.user?.real_name);
-    res.status(201).json({ items: values });
-  } catch (error) {
-    console.error('添加来源渠道失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-router.delete('/channels/:name', auth, authAdmin, async (req, res) => {
-  try {
-    const name = decodeURIComponent(req.params.name);
-    const setting = await ensureCategory('sourceChannels');
-    const values = (setting.values || []).filter(c => c !== name);
-    await setting.update({ values });
-    await logOperation('删除来源渠道', `删除: ${name}`, req.user?.id, req.user?.real_name);
-    res.json({ items: values });
-  } catch (error) {
-    console.error('删除来源渠道失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-// ---- Cancel Reasons ----
-router.get('/cancel-reasons', auth, async (req, res) => {
-  try {
-    const setting = await ensureCategory('cancelReasons');
-    res.json({ items: setting.values });
-  } catch (error) {
-    console.error('获取取消原因失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-router.post('/cancel-reasons', auth, authAdmin, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: '请提供原因名称' });
-
-    const setting = await ensureCategory('cancelReasons');
-    const values = setting.values || [];
-    if (values.includes(name)) return res.status(400).json({ error: '原因已存在' });
-
-    values.push(name);
-    await setting.update({ values });
-    await logOperation('添加取消原因', `添加: ${name}`, req.user?.id, req.user?.real_name);
-    res.status(201).json({ items: values });
-  } catch (error) {
-    console.error('添加取消原因失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-router.delete('/cancel-reasons/:name', auth, authAdmin, async (req, res) => {
-  try {
-    const name = decodeURIComponent(req.params.name);
-    const setting = await ensureCategory('cancelReasons');
-    const values = (setting.values || []).filter(r => r !== name);
-    await setting.update({ values });
-    await logOperation('删除取消原因', `删除: ${name}`, req.user?.id, req.user?.real_name);
-    res.json({ items: values });
-  } catch (error) {
-    console.error('删除取消原因失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
+// Register CRUD for all four categories
+registerCRUD(router, 'service-types', 'serviceTypes');
+registerCRUD(router, 'areas', 'serviceAreas');
+registerCRUD(router, 'channels', 'sourceChannels');
+registerCRUD(router, 'cancel-reasons', 'cancelReasons');
 
 // ---- Operation Logs ----
 router.get('/logs', auth, async (req, res) => {

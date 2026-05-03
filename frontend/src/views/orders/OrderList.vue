@@ -13,7 +13,7 @@
 
     <!-- Stats Cards -->
     <div class="stats-grid">
-      <div class="stat-card" @click="activeTab = ''; fetchOrders()">
+      <div class="stat-card" @click="activeTab = ''; specialFilter = ''; pagination.page = 1; fetchOrders()">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
@@ -22,64 +22,52 @@
         <div class="stat-info">
           <div class="stat-value">{{ stats.total }}</div>
           <div class="stat-label">全部工单</div>
-          <div class="stat-trend" :class="stats.totalTrend > 0 ? 'up' : 'down'">
-            {{ stats.totalTrend > 0 ? '+' : '' }}{{ stats.totalTrend }}% 较上月
-          </div>
         </div>
       </div>
-      <div class="stat-card" @click="activeTab = 'pending'; fetchOrders()">
+      <div class="stat-card" @click="activeTab = ''; specialFilter = 'pendingDispatch'; pagination.page = 1; fetchOrders()">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.pending }}</div>
+          <div class="stat-value">{{ (stats.statusCounts.pending || 0) + (stats.statusCounts.dispatched || 0) }}</div>
           <div class="stat-label">待处理</div>
-          <div class="stat-trend" :class="stats.pendingTrend < 0 ? 'down' : 'up'">
-            {{ stats.pendingTrend > 0 ? '+' : '' }}{{ stats.pendingTrend }}% 较上月
-          </div>
         </div>
       </div>
-      <div class="stat-card" @click="activeTab = 'completed'; fetchOrders()">
-        <div class="stat-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-          </svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-value">{{ stats.completed }}</div>
-          <div class="stat-label">已完成</div>
-          <div class="stat-trend" :class="stats.completedTrend > 0 ? 'up' : 'down'">
-            {{ stats.completedTrend > 0 ? '+' : '' }}{{ stats.completedTrend }}% 较上月
-          </div>
-        </div>
-      </div>
-      <div class="stat-card" @click="filterOverdue(); fetchOrders()">
+      <div class="stat-card" @click="activeTab = ''; specialFilter = 'overdue'; pagination.page = 1; fetchOrders()">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
         </div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.overdue }}</div>
+          <div class="stat-value">{{ stats.overdueCount }}</div>
           <div class="stat-label">超期工单</div>
-          <div class="stat-trend down">
-            +{{ stats.overdueChange }} 较昨日
-          </div>
+        </div>
+      </div>
+      <div class="stat-card" @click="activeTab = ''; specialFilter = 'awaitCallback'; pagination.page = 1; fetchOrders()">
+        <div class="stat-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value">{{ stats.awaitCallbackCount }}</div>
+          <div class="stat-label">待回访</div>
         </div>
       </div>
     </div>
 
     <!-- Status Tabs -->
     <div class="status-tabs">
-      <button
-        v-for="tab in statusTabs"
-        :key="tab.value"
-        class="status-tab"
-        :class="{ active: activeTab === tab.value }"
-        @click="activeTab = tab.value; fetchOrders()"
-      >
+    <button
+      v-for="tab in statusTabs"
+      :key="tab.value"
+      class="status-tab"
+      :class="{ active: activeTab === tab.value }"
+      @click="activeTab = tab.value; specialFilter = ''; fetchOrders()"
+    >
         {{ tab.label }}
         <span class="tab-count">{{ tab.count }}</span>
       </button>
@@ -211,23 +199,26 @@ const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 const stats = ref({
   total: 0,
   totalTrend: 12.5,
-  pending: 0,
-  pendingTrend: -3.2,
-  completed: 0,
-  completedTrend: 8.1,
-  overdue: 0,
-  overdueChange: 2
+  overdueCount: 0,
+  awaitCallbackCount: 0,
+  statusCounts: {}
 })
 
-const statusTabs = computed(() => [
-  { label: '全部', value: '', count: stats.value.total },
-  { label: '待派单', value: 'pending', count: stats.value.pending },
-  { label: '已派单', value: 'dispatched', count: 0 },
-  { label: '已完成', value: 'completed', count: stats.value.completed },
-  { label: '已回访', value: 'callback', count: 0 },
-  { label: '已取消', value: 'cancelled', count: 0 },
-  { label: '咨询单', value: 'consultation', count: 0 }
-])
+// 特殊筛选模式：overdue / pendingDispatch / awaitCallback（与 tabs 互斥）
+const specialFilter = ref('')
+
+const statusTabs = computed(() => {
+  const sc = stats.value.statusCounts || {}
+  return [
+    { label: '全部', value: '', count: stats.value.total },
+    { label: '待派单', value: 'pending', count: sc.pending || 0 },
+    { label: '已派单', value: 'dispatched', count: sc.dispatched || 0 },
+    { label: '已完成', value: 'completed', count: sc.completed || 0 },
+    { label: '已回访', value: 'callback', count: sc.callback || 0 },
+    { label: '已取消', value: 'cancelled', count: sc.cancelled || 0 },
+    { label: '咨询单', value: 'consultation', count: sc.consultation || 0 }
+  ]
+})
 
 const areas = ['新城区', '未央区', '高新区', '灞桥区']
 const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
@@ -337,15 +328,10 @@ async function doAssign() {
   }
 }
 
-function filterOverdue() {
-  // Filter to only show overdue orders - this is a simple implementation
-  // that relies on the isOverdue check, but backend could implement it if needed
-  activeTab.value = ''
-}
-
 function resetFilters() {
   searchQuery.value = ''
   activeTab.value = ''
+  specialFilter.value = ''
   areaFilter.value = ''
   categoryFilter.value = ''
   technicianFilter.value = ''
@@ -360,7 +346,11 @@ async function fetchOrders() {
       page: pagination.value.page,
       pageSize: pagination.value.pageSize
     }
+    // tabs 和特殊筛选互斥
     if (activeTab.value) params.status = activeTab.value
+    if (specialFilter.value === 'overdue') params.overdue = 'true'
+    if (specialFilter.value === 'awaitCallback') params.awaitCallback = 'true'
+    if (specialFilter.value === 'pendingDispatch') params.pendingDispatch = 'true'
     if (searchQuery.value) params.keyword = searchQuery.value
     if (areaFilter.value) params.area = areaFilter.value
     if (categoryFilter.value) params.problemCategory = categoryFilter.value
@@ -370,16 +360,19 @@ async function fetchOrders() {
     orders.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || orders.value.length
 
-    // Calculate stats from response
-    if (response.data.stats) {
-      stats.value = { ...stats.value, ...response.data.stats }
-    } else {
-      // Fallback calculation if backend doesn't return stats
-      stats.value.total = pagination.value.total
-      stats.value.pending = orders.value.filter(o => o.status === 'pending').length
-      stats.value.completed = orders.value.filter(o => o.status === 'completed').length
-      stats.value.overdue = orders.value.filter(o => isOverdue(o)).length
+    // Update stats from response
+    if (response.data.statusCounts) {
+      stats.value.statusCounts = response.data.statusCounts
     }
+    if (response.data.overdueCount !== undefined) {
+      stats.value.overdueCount = response.data.overdueCount
+    }
+    if (response.data.awaitCallbackCount !== undefined) {
+      stats.value.awaitCallbackCount = response.data.awaitCallbackCount
+    }
+    // Update tab counts
+    const sc = response.data.statusCounts || {}
+    stats.value.total = Object.values(sc).reduce((a, b) => a + b, 0)
   } catch (error) {
     ElMessage.error('获取工单列表失败')
     console.error(error)
@@ -399,7 +392,7 @@ async function fetchTechnicians() {
 
 // Debounced search - wait 300ms after user stops typing
 const debouncedSearch = debounce(() => {
-  pagination.page = 1
+  pagination.value.page = 1
   fetchOrders()
 }, 300)
 
