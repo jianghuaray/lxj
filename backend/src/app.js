@@ -12,6 +12,7 @@ const callbackRoutes = require('./routes/callbacks');
 const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
+const constructionRoutes = require('./routes/constructions');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,7 @@ app.use('/api/callbacks', callbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);             // User management
 app.use('/api/settings', settingsRoutes);       // System settings & logs
+app.use('/api/construction', constructionRoutes); // Construction fees
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

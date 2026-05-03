@@ -50,13 +50,13 @@
         <div class="form-field">
           <label class="form-label">区域<span class="required">*</span></label>
           <el-select v-model="form.area" class="form-select-el" placeholder="请选择所在区域">
-            <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+            <el-option v-for="area in settingsStore.areas" :key="area" :label="area" :value="area" />
           </el-select>
         </div>
         <div class="form-field">
           <label class="form-label">来源渠道</label>
           <el-select v-model="form.sourceChannel" class="form-select-el" placeholder="请选择来源渠道">
-            <el-option v-for="ch in sourceChannels" :key="ch" :label="ch" :value="ch" />
+            <el-option v-for="ch in settingsStore.channels" :key="ch" :label="ch" :value="ch" />
           </el-select>
         </div>
         <div class="form-field full-width">
@@ -72,7 +72,7 @@
         <div class="form-field">
           <label class="form-label">问题分类<span class="required">*</span></label>
           <el-select v-model="form.problemCategory" class="form-select-el" placeholder="请选择问题分类">
-            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+            <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
           </el-select>
         </div>
         <div class="form-field"></div>
@@ -106,19 +106,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
 
 const router = useRouter()
+const settingsStore = useSettingsStore()
 const loading = ref(false)
 const matchedCustomer = ref(null)
 const phoneSearched = ref(false)
 
-const areas = ['新城区', '未央区', '高新区', '灞桥区']
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
-const sourceChannels = ['社区宣传', '客户推荐', '线上推广', '其他']
+onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
+})
 
 const form = ref({
   customerName: '',

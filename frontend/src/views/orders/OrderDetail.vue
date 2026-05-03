@@ -168,25 +168,13 @@
           <div class="field-row">
             <span class="field-label">来源渠道</span>
             <el-select v-model="customerEditForm.sourceChannel" class="pill-select-el" placeholder="请选择" clearable>
-              <el-option label="电话咨询" value="电话咨询" />
-              <el-option label="微信" value="微信" />
-              <el-option label="物业推荐" value="物业推荐" />
-              <el-option label="老客户推荐" value="老客户推荐" />
-              <el-option label="线上平台" value="线上平台" />
-              <el-option label="社区宣传" value="社区宣传" />
-              <el-option label="其他" value="其他" />
+              <el-option v-for="ch in settingsStore.channels" :key="ch" :label="ch" :value="ch" />
             </el-select>
           </div>
           <div class="field-row">
             <span class="field-label">问题分类</span>
             <el-select v-model="customerEditForm.problemCategory" class="pill-select-el" placeholder="请选择" clearable>
-              <el-option label="水电维修" value="水电维修" />
-              <el-option label="门窗维修" value="门窗维修" />
-              <el-option label="墙面问题" value="墙面问题" />
-              <el-option label="下水疏通" value="下水疏通" />
-              <el-option label="家电维修" value="家电维修" />
-              <el-option label="锁具维修" value="锁具维修" />
-              <el-option label="其他" value="其他" />
+              <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
             </el-select>
           </div>
           <div class="field-row">
@@ -581,6 +569,9 @@ import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -979,6 +970,7 @@ watch(() => constructionEditForm.value.totalFee, (val) => {
 })
 
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchOrderDetail()
   fetchTechnicians()
 })

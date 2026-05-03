@@ -55,56 +55,56 @@
 
         <form @submit.prevent="handleSubmit" autocomplete="off">
           <!-- Username -->
-          <div class="input-group">
-            <div class="input-wrapper">
-              <span class="input-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-              </span>
-              <input
-                type="text"
-                v-model="form.username"
-                class="input-field"
-                placeholder="请输入用户名"
-                id="username"
-              >
-            </div>
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              v-model="form.username"
+              class="login-input"
+              placeholder="请输入用户名"
+              id="username"
+            >
           </div>
+        </div>
 
-          <!-- Password -->
-          <div class="input-group">
-            <div class="input-wrapper">
-              <span class="input-icon">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </span>
-              <input
-                :type="showPassword ? 'text' : 'password'"
-                v-model="form.password"
-                class="input-field password-field"
-                placeholder="请输入密码"
-                id="password"
-              >
-              <button
-                type="button"
-                class="toggle-password"
-                @click="showPassword = !showPassword"
-              >
-                <svg v-if="!showPassword" viewBox="0 0 24 24">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <svg v-else viewBox="0 0 24 24">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-              </button>
-            </div>
+        <!-- Password -->
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input
+              :type="showPassword ? 'text' : 'password'"
+              v-model="form.password"
+              class="login-input login-password"
+              placeholder="请输入密码"
+              id="password"
+            >
+            <button
+              type="button"
+              class="toggle-password"
+              @click="showPassword = !showPassword"
+            >
+              <svg v-if="!showPassword" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
           </div>
+        </div>
 
           <!-- Remember me & Forgot password -->
           <div class="form-options">
@@ -379,7 +379,7 @@ async function handleSubmit() {
 
 .input-icon {
   position: absolute;
-  left: 20px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
@@ -396,13 +396,13 @@ async function handleSubmit() {
   }
 }
 
-.input-field {
+.login-input {
   width: 100%;
   height: 52px;
   border-radius: 999px;
   border: 1px solid rgba(222, 216, 207, 0.8);
   background: rgba(255, 255, 255, 0.5);
-  padding: 0 20px 0 50px;
+  padding: 0 20px 0 64px;
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--fg);
@@ -421,7 +421,7 @@ async function handleSubmit() {
   }
 }
 
-.password-field {
+.login-password {
   padding-right: 50px;
 }
 

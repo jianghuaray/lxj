@@ -83,10 +83,10 @@
         @input="debouncedSearch"
       />
       <el-select v-model="categoryFilter" class="filter-select-el" placeholder="问题分类" clearable @change="fetchOrders">
-        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+        <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
       </el-select>
       <el-select v-model="areaFilter" class="filter-select-el" placeholder="所属区域" clearable @change="fetchOrders">
-        <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
+        <el-option v-for="area in settingsStore.areas" :key="area" :label="area" :value="area" />
       </el-select>
       <button class="btn-query" @click="fetchOrders">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
@@ -184,6 +184,9 @@ import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatTime } from '@/utils/format'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const router = useRouter()
 const loading = ref(false)
@@ -219,9 +222,6 @@ const statusTabs = computed(() => {
     { label: '咨询单', value: 'consultation', count: sc.consultation || 0 }
   ]
 })
-
-const areas = ['新城区', '未央区', '高新区', '灞桥区']
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
 
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.pageSize) || 1)
 
@@ -397,6 +397,7 @@ const debouncedSearch = debounce(() => {
 }, 300)
 
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchOrders()
   fetchTechnicians()
 })

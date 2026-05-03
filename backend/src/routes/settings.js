@@ -91,10 +91,11 @@ function registerCRUD(router, urlSlug, dbKey) {
       if (!name || !name.trim()) return res.status(400).json({ error: `请提供${label}名称` });
 
       const setting = await ensureCategory(dbKey);
-      const values = setting.values || [];
-      if (values.includes(name.trim())) return res.status(400).json({ error: `${label}已存在` });
+      const originalValues = setting.values || [];
+      if (originalValues.includes(name.trim())) return res.status(400).json({ error: `${label}已存在` });
 
-      values.push(name.trim());
+      // Must create a NEW array — mutating the same ref causes Sequelize to skip UPDATE
+      const values = [...originalValues, name.trim()];
       await setting.update({ values });
       await logOperation(`添加${label}`, `添加: ${name.trim()}`, req.user?.id, req.user?.real_name);
       res.status(201).json({ items: values });
@@ -143,6 +144,27 @@ function registerCRUD(router, urlSlug, dbKey) {
     }
   });
 }
+
+// ---- Batch GET: return all base data in one request ----
+router.get('/all', auth, async (req, res) => {
+  try {
+    const [serviceTypes, serviceAreas, sourceChannels, cancelReasons] = await Promise.all([
+      ensureCategory('serviceTypes'),
+      ensureCategory('serviceAreas'),
+      ensureCategory('sourceChannels'),
+      ensureCategory('cancelReasons'),
+    ]);
+    res.json({
+      serviceTypes: serviceTypes.values || [],
+      areas: serviceAreas.values || [],
+      channels: sourceChannels.values || [],
+      cancelReasons: cancelReasons.values || [],
+    });
+  } catch (error) {
+    console.error('获取基础数据失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
 
 // Register CRUD for all four categories
 registerCRUD(router, 'service-types', 'serviceTypes');

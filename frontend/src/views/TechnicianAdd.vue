@@ -57,7 +57,7 @@
         <div class="form-section">
           <div class="section-title">擅长类型</div>
           <div class="skill-tags">
-            <label v-for="cat in categories" :key="cat" class="skill-tag" :class="{ selected: form.specialties.includes(cat) }" @click="toggleSpecialty(cat)">
+            <label v-for="cat in settingsStore.serviceTypes" :key="cat" class="skill-tag" :class="{ selected: form.specialties.includes(cat) }" @click="toggleSpecialty(cat)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               {{ cat }}
             </label>
@@ -80,14 +80,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
 const router = useRouter()
+const settingsStore = useSettingsStore()
 const formRef = ref(null)
 const submitLoading = ref(false)
 const isEdit = ref(false)
-
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
 
 const form = ref({
   name: '',
@@ -158,7 +158,10 @@ async function submitForm() {
   }
 }
 
-onMounted(() => { fetchTechnician() })
+onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
+  fetchTechnician()
+})
 </script>
 
 <style scoped lang="scss">

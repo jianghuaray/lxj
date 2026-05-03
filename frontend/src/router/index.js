@@ -78,6 +78,12 @@ const router = createRouter({
           meta: { title: '回访管理' }
         },
         {
+          path: 'fees',
+          name: 'fees',
+          component: () => import('@/views/FeeList.vue'),
+          meta: { title: '维修费用' }
+        },
+        {
           path: 'system',
           name: 'system',
           component: () => import('@/views/SystemSettings.vue'),

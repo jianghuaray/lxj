@@ -75,8 +75,8 @@
           <div class="data-card-header">
             <span class="data-card-title">服务类型管理</span>
             <button class="data-card-edit-btn" @click="openAddDialog('serviceTypes')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
@@ -96,8 +96,8 @@
           <div class="data-card-header">
             <span class="data-card-title">区域管理</span>
             <button class="data-card-edit-btn" @click="openAddDialog('areaList')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
@@ -117,8 +117,8 @@
           <div class="data-card-header">
             <span class="data-card-title">来源渠道管理</span>
             <button class="data-card-edit-btn" @click="openAddDialog('sourceChannels')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
@@ -138,8 +138,8 @@
           <div class="data-card-header">
             <span class="data-card-title">取消原因管理</span>
             <button class="data-card-edit-btn" @click="openAddDialog('cancelReasons')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">

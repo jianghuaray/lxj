@@ -43,7 +43,7 @@
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
       <el-select v-model="specialtyFilter" class="filter-select-el" placeholder="全部类型" clearable @change="fetchTechnicians">
-        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+        <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
       </el-select>
       <el-select v-model="statusFilter" class="filter-select-el" placeholder="全部状态" clearable @change="fetchTechnicians">
         <el-option label="启用" value="1" />
@@ -193,6 +193,9 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const loading = ref(false)
 const technicians = ref([])
@@ -202,7 +205,6 @@ const pageSize = ref(12)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const specialtyFilter = ref('')
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
 
 const stats = ref({
   activeCount: 0,
@@ -334,6 +336,7 @@ async function handleDelete(tech) {
 }
 
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchTechnicians()
   fetchStats()
 })

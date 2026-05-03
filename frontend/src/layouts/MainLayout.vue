@@ -73,6 +73,7 @@ import {
   Tools,
   DataAnalysis,
   Phone,
+  Money,
   Setting
 } from '@element-plus/icons-vue'
 
@@ -88,6 +89,7 @@ const menuItems = [
   { path: '/customers', title: '客户管理', icon: User },
   { path: '/technicians', title: '师傅管理', icon: Tools },
   { path: '/callbacks', title: '回访管理', icon: Phone },
+  { path: '/fees', title: '维修费用', icon: Money },
   { path: '/system', title: '系统设置', icon: Setting }
 ]
 
