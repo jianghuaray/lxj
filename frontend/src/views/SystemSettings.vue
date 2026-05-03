@@ -227,7 +227,7 @@
           <el-input v-model="userForm.realName" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="userForm.role" style="width:100%">
+          <el-select v-model="userForm.role" class="form-select-el">
             <el-option label="管理员" value="admin" />
             <el-option label="接线员" value="operator" />
           </el-select>
@@ -236,7 +236,7 @@
           <el-input v-model="userForm.password" type="password" placeholder="设置密码" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="userForm.status" style="width:100%">
+          <el-select v-model="userForm.status" class="form-select-el">
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>

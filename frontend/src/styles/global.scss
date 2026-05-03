@@ -615,7 +615,7 @@ button {
   vertical-align: middle;
 }
 
-.page-size-select .el-input__wrapper {
+.page-size-select .el-select__wrapper {
   min-height: 32px !important;
   height: 32px !important;
   padding: 0 12px !important;
@@ -624,6 +624,34 @@ button {
 .form-select-el,
 .pill-select-el {
   width: 100%;
+  box-sizing: border-box;
+
+  .el-select__wrapper {
+    min-height: 40px !important;
+    height: 40px !important;
+    border-radius: 999px !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .el-select__placeholder,
+  .el-select__selected-item {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+
+  .el-select__suffix {
+    right: 16px !important;
+  }
+
+  .el-select__caret {
+    color: #78786C !important;
+  }
 }
 
 .form-card,

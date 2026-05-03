@@ -140,7 +140,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="回访方式">
-          <el-select v-model="callbackForm.callbackMethod" style="width:100%">
+          <el-select v-model="callbackForm.callbackMethod" class="form-select-el">
             <el-option label="电话" value="phone" />
             <el-option label="微信" value="wechat" />
             <el-option label="上门" value="visit" />

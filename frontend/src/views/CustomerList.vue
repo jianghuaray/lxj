@@ -161,7 +161,7 @@
           <el-input v-model="form.phone" placeholder="请输入电话" />
         </el-form-item>
         <el-form-item label="区域">
-          <el-select v-model="form.area" placeholder="请选择区域" clearable style="width:100%">
+          <el-select v-model="form.area" class="form-select-el" placeholder="请选择区域" clearable>
             <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
           </el-select>
         </el-form-item>
@@ -169,7 +169,7 @@
           <el-input v-model="form.address" placeholder="请输入地址" />
         </el-form-item>
         <el-form-item label="客户等级">
-          <el-select v-model="form.level" style="width:100%">
+          <el-select v-model="form.level" class="form-select-el">
             <el-option label="普通客户" value="normal" />
             <el-option label="VIP客户" value="vip" />
             <el-option label="黑名单" value="blacklist" />
