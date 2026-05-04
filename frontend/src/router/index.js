@@ -72,6 +72,30 @@ const router = createRouter({
           meta: { title: '编辑师傅' }
         },
         {
+          path: 'volunteers',
+          name: 'volunteers',
+          component: () => import('@/views/VolunteerList.vue'),
+          meta: { title: '志愿者管理' }
+        },
+        {
+          path: 'volunteers/add',
+          name: 'volunteer-add',
+          component: () => import('@/views/VolunteerAdd.vue'),
+          meta: { title: '新增志愿者' }
+        },
+        {
+          path: 'volunteers/edit/:id',
+          name: 'volunteer-edit',
+          component: () => import('@/views/VolunteerAdd.vue'),
+          meta: { title: '编辑志愿者' }
+        },
+        {
+          path: 'volunteers/:id',
+          name: 'volunteer-detail',
+          component: () => import('@/views/VolunteerDetail.vue'),
+          meta: { title: '志愿者档案' }
+        },
+        {
           path: 'fees',
           name: 'fees',
           component: () => import('@/views/FeeList.vue'),

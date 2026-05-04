@@ -6,7 +6,8 @@ const {
   Construction,
   CallbackRecord,
   Technician,
-  Customer
+  Customer,
+  Volunteer
 } = require('../models');
 const { auth } = require('../middleware/auth');
 
@@ -48,7 +49,8 @@ router.get('/', auth, async (req, res) => {
       totalRevenue,
       todayOrders,
       pendingCallbackCount,
-      pendingCount
+      pendingCount,
+      volunteerCount
     ] = await Promise.all([
       // Single grouped query replaces 3 separate count queries
       WorkOrder.findAll({
@@ -70,7 +72,8 @@ router.get('/', auth, async (req, res) => {
       }),
       WorkOrder.count({ where: { created_at: { [Op.gte]: todayStart } } }),
       WorkOrder.count({ where: { status: 'completed' } }),
-      WorkOrder.count({ where: { status: 'pending' } })
+      WorkOrder.count({ where: { status: 'pending' } }),
+      Volunteer.count()
     ]);
 
     // Compute derived stats from single statusCounts query
@@ -90,7 +93,8 @@ router.get('/', auth, async (req, res) => {
       avgSatisfaction: avgSatisfaction?.avg ? parseFloat(avgSatisfaction.avg).toFixed(1) : 0,
       totalRevenue: totalRevenue || 0,
       pendingCallbackCount,
-      pendingCount
+      pendingCount,
+      volunteerCount
     });
   } catch (error) {
     console.error('获取仪表盘数据失败:', error);

@@ -6,6 +6,8 @@ const Technician = require('./Technician');
 const WorkOrder = require('./WorkOrder');
 const Construction = require('./Construction');
 const CallbackRecord = require('./CallbackRecord');
+const Volunteer = require('./Volunteer');
+const VolunteerService = require('./VolunteerService');
 const Settings = require('./Settings');
 const OperationLog = require('./OperationLog');
 
@@ -39,6 +41,10 @@ CallbackRecord.belongsTo(WorkOrder, { foreignKey: 'order_id', as: 'order', onDel
 User.hasMany(OperationLog, { foreignKey: 'operator_id', as: 'operationLogs', onDelete: 'SET NULL' });
 OperationLog.belongsTo(User, { foreignKey: 'operator_id', as: 'operator', onDelete: 'SET NULL' });
 
+// 志愿者与服务记录的关系
+Volunteer.hasMany(VolunteerService, { foreignKey: 'volunteer_id', as: 'services', onDelete: 'CASCADE' });
+VolunteerService.belongsTo(Volunteer, { foreignKey: 'volunteer_id', as: 'volunteer', onDelete: 'CASCADE' });
+
 module.exports = {
   sequelize,
   User,
@@ -47,6 +53,8 @@ module.exports = {
   WorkOrder,
   Construction,
   CallbackRecord,
+  Volunteer,
+  VolunteerService,
   Settings,
   OperationLog
 };

@@ -21,6 +21,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
 const constructionRoutes = require('./routes/constructions');
+const volunteerRoutes = require('./routes/volunteers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -61,6 +62,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/construction', constructionRoutes);
+app.use('/api/volunteers', volunteerRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
