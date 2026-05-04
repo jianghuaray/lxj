@@ -20,7 +20,10 @@ const Settings = sequelize.define('Settings', {
   }
 }, {
   tableName: 'settings',
-  underscored: true
+  underscored: true,
+  indexes: [
+    { fields: ['category'] }
+  ]
 });
 
 module.exports = Settings;

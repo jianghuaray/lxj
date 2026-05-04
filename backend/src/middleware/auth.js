@@ -24,7 +24,8 @@ const auth = async (req, res, next) => {
 };
 
 const authAdmin = async (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  // 防御性检查：确保 auth 中间件已正确运行
+  if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: '需要管理员权限' });
   }
   next();

@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { CallbackRecord, WorkOrder, Customer, User, Construction, Technician } = require('../models');
+const { sequelize, CallbackRecord, WorkOrder, Customer, User, Construction, Technician } = require('../models');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -13,18 +13,21 @@ router.get('/', auth, async (req, res) => {
 
     // If status is 'pending', return completed orders without callback records
     if (status === 'pending') {
-      // Find completed orders that don't have callback records yet
-      const completedOrders = await WorkOrder.findAll({
-        where: { status: 'completed' },
+      // 只返回没有回访记录的已完成工单
+      const { count: total, rows: completedOrders } = await WorkOrder.findAndCountAll({
+        where: {
+          status: 'completed',
+          '$callback.id$': null
+        },
         include: [
-          { model: Customer, as: 'customer' }
+          { model: Customer, as: 'customer' },
+          { model: CallbackRecord, as: 'callback', required: false }
         ],
         order: [['completed_at', 'ASC']],
         limit: parseInt(pageSize),
-        offset
+        offset,
+        subQuery: false
       });
-
-      const total = await WorkOrder.count({ where: { status: 'completed' } });
 
       const items = completedOrders.map(order => {
         const o = order.toJSON();
@@ -127,14 +130,20 @@ router.get('/pending', auth, async (req, res) => {
     const { page = 1, pageSize = 20 } = req.query;
     const offset = (page - 1) * pageSize;
 
+    // 只返回没有回访记录的已完成工单
     const { count, rows } = await WorkOrder.findAndCountAll({
-      where: { status: 'completed' },
+      where: {
+        status: 'completed',
+        '$callback.id$': null
+      },
       include: [
-        { model: Customer, as: 'customer' }
+        { model: Customer, as: 'customer' },
+        { model: CallbackRecord, as: 'callback', required: false }
       ],
       order: [['completed_at', 'ASC']],
       limit: parseInt(pageSize),
-      offset
+      offset,
+      subQuery: false
     });
 
     res.json({
@@ -151,6 +160,7 @@ router.get('/pending', auth, async (req, res) => {
 
 // 提交回访 (POST /callbacks/:id/complete - frontend CallbackList uses this)
 router.post('/:id/complete', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const {
       isSatisfied,
@@ -166,12 +176,14 @@ router.post('/:id/complete', auth, async (req, res) => {
       orderId = orderId.replace('pending_', '');
     }
 
-    const order = await WorkOrder.findByPk(orderId);
+    const order = await WorkOrder.findByPk(orderId, { transaction });
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (order.status !== 'completed') {
+      await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许回访' });
     }
 
@@ -184,14 +196,16 @@ router.post('/:id/complete', auth, async (req, res) => {
       callback_by: req.user.id,
       other_feedback: otherFeedback,
       callback_at: new Date()
-    });
+    }, { transaction });
 
     // Update order status
     order.status = 'callback';
-    await order.save();
+    await order.save({ transaction });
 
+    await transaction.commit();
     res.status(201).json(callback);
   } catch (error) {
+    await transaction.rollback();
     console.error('提交回访失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -199,17 +213,20 @@ router.post('/:id/complete', auth, async (req, res) => {
 
 // Also support original route
 router.post('/:orderId', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const {
       isSatisfied, satisfactionScore, feeConsistent, callbackMethod, otherFeedback } = req.body;
     const orderId = req.params.orderId;
 
-    const order = await WorkOrder.findByPk(orderId);
+    const order = await WorkOrder.findByPk(orderId, { transaction });
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (order.status !== 'completed') {
+      await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许回访' });
     }
 
@@ -222,13 +239,15 @@ router.post('/:orderId', auth, async (req, res) => {
       callback_by: req.user.id,
       other_feedback: otherFeedback,
       callback_at: new Date()
-    });
+    }, { transaction });
 
     order.status = 'callback';
-    await order.save();
+    await order.save({ transaction });
 
+    await transaction.commit();
     res.status(201).json(callback);
   } catch (error) {
+    await transaction.rollback();
     console.error('提交回访失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }

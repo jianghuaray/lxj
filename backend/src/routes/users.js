@@ -125,12 +125,16 @@ router.patch('/:id/reset-password', auth, authAdmin, async (req, res) => {
   try {
     const { newPassword } = req.body;
 
+    if (!newPassword || newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      return res.status(400).json({ error: '新密码不符合要求：至少 8 位，包含字母和数字' });
+    }
+
     const user = await User.findByPk(req.params.id);
     if (!user) {
       return res.status(404).json({ error: '用户不存在' });
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword || '123456', 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
 

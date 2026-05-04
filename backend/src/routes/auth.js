@@ -1,13 +1,23 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const { User } = require('../models');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// 登录接口速率限制：15 分钟内最多 10 次尝试，防止暴力破解
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 分钟
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '登录尝试过多，请 15 分钟后再试' }
+});
+
 // 登录
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -69,6 +79,11 @@ router.get('/me', auth, async (req, res) => {
 router.post('/change-password', auth, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
+
+    // 密码强度：至少 8 位，包含字母和数字
+    if (!newPassword || newPassword.length < 8 || !/[a-zA-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      return res.status(400).json({ error: '新密码不符合要求：至少 8 位，包含字母和数字' });
+    }
 
     const isPasswordValid = await bcrypt.compare(oldPassword, req.user.password);
     if (!isPasswordValid) {

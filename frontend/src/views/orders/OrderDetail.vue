@@ -18,13 +18,17 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           派单
         </button>
-        <button class="btn-followup header-action-btn" v-if="order.status === 'dispatched'" @click="startCompleteOrder">
+        <button class="btn-followup header-action-btn" v-if="order.status === 'dispatched'" @click="completeOrderDirectly">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           完成工单
         </button>
         <button class="btn-followup header-action-btn" v-if="order.status === 'completed'" @click="startEditCallback">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           执行回访
+        </button>
+        <button class="btn-followup header-action-btn" v-if="order.status === 'consultation'" @click="convertToFormal">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          转正式单
         </button>
         <button class="btn-outline danger" v-if="['pending', 'dispatched'].includes(order.status)" @click="cancelOrder">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
@@ -164,25 +168,13 @@
           <div class="field-row">
             <span class="field-label">来源渠道</span>
             <el-select v-model="customerEditForm.sourceChannel" class="pill-select-el" placeholder="请选择" clearable>
-              <el-option label="电话咨询" value="电话咨询" />
-              <el-option label="微信" value="微信" />
-              <el-option label="物业推荐" value="物业推荐" />
-              <el-option label="老客户推荐" value="老客户推荐" />
-              <el-option label="线上平台" value="线上平台" />
-              <el-option label="社区宣传" value="社区宣传" />
-              <el-option label="其他" value="其他" />
+              <el-option v-for="ch in settingsStore.channels" :key="ch" :label="ch" :value="ch" />
             </el-select>
           </div>
           <div class="field-row">
             <span class="field-label">问题分类</span>
             <el-select v-model="customerEditForm.problemCategory" class="pill-select-el" placeholder="请选择" clearable>
-              <el-option label="水电维修" value="水电维修" />
-              <el-option label="门窗维修" value="门窗维修" />
-              <el-option label="墙面问题" value="墙面问题" />
-              <el-option label="下水疏通" value="下水疏通" />
-              <el-option label="家电维修" value="家电维修" />
-              <el-option label="锁具维修" value="锁具维修" />
-              <el-option label="其他" value="其他" />
+              <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
             </el-select>
           </div>
           <div class="field-row">
@@ -224,7 +216,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             施工信息
           </div>
-          <button class="card-edit-btn" @click="startEditConstruction" v-if="!editingConstruction && canEditConstruction()">
+          <button class="card-edit-btn" @click="startEditConstruction" v-if="!editingConstruction && isCompletedOrCallback()">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           </button>
         </div>
@@ -248,7 +240,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">维修师傅</label>
-              <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable>
+              <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable @change="onTechnicianChange">
                 <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
               </el-select>
             </div>
@@ -256,6 +248,10 @@
               <div class="form-group">
                 <label class="form-label">总费用（元）</label>
                 <input type="number" class="pill-input" v-model.number="constructionEditForm.totalFee" placeholder="请输入总费用" min="0" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">抽成比例</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.commissionRate * 100).toFixed(0)" disabled style="opacity:0.6;cursor:not-allowed;" />
               </div>
               <div class="form-group">
                 <label class="form-label">应收服务费（元）</label>
@@ -269,6 +265,10 @@
                 <label class="form-label">材料成本（元）</label>
                 <input type="number" class="pill-input" v-model.number="constructionEditForm.materialCost" placeholder="请输入材料成本" min="0" />
               </div>
+              <div class="form-group">
+                <label class="form-label">楼管激励（元）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.buildingManagerIncentive" placeholder="请输入楼管激励" min="0" />
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">实际维修项目</label>
@@ -278,7 +278,7 @@
               <button class="btn-outline gray" style="padding:8px 20px;" @click="cancelEditConstruction">取消</button>
               <button class="btn-followup" style="width:auto;margin-bottom:0;" @click="saveConstruction" :disabled="constructionSaving">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                {{ constructionSaving ? '提交中...' : '确认完成' }}
+                {{ constructionSaving ? '提交中...' : '完成工单' }}
               </button>
             </div>
           </div>
@@ -298,6 +298,10 @@
                 <td class="cost-value cost-total-value">¥{{ order.totalFee || 0 }}</td>
               </tr>
               <tr>
+                <td class="cost-label">抽成比例</td>
+                <td class="cost-value">{{ formatCommissionRate(order) }}</td>
+              </tr>
+              <tr>
                 <td class="cost-label">应收服务费</td>
                 <td class="cost-value">¥{{ order.serviceFee || 0 }}</td>
               </tr>
@@ -308,10 +312,6 @@
               <tr>
                 <td class="cost-label">材料成本</td>
                 <td class="cost-value">¥{{ order.materialCost || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">抽成比例</td>
-                <td class="cost-value">{{ order.commissionRate ? (order.commissionRate * 100) + '%' : '-' }}</td>
               </tr>
               <tr>
                 <td class="cost-label">楼管激励</td>
@@ -344,13 +344,17 @@
         <div class="edit-form" v-if="editingConstruction">
           <div class="form-group">
             <label class="form-label">维修师傅</label>
-            <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable>
+            <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable @change="onTechnicianChange">
               <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
             </el-select>
           </div>
           <div class="form-group">
             <label class="form-label">总费用（师傅报价）</label>
             <input class="pill-input" type="number" v-model.number="constructionEditForm.totalFee" placeholder="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">抽成比例</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.commissionRate * 100).toFixed(0)" disabled style="opacity:0.6;cursor:not-allowed;" />
           </div>
           <div class="form-group">
             <label class="form-label">应收服务费（自动计算）</label>
@@ -367,10 +371,6 @@
           <div class="form-group">
             <label class="form-label">楼管激励</label>
             <input class="pill-input" type="number" v-model.number="constructionEditForm.buildingManagerIncentive" placeholder="0" min="0" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">抽成比例</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.commissionRate" placeholder="0.30" min="0" max="1" step="0.05" />
           </div>
           <div class="form-group">
             <label class="form-label">实际维修项目</label>
@@ -564,11 +564,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -696,6 +699,22 @@ function getCallbackMethod(method) {
   return map[method] || method
 }
 
+function formatCommissionRate(order) {
+  const rate = order.commissionRate || order.commission_rate
+  return rate ? (rate * 100) + '%' : '-'
+}
+
+function onTechnicianChange(techId) {
+  const tech = availableTechnicians.value.find(t => t.id === techId)
+  if (tech) {
+    const rate = tech.commission_rate ? tech.commission_rate : 0.30
+    constructionEditForm.value.commissionRate = rate
+    if (constructionEditForm.value.totalFee) {
+      constructionEditForm.value.serviceFee = Math.round(constructionEditForm.value.totalFee * rate * 100) / 100
+    }
+  }
+}
+
 function startEditCustomer() {
   customerEditForm.value = {
     customerName: order.value.customerName || '',
@@ -744,18 +763,36 @@ function startEditConstruction() {
   const now = new Date()
   const pad = n => String(n).padStart(2, '0')
   const defaultCompletedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+  const techId = order.value.technicianId || order.value.technician_id || ''
+  const tech = availableTechnicians.value.find(t => t.id === techId)
+  const rate = tech ? (tech.commission_rate || 0.30) : (order.value.commissionRate || order.value.commission_rate || 0.30)
   constructionEditForm.value = {
-    technicianId: order.value.technicianId || order.value.technician_id || '',
+    technicianId: techId,
     totalFee: order.value.totalFee || 0,
     serviceFee: order.value.serviceFee || 0,
     receivedFee: order.value.receivedFee || 0,
     materialCost: order.value.materialCost || 0,
     buildingManagerIncentive: order.value.buildingManagerIncentive || 0,
-    commissionRate: order.value.commissionRate || 0.30,
+    commissionRate: rate,
     actualWork: order.value.actualWork || '',
     completedAt: order.value.completedAt ? order.value.completedAt.slice(0, 16) : defaultCompletedAt
   }
   editingConstruction.value = true
+}
+
+async function completeOrderDirectly() {
+  if (order.value.status === 'dispatched') {
+    // 已派单：先初始化表单，再直接保存并推进状态
+    if (!editingConstruction.value) {
+      startEditConstruction()
+    }
+    // 等表单数据填入后再保存
+    await nextTick()
+    await saveConstruction()
+  } else {
+    // 已完成/已回访：打开编辑表单
+    startEditConstruction()
+  }
 }
 
 function cancelEditConstruction() {
@@ -830,15 +867,18 @@ async function fetchOrderDetail() {
   try {
     const response = await api.get(`/orders/${orderId}`)
     order.value = response.data
+    const techId = order.value.technicianId || order.value.technician_id || ''
+    const tech = availableTechnicians.value.find(t => t.id === techId)
+    const rate = tech ? (tech.commission_rate || 0.30) : (order.value.commissionRate || order.value.commission_rate || 0.30)
     constructionEditForm.value = {
       ...constructionEditForm.value,
-      technicianId: order.value.technicianId || order.value.technician_id || '',
+      technicianId: techId,
       totalFee: order.value.totalFee || 0,
       serviceFee: order.value.serviceFee || 0,
       receivedFee: order.value.receivedFee || 0,
       materialCost: order.value.materialCost || 0,
       buildingManagerIncentive: order.value.buildingManagerIncentive || 0,
-      commissionRate: order.value.commissionRate || 0.30,
+      commissionRate: rate,
       actualWork: order.value.actualWork || '',
       completedAt: order.value.completedAt ? order.value.completedAt.slice(0, 16) : constructionEditForm.value.completedAt
     }
@@ -893,6 +933,21 @@ async function assignOrder() {
   }
 }
 
+async function convertToFormal() {
+  try {
+    await ElMessageBox.confirm('确定要将此咨询单转为正式单吗？转为正式单后将进入待派单状态。', '转正式单', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await api.patch(`/orders/${orderId}/convert`)
+    ElMessage.success('咨询单已转为正式单，当前状态为待派单')
+    await fetchOrderDetail()
+  } catch (e) {
+    // cancelled
+  }
+}
+
 async function cancelOrder() {
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消工单', {
@@ -914,13 +969,8 @@ watch(() => constructionEditForm.value.totalFee, (val) => {
   }
 })
 
-watch(() => constructionEditForm.value.commissionRate, (val) => {
-  if (val && constructionEditForm.value.totalFee) {
-    constructionEditForm.value.serviceFee = Math.round(constructionEditForm.value.totalFee * val * 100) / 100
-  }
-})
-
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchOrderDetail()
   fetchTechnicians()
 })

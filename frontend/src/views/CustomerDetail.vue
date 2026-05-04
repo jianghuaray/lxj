@@ -18,6 +18,10 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
           调整等级
         </button>
+        <button class="btn-pill danger-outline" @click="confirmDelete">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          删除客户
+        </button>
       </div>
     </div>
 
@@ -211,17 +215,37 @@
         <el-button type="primary" @click="addTag">添加</el-button>
       </template>
     </el-dialog>
+
+    <!-- Level Adjust Dialog -->
+    <el-dialog v-model="showLevelDialog" title="调整客户等级" width="400px">
+      <div class="level-options">
+        <div
+          v-for="opt in levelOptions"
+          :key="opt.value"
+          class="level-option"
+          :class="{ active: customer.level === opt.value }"
+          @click="changeLevel(opt.value)"
+        >
+          <span class="level-option-label">{{ opt.label }}</span>
+          <span class="level-option-desc">{{ opt.desc }}</span>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="showLevelDialog = false">取消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate, formatCurrency } from '@/utils/format'
 
 const route = useRoute()
+const router = useRouter()
 const customerId = route.params.id
 
 const customer = ref({})
@@ -232,6 +256,12 @@ const saveLoading = ref(false)
 const newTag = ref('')
 
 const availableTags = ['价格敏感', '周末预约', '老人独居', '高价值客户', '某小区业主', '新客户', '回头客']
+
+const levelOptions = [
+  { label: '普通客户', value: 'normal', desc: '默认等级，所有新注册客户' },
+  { label: 'VIP客户', value: 'vip', desc: '消费达标或人工指定' },
+  { label: '黑名单', value: 'blacklist', desc: '禁止预约和接单' }
+]
 
 const levelHistory = ref([
   { date: '2025-08-15', description: '注册为普通客户' },
@@ -332,6 +362,27 @@ async function changeLevel(level) {
     await fetchCustomer()
   } catch (error) {
     ElMessage.error('更新失败')
+  }
+}
+
+async function confirmDelete() {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除客户「${customer.value.name}」吗？此操作不可恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    await api.delete(`/customers/${customerId}`)
+    ElMessage.success('客户已删除')
+    router.push('/customers')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -890,6 +941,38 @@ onMounted(() => {
   border-color: rgba(74,127,181,0.3);
 }
 .tag-item.available svg { width: 14px; height: 14px; }
+
+.level-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.level-option {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(222,216,207,0.8);
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    background: rgba(74,127,181,0.05);
+    border-color: var(--primary);
+  }
+  &.active {
+    background: rgba(74,127,181,0.08);
+    border-color: var(--primary);
+  }
+}
+.level-option-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.level-option-desc {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 4px;
+  display: block;
+}
 
 @media (max-width: 900px) {
   .profile-layout { grid-template-columns: 1fr; }

@@ -43,7 +43,7 @@
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
       <el-select v-model="specialtyFilter" class="filter-select-el" placeholder="全部类型" clearable @change="fetchTechnicians">
-        <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+        <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
       </el-select>
       <el-select v-model="statusFilter" class="filter-select-el" placeholder="全部状态" clearable @change="fetchTechnicians">
         <el-option label="启用" value="1" />
@@ -60,6 +60,10 @@
       <button class="btn-filter secondary" @click="resetFilters">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
         重置
+      </button>
+      <button class="btn-export" style="margin-left:auto;" @click="exportTechnicians">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出Excel
       </button>
     </div>
 
@@ -82,6 +86,7 @@
         <div class="tech-contact">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           {{ tech.phone }}
+          <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
         </div>
         <div class="tech-skills">
           <span v-for="s in (tech.specialties || [])" :key="s" class="skill-tag">{{ s }}</span>
@@ -101,15 +106,11 @@
           </div>
         </div>
         <div class="tech-card-actions">
-          <button class="action-link primary" @click="$router.push(`/technicians/add?id=${tech.id}`)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            查看详情
-          </button>
           <button class="action-link muted" @click="showSettlement(tech)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             结算
           </button>
-          <button class="action-link muted" @click="$router.push(`/technicians/add?id=${tech.id}`)">
+          <button class="action-link muted" @click="$router.push(`/technicians/edit/${tech.id}`)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
             编辑
           </button>
@@ -196,6 +197,10 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
+import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
+
+const settingsStore = useSettingsStore()
 
 const loading = ref(false)
 const technicians = ref([])
@@ -205,7 +210,6 @@ const pageSize = ref(12)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const specialtyFilter = ref('')
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
 
 const stats = ref({
   activeCount: 0,
@@ -336,7 +340,42 @@ async function handleDelete(tech) {
   }
 }
 
+async function exportTechnicians() {
+  try {
+    // 获取所有筛选条件下的数据（不分页）
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (specialtyFilter.value) params.specialty = specialtyFilter.value
+    
+    const response = await api.get('/technicians', { params })
+    const allTechnicians = response.data.items || response.data || []
+    
+    // 表头
+    const headers = ['姓名', '手机号', '专长', '状态', '抽成比例', '本月单量', '满意度', '营收']
+    
+    // 数据行
+    const data = allTechnicians.map(t => [
+      t.name || '',
+      t.phone || '',
+      (t.specialties || []).join('、'),
+      t.status === 1 ? '启用' : '停用',
+      `${Math.round((t.commission_rate || 0.3) * 100)}%`,
+      t.orderCount || 0,
+      t.avgSatisfaction || '-',
+      t.totalRevenue || 0
+    ])
+    
+    exportToExcel('师傅列表', headers, data)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
+}
+
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchTechnicians()
   fetchStats()
 })
@@ -481,15 +520,33 @@ onMounted(() => {
 
 .filter-select-el {
   width: 200px !important;
-  :deep(.el-input__wrapper) {
+  flex-shrink: 0;
+  :deep(.el-select__wrapper) {
     border-radius: 999px !important;
+    min-height: 40px !important;
     height: 40px !important;
-    padding: 0 44px 0 16px !important;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 16px center !important;
-    background-color: rgba(255,255,255,0.5) !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
     box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-select__placeholder) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__selected-item) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__suffix) {
+    right: 16px !important;
+  }
+  :deep(.el-select__caret) {
+    color: #78786C !important;
   }
 }
 
@@ -565,6 +622,10 @@ onMounted(() => {
     &:hover { background: rgba(232,184,75,0.08); }
   }
 }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.btn-export:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-export:active { transform: scale(0.95); }
 
 /* Technician Card Grid */
 .technician-grid {
@@ -657,6 +718,16 @@ onMounted(() => {
     height: 14px;
     flex-shrink: 0;
   }
+}
+
+.commission-badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--secondary);
+  background: rgba(232, 184, 75, 0.1);
+  padding: 2px 10px;
+  border-radius: 999px;
 }
 
 .tech-skills {

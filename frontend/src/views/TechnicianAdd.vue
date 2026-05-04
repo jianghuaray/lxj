@@ -57,7 +57,7 @@
         <div class="form-section">
           <div class="section-title">擅长类型</div>
           <div class="skill-tags">
-            <label v-for="cat in categories" :key="cat" class="skill-tag" :class="{ selected: form.specialties.includes(cat) }" @click="toggleSpecialty(cat)">
+            <label v-for="cat in settingsStore.serviceTypes" :key="cat" class="skill-tag" :class="{ selected: form.specialties.includes(cat) }" @click="toggleSpecialty(cat)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               {{ cat }}
             </label>
@@ -80,14 +80,14 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
 const router = useRouter()
+const settingsStore = useSettingsStore()
 const formRef = ref(null)
 const submitLoading = ref(false)
 const isEdit = ref(false)
-
-const categories = ['水电维修', '下水疏通', '家具门窗', '家电维修', '家电清洗', '测漏防水', '开锁换锁', '局部翻新']
 
 const form = ref({
   name: '',
@@ -113,16 +113,18 @@ function toggleSpecialty(cat) {
 }
 
 async function fetchTechnician() {
-  if (route.params.id) {
+  // Check route params for edit mode (e.g., /technicians/edit/:id)
+  const techId = route.params.id || route.query.id
+  if (techId) {
     isEdit.value = true
     try {
-      const response = await api.get(`/technicians/${route.params.id}`)
+      const response = await api.get(`/technicians/${techId}`)
       const data = response.data
       form.value = {
         name: data.name,
         phone: data.phone,
         specialties: data.specialties || [],
-        commissionRate: data.commissionRate || 0.30,
+        commissionRate: data.commission_rate ? Math.round(data.commission_rate * 100) : 30,
         status: data.status ?? 1,
         remark: data.remark || ''
       }
@@ -136,8 +138,10 @@ async function submitForm() {
   try { await formRef.value.validate() } catch(e) { return }
   submitLoading.value = true
   try {
-    if (isEdit.value) {
-      await api.patch(`/technicians/${route.params.id}`, form.value)
+    // Determine the technician ID from route params or query
+    const techId = route.params.id || route.query.id
+    if (techId) {
+      await api.put(`/technicians/${techId}`, form.value)
       ElMessage.success('修改成功')
     } else {
       await api.post('/technicians', form.value)
@@ -145,13 +149,17 @@ async function submitForm() {
     }
     router.push('/technicians')
   } catch (error) {
-    ElMessage.error('操作失败')
+    console.error('保存失败:', error)
+    ElMessage.error(error.response?.data?.error || '操作失败')
   } finally {
     submitLoading.value = false
   }
 }
 
-onMounted(() => { fetchTechnician() })
+onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
+  fetchTechnician()
+})
 </script>
 
 <style scoped lang="scss">

@@ -10,51 +10,51 @@
 
     <!-- Stats Cards -->
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'all' }" @click="filterByCard('all')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.total }}</div>
           <div class="stat-label">客户总数</div>
-          <div class="stat-trend up">+8.3% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'vip' }" @click="filterByCard('vip')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.vip }}</div>
           <div class="stat-label">VIP客户</div>
-          <div class="stat-trend up">+5.4% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'new' }" @click="filterByCard('new')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.newThisMonth }}</div>
           <div class="stat-label">本月新增</div>
-          <div class="stat-trend up">+15.2% 较上月</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" :class="{ active: activeCard === 'blacklist' }" @click="filterByCard('blacklist')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
         </div>
         <div class="stat-info">
           <div class="stat-value">{{ stats.blacklist }}</div>
           <div class="stat-label">黑名单客户</div>
-          <div class="stat-trend down">-2 较上月</div>
         </div>
       </div>
     </div>
 
     <!-- Filter Toolbar -->
     <div class="filter-toolbar">
-      <input class="filter-input" v-model="searchQuery" placeholder="搜索姓名/手机号/地址" @keyup.enter="fetchCustomers" @input="debouncedSearch" />
+      <el-input v-model="searchQuery" class="filter-input-el" placeholder="搜索姓名/手机号/地址" clearable @keyup.enter="fetchCustomers" @input="debouncedSearch">
+        <template #prefix>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted-fg)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </template>
+      </el-input>
       <el-select v-model="levelFilter" class="filter-select-el" placeholder="全部等级" clearable @change="fetchCustomers">
         <el-option label="普通客户" value="normal" />
         <el-option label="VIP客户" value="vip" />
@@ -65,6 +65,10 @@
       </el-select>
       <button class="btn-query" @click="fetchCustomers">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
+      <button class="btn-export" style="margin-left:auto;" @click="exportCustomers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        导出Excel
+      </button>
     </div>
 
     <!-- Data Table -->
@@ -157,7 +161,7 @@
           <el-input v-model="form.phone" placeholder="请输入电话" />
         </el-form-item>
         <el-form-item label="区域">
-          <el-select v-model="form.area" placeholder="请选择区域" clearable style="width:100%">
+          <el-select v-model="form.area" class="form-select-el" placeholder="请选择区域" clearable>
             <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
           </el-select>
         </el-form-item>
@@ -165,7 +169,7 @@
           <el-input v-model="form.address" placeholder="请输入地址" />
         </el-form-item>
         <el-form-item label="客户等级">
-          <el-select v-model="form.level" style="width:100%">
+          <el-select v-model="form.level" class="form-select-el">
             <el-option label="普通客户" value="normal" />
             <el-option label="VIP客户" value="vip" />
             <el-option label="黑名单" value="blacklist" />
@@ -190,6 +194,7 @@ import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatDate } from '@/utils/format'
+import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
 const router = useRouter()
 const loading = ref(false)
@@ -202,6 +207,7 @@ const customers = ref([])
 const searchQuery = ref('')
 const levelFilter = ref('')
 const areaFilter = ref('')
+const activeCard = ref('all')
 const pagination = ref({ page: 1, pageSize: 12, total: 0 })
 
 const stats = ref({ total: 0, vip: 0, newThisMonth: 0, blacklist: 0 })
@@ -235,6 +241,27 @@ const displayPages = computed(() => {
 function getLevelText(level) {
   const map = { normal: '普通', vip: 'VIP', blacklist: '黑名单' }
   return map[level] || '普通'
+}
+
+function filterByCard(type) {
+  activeCard.value = type
+  pagination.value.page = 1
+  
+  // 根据卡片类型设置筛选条件
+  if (type === 'all') {
+    levelFilter.value = ''
+    fetchCustomers()
+  } else if (type === 'vip') {
+    levelFilter.value = 'vip'
+    fetchCustomers()
+  } else if (type === 'blacklist') {
+    levelFilter.value = 'blacklist'
+    fetchCustomers()
+  } else if (type === 'new') {
+    levelFilter.value = ''
+    // 本月新增需要特殊处理，获取所有数据后筛选
+    fetchNewCustomers()
+  }
 }
 
 function getTagClass(index) {
@@ -287,13 +314,74 @@ function resetFilters() {
   searchQuery.value = ''
   levelFilter.value = ''
   areaFilter.value = ''
+  activeCard.value = 'all'
   pagination.value.page = 1
   fetchCustomers()
+}
+
+async function fetchStats() {
+  try {
+    // 获取统计数据 - 请求大页码获取所有数据来计算统计
+    const response = await api.get('/customers', { params: { page: 1, pageSize: 9999 } })
+    const allCustomers = response.data.items || response.data || []
+    
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    stats.value.total = allCustomers.length
+    stats.value.vip = allCustomers.filter(c => c.level === 'vip').length
+    stats.value.blacklist = allCustomers.filter(c => c.level === 'blacklist').length
+    stats.value.newThisMonth = allCustomers.filter(c => {
+      if (!c.createdAt) return false
+      const createdAt = new Date(c.createdAt)
+      return createdAt >= startOfMonth
+    }).length
+  } catch (error) {
+    console.error('获取统计数据失败', error)
+  }
+}
+
+async function fetchNewCustomers() {
+  loading.value = true
+  try {
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (areaFilter.value) params.area = areaFilter.value
+    
+    const response = await api.get('/customers', { params })
+    const allCustomers = response.data.items || response.data || []
+    
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    // 筛选本月新增的客户
+    const newCustomers = allCustomers.filter(c => {
+      if (!c.createdAt) return false
+      const createdAt = new Date(c.createdAt)
+      return createdAt >= startOfMonth
+    })
+    
+    // 分页处理
+    const start = (pagination.value.page - 1) * pagination.value.pageSize
+    const end = start + pagination.value.pageSize
+    customers.value = newCustomers.slice(start, end)
+    pagination.value.total = newCustomers.length
+  } catch (error) {
+    ElMessage.error('获取客户列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 async function fetchCustomers() {
   loading.value = true
   try {
+    // 如果是"本月新增"卡片，使用特殊处理
+    if (activeCard.value === 'new') {
+      await fetchNewCustomers()
+      return
+    }
+    
     const params = { page: pagination.value.page, pageSize: pagination.value.pageSize }
     if (searchQuery.value) params.keyword = searchQuery.value
     if (levelFilter.value) params.level = levelFilter.value
@@ -301,17 +389,16 @@ async function fetchCustomers() {
     const response = await api.get('/customers', { params })
     customers.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || customers.value.length
-
-    // 计算统计
-    stats.value.total = pagination.value.total
-    stats.value.vip = customers.value.filter(c => c.level === 'vip').length
-    stats.value.blacklist = customers.value.filter(c => c.level === 'blacklist').length
-    stats.value.newThisMonth = Math.floor(Math.random() * 50 + 50) // 模拟数据
   } catch (error) {
     ElMessage.error('获取客户列表失败')
   } finally {
     loading.value = false
   }
+}
+
+// 获取统计数据
+async function loadStats() {
+  await fetchStats()
 }
 
 // Debounced search - wait 300ms after user stops typing
@@ -320,7 +407,55 @@ const debouncedSearch = debounce(() => {
   fetchCustomers()
 }, 300)
 
-onMounted(() => { fetchCustomers() })
+onMounted(() => { 
+  fetchCustomers()
+  loadStats()
+})
+async function exportCustomers() {
+  try {
+    // 获取所有筛选条件下的数据（不分页）
+    const params = { page: 1, pageSize: 9999 }
+    if (searchQuery.value) params.keyword = searchQuery.value
+    if (levelFilter.value) params.level = levelFilter.value
+    if (areaFilter.value) params.area = areaFilter.value
+    
+    const response = await api.get('/customers', { params })
+    let allCustomers = response.data.items || response.data || []
+    
+    // 如果是"本月新增"卡片，进行客户端筛选
+    if (activeCard.value === 'new') {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      allCustomers = allCustomers.filter(c => {
+        if (!c.createdAt) return false
+        return new Date(c.createdAt) >= startOfMonth
+      })
+    }
+    
+    // 表头
+    const headers = ['姓名', '手机号', '区域', '地址', '客户等级', '标签', '累计工单', '累计消费', '最近报修']
+    
+    // 数据行
+    const data = allCustomers.map(c => [
+      c.name || '',
+      c.phone || '',
+      c.area || '',
+      c.address || '',
+      getLevelText(c.level),
+      (c.tags || []).join('、'),
+      c.totalOrders || 0,
+      c.totalAmount || 0,
+      formatDateForExport(c.lastOrderAt)
+    ])
+    
+    exportToExcel('客户列表', headers, data)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
+}
+
 onUnmounted(() => { debouncedSearch.cancel() })
 </script>
 
@@ -340,6 +475,8 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .stat-card:nth-child(3) { border-radius: 24px 24px 16px 16px; }
 .stat-card:nth-child(4) { border-radius: 16px 16px 24px 24px; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.stat-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(74,127,181,0.2); }
+.stat-card.active .stat-icon { background: var(--primary); color: white; }
 .stat-icon { width: 48px; height: 48px; border-radius: 50%; background: rgba(74,127,181,0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); transition: all 0.3s ease; flex-shrink: 0; }
 .stat-card:hover .stat-icon { background: var(--primary); color: white; }
 .stat-card:nth-child(2) .stat-icon { background: rgba(232,184,75,0.15); color: var(--secondary); }
@@ -361,23 +498,72 @@ onUnmounted(() => { debouncedSearch.cancel() })
 .filter-select { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; padding-right: 36px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: all 0.2s ease; min-width: 120px; }
 .filter-select:focus { box-shadow: 0 0 0 3px rgba(74,127,181,0.15); border-color: var(--primary); }
 
-.filter-select-el {
-  width: 200px !important;
+.filter-input-el {
+  flex: 1;
+  min-width: 200px;
+  :deep(.el-input) {
+    height: 40px !important;
+  }
   :deep(.el-input__wrapper) {
     border-radius: 999px !important;
     height: 40px !important;
-    padding: 0 44px 0 16px !important;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 16px center !important;
-    background-color: rgba(255,255,255,0.5) !important;
+    min-height: 40px !important;
+    padding: 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
     box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-input__inner) {
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 14px !important;
+    color: var(--fg) !important;
+  }
+  :deep(.el-input__prefix-inner) {
+    color: var(--muted-fg) !important;
+  }
+}
+.filter-select-el {
+  width: 200px !important;
+  flex-shrink: 0;
+  :deep(.el-select__wrapper) {
+    border-radius: 999px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-select__placeholder) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__selected-item) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__suffix) {
+    right: 16px !important;
+  }
+  :deep(.el-select__caret) {
+    color: #78786C !important;
   }
 }
 .btn-query { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; white-space: nowrap; }
 .btn-query:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
 .btn-reset { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
 .btn-reset:hover { background: rgba(232,184,75,0.08); }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--secondary); background: transparent; color: var(--secondary); font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+.btn-export:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-export:active { transform: scale(0.95); }
 
 .table-container { background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; margin-bottom: 16px; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }

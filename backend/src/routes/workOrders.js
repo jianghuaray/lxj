@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { WorkOrder, Customer, Technician, Construction, CallbackRecord, User } = require('../models');
+const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User } = require('../models');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -8,7 +8,7 @@ const router = express.Router();
 // 获取工单列表
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, pageSize = 20, status, area, problemCategory, category, technicianId, keyword, customerId, customerPhone } = req.query;
+    const { page = 1, pageSize = 20, status, area, problemCategory, category, technicianId, keyword, customerId, customerPhone, overdue, awaitCallback, pendingDispatch } = req.query;
 
     const where = {};
     if (status) where.status = status;
@@ -23,7 +23,7 @@ router.get('/', auth, async (req, res) => {
       const orderIds = constructions.map(c => c.order_id);
       if (orderIds.length === 0) {
         // No matching constructions, return empty result
-        return res.json({ items: [], total: 0, page: parseInt(page), pageSize: parseInt(pageSize), statusCounts: {} });
+        return res.json({ items: [], total: 0, page: parseInt(page), pageSize: parseInt(pageSize), statusCounts: {}, overdueCount: 0, awaitCallbackCount: 0 });
       }
       where.id = { [Op.in]: orderIds };
     }
@@ -36,6 +36,36 @@ router.get('/', auth, async (req, res) => {
         { customer_phone: { [Op.like]: `%${keyword}%` } },
         { address: { [Op.like]: `%${keyword}%` } }
       ];
+    }
+
+    // 超期筛选：超过24小时且状态在pending/dispatched之间（不含咨询单和取消单）
+    if (overdue === 'true') {
+      const overdueThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      Object.assign(where, {
+        status: { [Op.in]: ['pending', 'dispatched'] },
+        created_at: { [Op.lt]: overdueThreshold }
+      });
+    }
+
+    // 待回访筛选：已完成且维修金额超过100元（仅completed，不含callback）
+    if (awaitCallback === 'true') {
+      const awaitConstructions = await Construction.findAll({
+        where: { total_fee: { [Op.gt]: 100 } },
+        attributes: ['order_id']
+      });
+      const awaitOrderIds = awaitConstructions.map(c => c.order_id);
+      if (awaitOrderIds.length === 0) {
+        return res.json({ items: [], total: 0, page: parseInt(page), pageSize: parseInt(pageSize), statusCounts: {}, overdueCount: 0, awaitCallbackCount: 0 });
+      }
+      Object.assign(where, {
+        status: 'completed',
+        id: { [Op.in]: awaitOrderIds }
+      });
+    }
+
+    // 待处理筛选：pending + dispatched
+    if (pendingDispatch === 'true') {
+      where.status = { [Op.in]: ['pending', 'dispatched'] };
     }
 
     const offset = (page - 1) * pageSize;
@@ -55,7 +85,7 @@ router.get('/', auth, async (req, res) => {
       offset
     });
 
-    // Get status counts for tabs - single grouped query instead of 7 separate queries
+    // Get status counts for tabs - single grouped query (always unfiltered for tabs)
     const statusCountsRaw = await WorkOrder.findAll({
       attributes: ['status', [fn('COUNT', literal('*')), 'count']],
       group: ['status']
@@ -65,6 +95,26 @@ router.get('/', auth, async (req, res) => {
     allStatuses.forEach(s => { statusCounts[s] = 0; });
     statusCountsRaw.forEach(r => {
       statusCounts[r.dataValues.status] = parseInt(r.dataValues.count);
+    });
+
+    // 计算超期工单数量：超过24小时且状态在pending/dispatched之间（不含咨询单和取消单）
+    const overdueThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const overdueCount = await WorkOrder.count({
+      where: {
+        status: { [Op.in]: ['pending', 'dispatched'] },
+        created_at: { [Op.lt]: overdueThreshold }
+      }
+    });
+
+    // 计算待回访工单数量：已完成的维修金额超过100元（仅completed，不含callback）
+    const awaitCallbackCount = await WorkOrder.count({
+      where: { status: 'completed' },
+      include: [{
+        model: Construction,
+        as: 'construction',
+        where: { total_fee: { [Op.gt]: 100 } },
+        attributes: []
+      }]
     });
 
     // Format items for frontend
@@ -111,7 +161,9 @@ router.get('/', auth, async (req, res) => {
       total: count,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
-      statusCounts
+      statusCounts,
+      overdueCount,
+      awaitCallbackCount
     });
   } catch (error) {
     console.error('获取工单列表失败:', error);
@@ -157,7 +209,11 @@ router.get('/:id', auth, async (req, res) => {
           as: 'construction',
           include: [{ model: Technician, as: 'technician' }]
         },
-        { model: CallbackRecord, as: 'callback' },
+        {
+          model: CallbackRecord,
+          as: 'callback',
+          include: [{ model: User, as: 'callbackUser' }]
+        },
         { model: User, as: 'receiver' }
       ]
     });
@@ -255,6 +311,7 @@ router.get('/:id', auth, async (req, res) => {
 
 // 创建工单
 router.post('/', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const {
       customerId,
@@ -269,9 +326,9 @@ router.post('/', auth, async (req, res) => {
     } = req.body;
 
     // Check if customer exists
-    let customer = await Customer.findByPk(customerId);
+    let customer = await Customer.findByPk(customerId, { transaction });
     if (!customer && customerPhone) {
-      customer = await Customer.findOne({ where: { phone: customerPhone } });
+      customer = await Customer.findOne({ where: { phone: customerPhone }, transaction });
     }
 
     if (!customer) {
@@ -281,7 +338,7 @@ router.post('/', auth, async (req, res) => {
         area,
         address,
         source_channel: sourceChannel
-      });
+      }, { transaction });
     }
 
     // Generate order number - use timestamp + random suffix for concurrency safety
@@ -307,10 +364,12 @@ router.post('/', auth, async (req, res) => {
       receiver_id: req.user.id,
       received_at: new Date(),
       receiver_remark: receiverRemark
-    });
+    }, { transaction });
 
+    await transaction.commit();
     res.status(201).json(order);
   } catch (error) {
+    await transaction.rollback();
     console.error('创建工单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -351,26 +410,30 @@ router.patch('/:id', auth, async (req, res) => {
 
 // 派单 (POST /orders/:id/assign - frontend calls this)
 router.post('/:id/assign', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { technicianId, remark } = req.body;
-    const order = await WorkOrder.findByPk(req.params.id);
+    const order = await WorkOrder.findByPk(req.params.id, { transaction });
 
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (order.status !== 'pending') {
+      await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许派单' });
     }
 
-    const technician = await Technician.findByPk(technicianId);
+    const technician = await Technician.findByPk(technicianId, { transaction });
     if (!technician) {
+      await transaction.rollback();
       return res.status(404).json({ error: '师傅不存在' });
     }
 
     // Update order status
     order.status = 'dispatched';
-    await order.save();
+    await order.save({ transaction });
 
     // Create construction record
     await Construction.create({
@@ -379,10 +442,12 @@ router.post('/:id/assign', auth, async (req, res) => {
       dispatch_remark: remark || req.body.dispatchRemark,
       dispatched_at: new Date(),
       commission_rate: technician.commission_rate
-    });
+    }, { transaction });
 
+    await transaction.commit();
     res.json({ message: '派单成功' });
   } catch (error) {
+    await transaction.rollback();
     console.error('派单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -390,25 +455,29 @@ router.post('/:id/assign', auth, async (req, res) => {
 
 // Also support the original dispatch route for backward compatibility
 router.post('/:id/dispatch', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { technicianId, dispatchRemark } = req.body;
-    const order = await WorkOrder.findByPk(req.params.id);
+    const order = await WorkOrder.findByPk(req.params.id, { transaction });
 
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (order.status !== 'pending') {
+      await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许派单' });
     }
 
-    const technician = await Technician.findByPk(technicianId);
+    const technician = await Technician.findByPk(technicianId, { transaction });
     if (!technician) {
+      await transaction.rollback();
       return res.status(404).json({ error: '师傅不存在' });
     }
 
     order.status = 'dispatched';
-    await order.save();
+    await order.save({ transaction });
 
     await Construction.create({
       order_id: order.id,
@@ -416,10 +485,12 @@ router.post('/:id/dispatch', auth, async (req, res) => {
       dispatch_remark: dispatchRemark,
       dispatched_at: new Date(),
       commission_rate: technician.commission_rate
-    });
+    }, { transaction });
 
+    await transaction.commit();
     res.json({ message: '派单成功' });
   } catch (error) {
+    await transaction.rollback();
     console.error('派单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -522,6 +593,30 @@ router.patch('/:id/cancel', auth, async (req, res) => {
   }
 });
 
+// 咨询单转正式单 (PATCH /orders/:id/convert - frontend uses this)
+router.patch('/:id/convert', auth, async (req, res) => {
+  try {
+    const order = await WorkOrder.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: '工单不存在' });
+    }
+
+    if (order.status !== 'consultation') {
+      return res.status(400).json({ error: '只有咨询单才能转为正式单' });
+    }
+
+    // 将咨询单转为待派单状态
+    order.status = 'pending';
+    order.received_at = new Date(); // 更新接单时间
+    await order.save();
+
+    res.json({ message: '咨询单已转为正式单，当前状态为待派单' });
+  } catch (error) {
+    console.error('咨询单转正式单失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 录入费用 (POST /orders/:id/fee - frontend uses this)
 router.post('/:id/fee', auth, async (req, res) => {
   try {
@@ -600,6 +695,7 @@ router.put('/:id/fees', auth, async (req, res) => {
 
 // 执行回访 (POST /orders/:id/callback - frontend uses this)
 router.post('/:id/callback', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const {
       isSatisfied,
@@ -610,13 +706,15 @@ router.post('/:id/callback', auth, async (req, res) => {
     } = req.body;
 
     const orderId = req.params.id;
-    const order = await WorkOrder.findByPk(orderId);
+    const order = await WorkOrder.findByPk(orderId, { transaction });
 
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (!['completed', 'callback'].includes(order.status)) {
+      await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许回访' });
     }
 
@@ -629,14 +727,16 @@ router.post('/:id/callback', auth, async (req, res) => {
       callback_by: req.user.id,
       other_feedback: otherFeedback,
       callback_at: new Date()
-    });
+    }, { transaction });
 
     // Update order status
     order.status = 'callback';
-    await order.save();
+    await order.save({ transaction });
 
+    await transaction.commit();
     res.status(201).json(callback);
   } catch (error) {
+    await transaction.rollback();
     console.error('提交回访失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }

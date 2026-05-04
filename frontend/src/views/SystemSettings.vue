@@ -14,10 +14,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
         基础数据管理
       </button>
-      <button class="system-tab" :class="{ active: activeTab === 'logs' }" @click="activeTab = 'logs'">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
-        操作日志
-      </button>
     </div>
 
     <!-- ===== Tab 1: User Management ===== -->
@@ -72,29 +68,26 @@
     </div>
 
     <!-- ===== Tab 2: Basic Data Management ===== -->
-    <div v-if="activeTab === 'baseData'" class="tab-panel" id="panel-basedata">
+    <div v-if="activeTab === 'baseData'" class="tab-panel active" id="panel-basedata">
       <div class="data-cards-grid">
         <!-- Service Types -->
         <div class="data-card">
           <div class="data-card-header">
             <span class="data-card-title">服务类型管理</span>
-            <button class="data-card-edit-btn" @click="addItemDialog('serviceTypes')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+            <button class="data-card-edit-btn" @click="openAddDialog('serviceTypes')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
             <div v-for="item in serviceTypes" :key="item" class="data-list-item">
               <span>{{ item }}</span>
               <div class="data-list-actions">
-                <button class="action-btn muted-action" @click="editItem('serviceTypes', item)">编辑</button>
+                <button class="action-btn muted-action" @click="openEditDialog('serviceTypes', item)">编辑</button>
                 <button class="action-btn danger" @click="removeItem('serviceTypes', item)">删除</button>
               </div>
             </div>
-            <div class="data-list-item add-new">
-              <input class="filter-input" v-model="newServiceType" placeholder="输入新类型" @keyup.enter="addItem('serviceTypes')" />
-              <button class="btn-query" @click="addItem('serviceTypes')">添加</button>
-            </div>
+            <div v-if="serviceTypes.length === 0" class="empty-hint">暂无数据，点击右上角添加</div>
           </div>
         </div>
 
@@ -102,23 +95,20 @@
         <div class="data-card">
           <div class="data-card-header">
             <span class="data-card-title">区域管理</span>
-            <button class="data-card-edit-btn" @click="addItemDialog('areaList')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+            <button class="data-card-edit-btn" @click="openAddDialog('areaList')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
             <div v-for="item in areaList" :key="item" class="data-list-item">
               <span>{{ item }}</span>
               <div class="data-list-actions">
-                <button class="action-btn muted-action" @click="editItem('areaList', item)">编辑</button>
+                <button class="action-btn muted-action" @click="openEditDialog('areaList', item)">编辑</button>
                 <button class="action-btn danger" @click="removeItem('areaList', item)">删除</button>
               </div>
             </div>
-            <div class="data-list-item add-new">
-              <input class="filter-input" v-model="newArea" placeholder="输入新区域" @keyup.enter="addItem('areaList')" />
-              <button class="btn-query" @click="addItem('areaList')">添加</button>
-            </div>
+            <div v-if="areaList.length === 0" class="empty-hint">暂无数据，点击右上角添加</div>
           </div>
         </div>
 
@@ -126,23 +116,20 @@
         <div class="data-card">
           <div class="data-card-header">
             <span class="data-card-title">来源渠道管理</span>
-            <button class="data-card-edit-btn" @click="addItemDialog('sourceChannels')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+            <button class="data-card-edit-btn" @click="openAddDialog('sourceChannels')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
             <div v-for="item in sourceChannels" :key="item" class="data-list-item">
               <span>{{ item }}</span>
               <div class="data-list-actions">
-                <button class="action-btn muted-action" @click="editItem('sourceChannels', item)">编辑</button>
+                <button class="action-btn muted-action" @click="openEditDialog('sourceChannels', item)">编辑</button>
                 <button class="action-btn danger" @click="removeItem('sourceChannels', item)">删除</button>
               </div>
             </div>
-            <div class="data-list-item add-new">
-              <input class="filter-input" v-model="newChannel" placeholder="输入新渠道" @keyup.enter="addItem('sourceChannels')" />
-              <button class="btn-query" @click="addItem('sourceChannels')">添加</button>
-            </div>
+            <div v-if="sourceChannels.length === 0" class="empty-hint">暂无数据，点击右上角添加</div>
           </div>
         </div>
 
@@ -150,70 +137,22 @@
         <div class="data-card">
           <div class="data-card-header">
             <span class="data-card-title">取消原因管理</span>
-            <button class="data-card-edit-btn" @click="addItemDialog('cancelReasons')">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-              编辑
+            <button class="data-card-edit-btn" @click="openAddDialog('cancelReasons')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+              添加
             </button>
           </div>
           <div class="data-card-list">
             <div v-for="item in cancelReasons" :key="item" class="data-list-item">
               <span>{{ item }}</span>
               <div class="data-list-actions">
-                <button class="action-btn muted-action" @click="editItem('cancelReasons', item)">编辑</button>
+                <button class="action-btn muted-action" @click="openEditDialog('cancelReasons', item)">编辑</button>
                 <button class="action-btn danger" @click="removeItem('cancelReasons', item)">删除</button>
               </div>
             </div>
-            <div class="data-list-item add-new">
-              <input class="filter-input" v-model="newReason" placeholder="输入新原因" @keyup.enter="addItem('cancelReasons')" />
-              <button class="btn-query" @click="addItem('cancelReasons')">添加</button>
-            </div>
+            <div v-if="cancelReasons.length === 0" class="empty-hint">暂无数据，点击右上角添加</div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- ===== Tab 3: Operation Logs ===== -->
-    <div v-if="activeTab === 'logs'" class="tab-panel" id="panel-logs">
-      <!-- Filter Toolbar -->
-      <div class="filter-toolbar">
-        <el-select v-model="logOperator" class="filter-select-el" placeholder="全部操作人" clearable>
-          <el-option v-for="user in operatorList" :key="user.username" :label="user.realName" :value="user.username" />
-        </el-select>
-        <el-date-picker v-model="startDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
-        <span style="color:var(--muted-fg);font-size:13px;">至</span>
-        <el-date-picker v-model="endDate" class="filter-date" type="date" value-format="YYYY-MM-DD" placeholder="请选择日期" />
-        <button class="btn-query" @click="fetchLogs">查询</button>
-      </div>
-
-      <!-- Log Table -->
-      <div class="table-container">
-        <table class="data-table log-table">
-          <colgroup>
-            <col class="col-time">
-            <col class="col-operator">
-            <col class="col-type">
-            <col class="col-content">
-            <col class="col-order">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>操作人</th>
-              <th>操作类型</th>
-              <th>操作内容</th>
-              <th>关联订单号</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="log in logs" :key="log.id">
-              <td>{{ formatDate(log.createdAt) }}</td>
-              <td>{{ log.operatorName || '-' }}</td>
-              <td><span class="status-badge" :class="`type-${log.action}`">{{ getLogTypeText(log.action) }}</span></td>
-              <td>{{ log.content }}</td>
-              <td><span class="log-order-id" v-if="log.orderNo">{{ log.orderNo }}</span></td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -227,7 +166,7 @@
           <el-input v-model="userForm.realName" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="userForm.role" style="width:100%">
+          <el-select v-model="userForm.role" class="form-select-el">
             <el-option label="管理员" value="admin" />
             <el-option label="接线员" value="operator" />
           </el-select>
@@ -236,7 +175,7 @@
           <el-input v-model="userForm.password" type="password" placeholder="设置密码" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="userForm.status" style="width:100%">
+          <el-select v-model="userForm.status" class="form-select-el">
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
@@ -245,6 +184,19 @@
       <template #footer>
         <el-button @click="userDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="saveUser" :loading="userSaving">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Base Data Edit Dialog -->
+    <el-dialog v-model="baseDataDialogVisible" :title="baseDataDialogTitle" width="420px">
+      <el-form :model="baseDataForm" label-position="top">
+        <el-form-item :label="baseDataLabel">
+          <el-input v-model="baseDataForm.name" placeholder="请输入名称" @keyup.enter="saveBaseDataItem" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="baseDataDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveBaseDataItem" :loading="baseDataSaving">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -258,39 +210,33 @@ import { formatDate } from '@/utils/format'
 
 const activeTab = ref('users')
 const users = ref([])
-const logs = ref([])
-const logSearch = ref('')
-const logType = ref('')
-const logOperator = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const operatorList = ref([])
 
 const serviceTypes = ref([])
 const areaList = ref([])
 const sourceChannels = ref([])
 const cancelReasons = ref([])
 
-const newServiceType = ref('')
-const newArea = ref('')
-const newChannel = ref('')
-const newReason = ref('')
+// Base data dialog state
+const baseDataDialogVisible = ref(false)
+const baseDataSaving = ref(false)
+const baseDataType = ref('')       // which list is being edited
+const baseDataOldName = ref('')    // old name (for edit mode, empty = add mode)
+const baseDataForm = ref({ name: '' })
+const baseDialogTitle = ref('')
+const baseDataLabel = ref('')
+
+// Category display config
+const categoryConfig = {
+  serviceTypes: { label: '服务类型', title: '添加服务类型', apiPath: 'service-types' },
+  areaList:      { label: '区域',     title: '添加区域',     apiPath: 'areas' },
+  sourceChannels: { label: '渠道',    title: '添加渠道',     apiPath: 'channels' },
+  cancelReasons:  { label: '取消原因', title: '添加取消原因', apiPath: 'cancel-reasons' }
+}
 
 const userDialogVisible = ref(false)
 const editingUser = ref(null)
 const userSaving = ref(false)
 const userForm = ref({ username: '', realName: '', role: 'operator', password: '', status: 1 })
-
-function getLogTypeText(type) {
-  const map = {
-    create: '创建工单',
-    dispatch: '派单',
-    complete: '完成',
-    callback: '回访',
-    cancel: '取消'
-  }
-  return map[type] || type
-}
 
 function showUserDialog(user = null) {
   editingUser.value = user
@@ -338,26 +284,7 @@ const apiMap = {
   cancelReasons: { list: '/settings/cancel-reasons', add: '/settings/cancel-reasons', remove: '/settings/cancel-reasons' }
 }
 
-const newInputMap = { serviceTypes: newServiceType, areaList: newArea, sourceChannels: newChannel, cancelReasons: newReason }
 const listRefMap = { serviceTypes, areaList, sourceChannels, cancelReasons }
-
-async function addItem(listName) {
-  const inputRef = newInputMap[listName]
-  const val = inputRef.value.trim()
-  if (!val) return
-  if (listRefMap[listName].value.includes(val)) {
-    ElMessage.warning('该项已存在')
-    return
-  }
-  try {
-    await api.post(apiMap[listName].add, { name: val })
-    ElMessage.success('添加成功')
-    inputRef.value = ''
-    await fetchBaseData(listName)
-  } catch (error) {
-    ElMessage.error('添加失败')
-  }
-}
 
 async function removeItem(listName, item) {
   try {
@@ -396,33 +323,69 @@ async function fetchUsers() {
   }
 }
 
-async function fetchLogs() {
+// Base data dialog methods
+function openAddDialog(listName) {
+  const config = categoryConfig[listName]
+  baseDataType.value = listName
+  baseDataOldName.value = ''  // add mode
+  baseDataForm.value.name = ''
+  baseDialogTitle.value = config.title
+  baseDataLabel.value = config.label
+  baseDataDialogVisible.value = true
+}
+
+function openEditDialog(listName, item) {
+  const config = categoryConfig[listName]
+  baseDataType.value = listName
+  baseDataOldName.value = item  // edit mode
+  baseDataForm.value.name = item
+  baseDialogTitle.value = `编辑${config.label}`
+  baseDataLabel.value = config.label
+  baseDataDialogVisible.value = true
+}
+
+async function saveBaseDataItem() {
+  const val = baseDataForm.value.name.trim()
+  if (!val) {
+    ElMessage.warning('请输入名称')
+    return
+  }
+
+  const config = categoryConfig[baseDataType.value]
+  const apiPath = config.apiPath
+  baseDataSaving.value = true
+
   try {
-    const params = {}
-    if (logSearch.value) params.keyword = logSearch.value
-    if (logType.value) params.action = logType.value
-    if (logOperator.value) params.operator = logOperator.value
-    if (startDate.value) params.startDate = startDate.value
-    if (endDate.value) params.endDate = endDate.value
-    const response = await api.get('/settings/logs', { params })
-    logs.value = response.data.items || response.data || []
+    if (baseDataOldName.value) {
+      // Edit mode: PUT
+      await api.put(`/settings/${apiPath}/${encodeURIComponent(baseDataOldName.value)}`, { name: val })
+      ElMessage.success('修改成功')
+    } else {
+      // Add mode: POST
+      await api.post(`/settings/${apiPath}`, { name: val })
+      ElMessage.success('添加成功')
+    }
+    baseDataDialogVisible.value = false
+    await fetchBaseData(baseDataType.value)
   } catch (error) {
-    console.error('获取日志失败')
+    const msg = error?.response?.data?.error || (baseDataOldName.value ? '修改失败' : '添加失败')
+    ElMessage.error(msg)
+  } finally {
+    baseDataSaving.value = false
   }
 }
 
-// 添加一些新方法
+// 添加一些新方法（保留兼容）
 function addItemDialog(listName) {
-  console.log('编辑', listName)
+  openAddDialog(listName)
 }
 
 function editItem(listName, item) {
-  console.log('编辑', listName, item)
+  openEditDialog(listName, item)
 }
 
 onMounted(() => {
   fetchUsers()
-  fetchLogs()
   fetchAllBaseData()
 })
 </script>
@@ -499,6 +462,7 @@ onMounted(() => {
 .data-list-item:last-child { border-bottom: none; }
 .data-list-item.add-new { border-bottom: none; padding-top: 16px; }
 .data-list-actions { display: flex; gap: 4px; }
+.empty-hint { padding: 24px 0; text-align: center; color: var(--muted-fg); font-size: 13px; }
 
 /* ===== Filter Toolbar ===== */
 .filter-toolbar { background: rgba(240,235,229,0.5); border-radius: 24px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -507,15 +471,33 @@ onMounted(() => {
 
 .filter-select-el {
   width: 200px !important;
-  :deep(.el-input__wrapper) {
+  flex-shrink: 0;
+  :deep(.el-select__wrapper) {
     border-radius: 999px !important;
+    min-height: 40px !important;
     height: 40px !important;
-    padding: 0 44px 0 16px !important;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 16px center !important;
-    background-color: rgba(255,255,255,0.5) !important;
+    padding: 0 36px 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
     box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-select__placeholder) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__selected-item) {
+    font-size: 14px !important;
+    color: var(--fg) !important;
+    line-height: 40px !important;
+  }
+  :deep(.el-select__suffix) {
+    right: 16px !important;
+  }
+  :deep(.el-select__caret) {
+    color: #78786C !important;
   }
 }
 .filter-input { height: 40px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body); font-size: 14px; color: var(--fg); outline: none; transition: all 0.2s ease; }
@@ -524,9 +506,25 @@ onMounted(() => {
 .btn-query { height: 36px; padding: 0 20px; border-radius: 999px; border: 1.5px solid var(--primary); background: var(--primary); color: white; font-family: var(--font-body); font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-soft); transition: all 0.2s ease; white-space: nowrap; }
 .btn-query:hover { background: #3D6FA0; border-color: #3D6FA0; box-shadow: var(--shadow-soft); }
 
-/* Log order id link */
-.log-order-id { font-weight: 600; color: var(--primary); cursor: pointer; }
-.log-order-id:hover { text-decoration: underline; }
+/* ===== Form elements in dialogs ===== */
+.form-select-el {
+  width: 100% !important;
+  :deep(.el-select__wrapper) {
+    border-radius: 12px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    background: rgba(255,255,255,0.8) !important;
+    box-shadow: 0 0 0 1px var(--border) !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+}
+:deep(.el-dialog) { border-radius: 20px; overflow: hidden; }
+:deep(.el-dialog__header) { padding: 20px 24px 16px; margin: 0; border-bottom: 1px solid rgba(222,216,207,0.3); }
+:deep(.el-dialog__title) { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--fg); }
+:deep(.el-dialog__body) { padding: 20px 24px; }
+:deep(.el-dialog__footer) { padding: 12px 24px 20px; border-top: 1px solid rgba(222,216,207,0.3); }
+:deep(.el-form-item__label) { font-size: 13px; color: var(--muted-fg); font-weight: 500; padding-bottom: 6px; }
 
 /* ===== User table column widths ===== */
 .user-table { table-layout: fixed; }
@@ -537,13 +535,34 @@ onMounted(() => {
 .user-table col.col-login { width: 18%; }
 .user-table col.col-action { width: 10%; }
 
-/* ===== Log table column widths ===== */
-.log-table { table-layout: fixed; }
-.log-table col.col-time { width: 16%; }
-.log-table col.col-operator { width: 10%; }
-.log-table col.col-type { width: 10%; }
-.log-table col.col-content { width: 30%; }
-.log-table col.col-order { width: 14%; }
+/* ===== Form elements in dialog ===== */
+.form-select-el {
+  width: 100% !important;
+  :deep(.el-select__wrapper) {
+    border-radius: 12px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    background: rgba(255,255,255,0.8) !important;
+    box-shadow: 0 0 0 1px var(--border) !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+}
+:deep(.el-dialog) { border-radius: 20px; overflow: hidden; }
+:deep(.el-dialog__header) { padding: 20px 24px 16px; margin: 0; border-bottom: 1px solid rgba(222,216,207,0.3); }
+:deep(.el-dialog__title) { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--fg); }
+:deep(.el-dialog__body) { padding: 20px 24px; }
+:deep(.el-dialog__footer) { padding: 12px 24px 20px; border-top: 1px solid rgba(222,216,207,0.3); }
+:deep(.el-form-item__label) { font-size: 13px; color: var(--muted-fg); font-weight: 500; padding-bottom: 6px; }
+
+/* ===== User table column widths ===== */
+.user-table { table-layout: fixed; }
+.user-table col.col-username { width: 15%; }
+.user-table col.col-name { width: 12%; }
+.user-table col.col-role { width: 12%; }
+.user-table col.col-status { width: 10%; }
+.user-table col.col-login { width: 18%; }
+.user-table col.col-action { width: 10%; }
 
 @media (max-width: 900px) {
   .data-cards-grid { grid-template-columns: 1fr; }

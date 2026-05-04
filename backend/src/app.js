@@ -3,6 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
+// 启动时校验必要环境变量
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET is not set. Please set it in your .env file.');
+  process.exit(1);
+}
+
 const { sequelize } = require('./models');
 const authRoutes = require('./routes/auth');
 const workOrderRoutes = require('./routes/workOrders');
@@ -12,12 +18,19 @@ const callbackRoutes = require('./routes/callbacks');
 const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
 const settingsRoutes = require('./routes/settings');
+const constructionRoutes = require('./routes/constructions');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
+// 限制 CORS 为前端域名，避免任意跨域访问
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+
+// 限制请求体大小，防止超大请求耗尽内存
+app.use(express.json({ limit: '1mb' }));
 
 // API routes - aligned with frontend api.js baseURL: '/api'
 app.use('/api/auth', authRoutes);
@@ -28,6 +41,7 @@ app.use('/api/callbacks', callbackRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);             // User management
 app.use('/api/settings', settingsRoutes);       // System settings & logs
+app.use('/api/construction', constructionRoutes); // Construction fees
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });

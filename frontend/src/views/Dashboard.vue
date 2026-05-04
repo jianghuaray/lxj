@@ -200,6 +200,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '@/utils/api'
 import { formatNumber } from '@/utils/format'
+import { debounce } from '@/utils/debounce'
 // ECharts on-demand import to reduce bundle size
 import * as echarts from 'echarts/core'
 import { LineChart, BarChart, PieChart } from 'echarts/charts'
@@ -528,12 +529,13 @@ function renderRevenueChart(data) {
   })
 }
 
-const handleResize = () => {
+// 防抖处理，防止窗口拖拽时高频触发多个 chart.resize()
+const handleResize = debounce(() => {
   lineChart?.resize()
   pieChart?.resize()
   barChart?.resize()
   revenueChart?.resize()
-}
+}, 200)
 
 onMounted(async () => {
   await fetchAll()
@@ -545,6 +547,7 @@ onUnmounted(() => {
   pieChart?.dispose()
   barChart?.dispose()
   revenueChart?.dispose()
+  handleResize.cancel()
   window.removeEventListener('resize', handleResize)
 })
 </script>

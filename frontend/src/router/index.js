@@ -66,10 +66,16 @@ const router = createRouter({
           meta: { title: '添加师傅' }
         },
         {
-          path: 'callbacks',
-          name: 'callbacks',
-          component: () => import('@/views/CallbackList.vue'),
-          meta: { title: '回访管理' }
+          path: 'technicians/edit/:id',
+          name: 'technician-edit',
+          component: () => import('@/views/TechnicianAdd.vue'),
+          meta: { title: '编辑师傅' }
+        },
+        {
+          path: 'fees',
+          name: 'fees',
+          component: () => import('@/views/FeeList.vue'),
+          meta: { title: '维修费用' }
         },
         {
           path: 'system',

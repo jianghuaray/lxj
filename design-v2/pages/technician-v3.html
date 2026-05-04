@@ -452,6 +452,28 @@ body::before {
   color: var(--muted-fg);
 }
 .btn-filter.secondary:hover { background: var(--accent); }
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 2px solid var(--secondary);
+  background: transparent;
+  color: var(--secondary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+.btn-export:hover {
+  background: rgba(232,184,75,0.08);
+  transform: scale(1.05);
+}
+.btn-export:active { transform: scale(0.95); }
 
 /* ===== Technician Card Grid ===== */
 .technician-grid {
@@ -783,6 +805,10 @@ body::before {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           重置
         </button>
+        <button class="btn-export" style="margin-left:auto;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出Excel
+        </button>
       </div>
 
       <!-- Technician Card Grid -->
@@ -816,13 +842,13 @@ body::before {
 <script>
 // ===== Technician Data =====
 const technicians = [
-  { name:'韩胜涛', phone:'138****1234', skills:['水电维修','下水疏通','测漏防水'], orders:32, rating:4.9, revenue:'¥4,800', status:'启用' },
-  { name:'李朝', phone:'139****5678', skills:['家电维修','家电清洗'], orders:28, rating:4.8, revenue:'¥3,920', status:'启用' },
-  { name:'巴焱', phone:'137****9012', skills:['家具门窗','局部翻新'], orders:25, rating:4.7, revenue:'¥3,750', status:'启用' },
-  { name:'郭富杰', phone:'136****3456', skills:['水电维修','开锁换锁'], orders:22, rating:4.5, revenue:'¥3,300', status:'启用' },
-  { name:'张华', phone:'135****7890', skills:['下水疏通','测漏防水'], orders:18, rating:4.3, revenue:'¥2,520', status:'启用' },
-  { name:'刘明', phone:'133****2345', skills:['家电维修'], orders:12, rating:4.1, revenue:'¥1,680', status:'启用' },
-  { name:'王强', phone:'131****6789', skills:['家具门窗'], orders:8, rating:3.8, revenue:'¥1,120', status:'停用' },
+  { name:'韩胜涛', phone:'138****1234', skills:['水电维修','下水疏通','测漏防水'], orders:32, rating:4.9, revenue:'¥4,800', commission:'30%', status:'启用' },
+  { name:'李朝', phone:'139****5678', skills:['家电维修','家电清洗'], orders:28, rating:4.8, revenue:'¥3,920', commission:'25%', status:'启用' },
+  { name:'巴焱', phone:'137****9012', skills:['家具门窗','局部翻新'], orders:25, rating:4.7, revenue:'¥3,750', commission:'30%', status:'启用' },
+  { name:'郭富杰', phone:'136****3456', skills:['水电维修','开锁换锁'], orders:22, rating:4.5, revenue:'¥3,300', commission:'20%', status:'启用' },
+  { name:'张华', phone:'135****7890', skills:['下水疏通','测漏防水'], orders:18, rating:4.3, revenue:'¥2,520', commission:'25%', status:'启用' },
+  { name:'刘明', phone:'133****2345', skills:['家电维修'], orders:12, rating:4.1, revenue:'¥1,680', commission:'30%', status:'启用' },
+  { name:'王强', phone:'131****6789', skills:['家具门窗'], orders:8, rating:3.8, revenue:'¥1,120', commission:'20%', status:'停用' },
 ];
 
 function renderCards(data) {
@@ -843,6 +869,7 @@ function renderCards(data) {
         <div class="tech-contact">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           ${t.phone}
+          <span style="margin-left:auto;font-size:12px;color:var(--secondary);font-weight:600;background:rgba(232,184,75,0.1);padding:2px 10px;border-radius:999px;">抽成 ${t.commission}</span>
         </div>
         <div class="tech-skills">${skillsHtml}</div>
         <div class="tech-stats-row">

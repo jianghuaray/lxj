@@ -25,7 +25,12 @@ const OperationLog = sequelize.define('OperationLog', {
   }
 }, {
   tableName: 'operation_logs',
-  underscored: true
+  underscored: true,
+  indexes: [
+    { fields: ['operator_id'] },
+    { fields: ['action'] },
+    { fields: ['created_at'] }
+  ]
 });
 
 module.exports = OperationLog;

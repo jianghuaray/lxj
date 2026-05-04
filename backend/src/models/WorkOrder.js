@@ -71,7 +71,17 @@ const WorkOrder = sequelize.define('WorkOrder', {
   }
 }, {
   tableName: 'work_orders',
-  underscored: true
+  underscored: true,
+  indexes: [
+    { fields: ['status'] },
+    { fields: ['customer_id'] },
+    { fields: ['receiver_id'] },
+    { fields: ['area'] },
+    { fields: ['problem_category'] },
+    { fields: ['completed_at'] },
+    { fields: ['created_at'] },
+    { fields: ['status', 'created_at'] }
+  ]
 });
 
 module.exports = WorkOrder;

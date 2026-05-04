@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const { Customer, WorkOrder, Construction, CallbackRecord, Technician } = require('../models');
-const { auth } = require('../middleware/auth');
+const { auth, authAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -283,8 +283,8 @@ router.patch('/:id', auth, async (req, res) => {
   }
 });
 
-// 删除客户
-router.delete('/:id', auth, async (req, res) => {
+// 删除客户（仅管理员可操作）
+router.delete('/:id', auth, authAdmin, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
     if (!customer) {
