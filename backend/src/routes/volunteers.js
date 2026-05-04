@@ -139,7 +139,7 @@ router.post('/', auth, async (req, res) => {
     if (!gender) return res.status(400).json({ error: '性别不能为空' });
     if (!politicalStatus) return res.status(400).json({ error: '政治面貌不能为空' });
     if (!community) return res.status(400).json({ error: '所属社区不能为空' });
-    if (!address) return res.status(400).json({ error: '家庭住址不能为空' });
+    // address 选填，不校验
 
     const phoneCheck = validatePhone(phone);
     if (!phoneCheck.valid) return res.status(400).json({ error: phoneCheck.error });

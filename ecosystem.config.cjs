@@ -6,7 +6,7 @@ module.exports = {
       cwd: '/opt/lexiujiang/backend',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3001,
       },
       instances: 1,
       autorestart: true,

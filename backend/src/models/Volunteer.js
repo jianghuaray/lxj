@@ -35,7 +35,7 @@ const Volunteer = sequelize.define('Volunteer', {
   },
   address: {
     type: DataTypes.STRING(200),
-    allowNull: false
+    allowNull: true
   },
   specialty: {
     type: DataTypes.STRING(200),

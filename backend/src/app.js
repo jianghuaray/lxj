@@ -27,6 +27,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// 启用 trust proxy 以支持 Nginx 转发
+app.set('trust proxy', 1);
+
 // 安全头
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -45,7 +48,8 @@ const apiLimiter = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: '请求过于频繁，请稍后再试' }
+  message: { error: '请求过于频繁，请稍后再试' },
+  validate: { trustProxy: false }
 });
 app.use('/api', apiLimiter);
 
@@ -102,8 +106,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('数据库连接成功');
 
-    // 同步数据库：创建缺失的表，不修改已有表结构（SQLite alter 不稳定）
-    await sequelize.sync();
+    // 同步数据库：确保所有表都存在
+    await sequelize.sync({ alter: true });
     console.log('数据库同步完成');
 
     app.listen(PORT, () => {
