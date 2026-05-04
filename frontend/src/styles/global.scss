@@ -547,6 +547,17 @@ button {
   color: #C99A35 !important;
 }
 
+.btn-pill.danger-outline {
+  background: transparent !important;
+  border: 1.5px solid #E85D5D !important;
+  color: #E85D5D !important;
+}
+.btn-pill.danger-outline:hover {
+  background: rgba(232, 93, 93, 0.08) !important;
+  border-color: #C93B3B !important;
+  color: #C93B3B !important;
+}
+
 .btn-outline,
 .btn-filter.secondary,
 .action-btn,
