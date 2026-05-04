@@ -1,6 +1,7 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
 const {
+  sequelize,
   WorkOrder,
   Construction,
   CallbackRecord,
@@ -11,12 +12,11 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// 获取仪表盘统计数据
+// 获取仪表盘统计数据 — 合并查询优化（8次→6次）
 router.get('/', auth, async (req, res) => {
   try {
     const { timeRange } = req.query;
 
-    // Determine date range
     const now = new Date();
     let startDate;
     switch (timeRange) {
@@ -39,53 +39,55 @@ router.get('/', auth, async (req, res) => {
         break;
     }
 
-    const dateWhere = { created_at: { [Op.gte]: startDate } };
-
-    // Basic counts
-    const totalOrders = await WorkOrder.count({ where: dateWhere });
-
-    const completedOrders = await WorkOrder.count({
-      where: { ...dateWhere, status: { [Op.in]: ['completed', 'callback'] } }
-    });
-    const completionRate = totalOrders > 0 ? (completedOrders / totalOrders * 100).toFixed(1) : 0;
-
-    const cancelledOrders = await WorkOrder.count({
-      where: { ...dateWhere, status: 'cancelled' }
-    });
-    const cancelRate = totalOrders > 0 ? (cancelledOrders / totalOrders * 100).toFixed(1) : 0;
-
-    // Average satisfaction
-    const avgSatisfaction = await CallbackRecord.findOne({
-      attributes: [[fn('AVG', col('satisfaction_score')), 'avg']],
-      where: {
-        satisfaction_score: { [Op.not]: null },
-        callback_at: { [Op.gte]: startDate }
-      }
-    });
-
-    // Total revenue
-    const totalRevenue = await Construction.sum('service_fee', {
-      where: { created_at: { [Op.gte]: startDate } }
-    });
-
-    // Pending callback count
-    const pendingCallbackCount = await WorkOrder.count({ where: { status: 'completed' } });
-
-    // Today orders
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayOrders = await WorkOrder.count({
-      where: { created_at: { [Op.gte]: todayStart } }
-    });
 
-    // Pending dispatch
-    const pendingCount = await WorkOrder.count({ where: { status: 'pending' } });
+    // Batch independent queries with Promise.all
+    const [
+      statusCounts,
+      avgSatisfaction,
+      totalRevenue,
+      todayOrders,
+      pendingCallbackCount,
+      pendingCount
+    ] = await Promise.all([
+      // Single grouped query replaces 3 separate count queries
+      WorkOrder.findAll({
+        attributes: ['status', [fn('COUNT', literal('*')), 'count']],
+        where: { created_at: { [Op.gte]: startDate } },
+        group: ['status'],
+        raw: true
+      }),
+      CallbackRecord.findOne({
+        attributes: [[fn('AVG', col('satisfaction_score')), 'avg']],
+        where: {
+          satisfaction_score: { [Op.not]: null },
+          callback_at: { [Op.gte]: startDate }
+        },
+        raw: true
+      }),
+      Construction.sum('service_fee', {
+        where: { created_at: { [Op.gte]: startDate } }
+      }),
+      WorkOrder.count({ where: { created_at: { [Op.gte]: todayStart } } }),
+      WorkOrder.count({ where: { status: 'completed' } }),
+      WorkOrder.count({ where: { status: 'pending' } })
+    ]);
+
+    // Compute derived stats from single statusCounts query
+    const statusMap = {};
+    statusCounts.forEach(r => { statusMap[r.status] = parseInt(r.count); });
+    const totalOrders = statusCounts.reduce((sum, r) => sum + parseInt(r.count), 0);
+    const completedOrders = (statusMap['completed'] || 0) + (statusMap['callback'] || 0);
+    const cancelledOrders = statusMap['cancelled'] || 0;
+    const completionRate = totalOrders > 0 ? (completedOrders / totalOrders * 100).toFixed(1) : 0;
+    const cancelRate = totalOrders > 0 ? (cancelledOrders / totalOrders * 100).toFixed(1) : 0;
 
     res.json({
       totalOrders,
       todayOrders,
       completionRate,
       cancelRate,
-      avgSatisfaction: avgSatisfaction?.dataValues.avg ? parseFloat(avgSatisfaction.dataValues.avg).toFixed(1) : 0,
+      avgSatisfaction: avgSatisfaction?.avg ? parseFloat(avgSatisfaction.avg).toFixed(1) : 0,
       totalRevenue: totalRevenue || 0,
       pendingCallbackCount,
       pendingCount
@@ -167,10 +169,10 @@ router.get('/area-distribution', auth, async (req, res) => {
   }
 });
 
-// 获取区域详细统计（完成率、满意度、营收）
+// 获取区域详细统计（完成率、满意度、营收）— 合并查询优化
 router.get('/area-stats', auth, async (req, res) => {
   try {
-    // 1. Get area-level aggregated stats from WorkOrder directly
+    // 1. Area-level aggregated stats from WorkOrder
     const areaStats = await WorkOrder.findAll({
       attributes: [
         'area',
@@ -179,63 +181,61 @@ router.get('/area-stats', auth, async (req, res) => {
         [fn('SUM', literal("CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END")), 'cancelled']
       ],
       where: { area: { [Op.not]: null, [Op.ne]: '' } },
-      group: ['area']
+      group: ['area'],
+      raw: true
     });
 
-    // 2. Get revenue per area - simple join via raw order_id reference
-    const areaRevenue = await Construction.findAll({
+    // 2. Revenue per area — single JOIN query (replaces 2 separate queries)
+    const revenueByArea = await Construction.findAll({
       attributes: [
-        'order_id',
-        'service_fee'
-      ]
+        [col('order.area'), 'area'],
+        [fn('SUM', col('service_fee')), 'revenue']
+      ],
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        attributes: [],
+        where: { area: { [Op.not]: null, [Op.ne]: '' } }
+      }],
+      group: [col('order.area')],
+      raw: true
     });
-    // Build a map of order_id -> order.area (need to fetch order areas first)
-    const orderAreas = await WorkOrder.findAll({
-      attributes: ['id', 'area'],
-      where: { area: { [Op.not]: null, [Op.ne]: '' } }
+    const revenueMap = {};
+    revenueByArea.forEach(r => { revenueMap[r['order.area']] = parseFloat(r.revenue) || 0; });
+
+    // 3. Satisfaction per area — single JOIN query (replaces 2 separate queries + in-memory aggregation)
+    const satisfactionByArea = await CallbackRecord.findAll({
+      attributes: [
+        [col('order.area'), 'area'],
+        [fn('AVG', col('satisfaction_score')), 'avg']
+      ],
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        attributes: [],
+        where: { area: { [Op.not]: null, [Op.ne]: '' } }
+      }],
+      where: { satisfaction_score: { [Op.not]: null } },
+      group: [col('order.area')],
+      raw: true
     });
-    const orderAreaMap = {};
-    orderAreas.forEach(o => { orderAreaMap[o.id] = o.area; });
-    // Sum revenue by area
-    const revenueByArea = {};
-    areaRevenue.forEach(c => {
-      const area = orderAreaMap[c.order_id];
-      if (area) {
-        revenueByArea[area] = (revenueByArea[area] || 0) + (c.service_fee || 0);
-      }
+    const satisfactionMap = {};
+    satisfactionByArea.forEach(r => {
+      satisfactionMap[r['order.area']] = parseFloat(r.avg).toFixed(1);
     });
 
-    // 3. Get satisfaction per area from CallbackRecord
-    const callbacks = await CallbackRecord.findAll({
-      attributes: ['order_id', 'satisfaction_score'],
-      where: { satisfaction_score: { [Op.not]: null } }
-    });
-    // Group satisfaction scores by area
-    const satisfactionByArea = {};
-    callbacks.forEach(cb => {
-      const area = orderAreaMap[cb.order_id];
-      if (area) {
-        if (!satisfactionByArea[area]) satisfactionByArea[area] = [];
-        satisfactionByArea[area].push(cb.satisfaction_score);
-      }
-    });
-
-    // 4. Merge all data
+    // Merge all data — 3 queries total instead of the original 5
     const result = areaStats.map(a => {
-      const total = parseInt(a.dataValues.total) || 0;
-      const completed = parseInt(a.dataValues.completed) || 0;
-      const area = a.dataValues.area;
-      const scores = satisfactionByArea[area] || [];
-      const avgSat = scores.length > 0
-        ? (scores.reduce((sum, s) => sum + s, 0) / scores.length).toFixed(1)
-        : '-';
+      const total = parseInt(a.total) || 0;
+      const completed = parseInt(a.completed) || 0;
+      const area = a.area;
       return {
         area,
         total,
         completed,
         completionRate: total > 0 ? parseFloat((completed / total * 100).toFixed(1)) : 0,
-        avgSatisfaction: avgSat,
-        revenue: Math.round(revenueByArea[area] || 0)
+        avgSatisfaction: satisfactionMap[area] || '-',
+        revenue: Math.round(revenueMap[area] || 0)
       };
     });
 
@@ -246,7 +246,7 @@ router.get('/area-stats', auth, async (req, res) => {
   }
 });
 
-// 获取营收趋势 (GET /dashboard/revenue-trend)
+// 获取营收趋势
 router.get('/revenue-trend', auth, async (req, res) => {
   try {
     const { days = 7 } = req.query;
@@ -288,23 +288,19 @@ router.get('/technician-ranking', auth, async (req, res) => {
       }]
     });
 
-    // Batch query satisfaction scores for all technicians
     const techIds = technicians.map(t => t.id);
 
-    // Get all Construction records for these technicians
     const techConstructions = await Construction.findAll({
       attributes: ['technician_id', 'order_id'],
       where: { technician_id: { [Op.in]: techIds } }
     });
 
-    // Group order_ids by technician
     const techOrderMap = {};
     techConstructions.forEach(c => {
       if (!techOrderMap[c.technician_id]) techOrderMap[c.technician_id] = [];
       techOrderMap[c.technician_id].push(c.order_id);
     });
 
-    // Get all callback records for these orders
     const allOrderIds = techConstructions.map(c => c.order_id);
     const orderAvgMap = {};
     if (allOrderIds.length > 0) {

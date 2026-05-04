@@ -2,6 +2,7 @@ const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
 const { Technician, Construction, WorkOrder, CallbackRecord } = require('../models');
 const { auth } = require('../middleware/auth');
+const { escapeLike, validatePhone, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -16,18 +17,18 @@ router.get('/', auth, async (req, res) => {
       if (!isNaN(parsedStatus)) {
         where.status = parsedStatus;
       }
-    } else {
-      // Default: show all active + inactive, but only filter when explicitly requested
     }
     if (keyword) {
+      const safeKeyword = escapeLike(keyword);
       where[Op.or] = [
-        { name: { [Op.like]: `%${keyword}%` } },
-        { phone: { [Op.like]: `%${keyword}%` } }
+        { name: { [Op.like]: `%${safeKeyword}%` } },
+        { phone: { [Op.like]: `%${safeKeyword}%` } }
       ];
     }
     if (specialty) {
-      // SQLite JSON query - specialties stored as JSON array
-      where.specialties = { [Op.like]: `%${specialty}%` };
+      // SQLite JSON query - specialties stored as JSON array (escape LIKE wildcards)
+      const safeSpecialty = escapeLike(specialty);
+      where.specialties = { [Op.like]: `%${safeSpecialty}%` };
     }
 
     const offset = (page - 1) * pageSize;
@@ -271,6 +272,13 @@ router.post('/', auth, async (req, res) => {
   try {
     const {
       name, phone, specialties, commissionRate, remark } = req.body;
+
+    // Input validation
+    if (!name || !name.trim()) return res.status(400).json({ error: '师傅姓名不能为空' });
+    const phoneCheck = validatePhone(phone);
+    if (!phoneCheck.valid) return res.status(400).json({ error: phoneCheck.error });
+    const nameLenCheck = validateLength(name, '姓名', 50);
+    if (!nameLenCheck.valid) return res.status(400).json({ error: nameLenCheck.error });
 
     // Check if phone exists
     const existingTech = await Technician.findOne({ where: { phone } });

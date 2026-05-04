@@ -2,6 +2,7 @@ const express = require('express');
 const { Op } = require('sequelize');
 const { auth, authAdmin } = require('../middleware/auth');
 const { Settings, OperationLog } = require('../models');
+const { escapeLike } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -178,11 +179,12 @@ router.get('/logs', auth, async (req, res) => {
     const { page = 1, pageSize = 20, action, keyword, startDate, endDate } = req.query;
 
     const where = {};
-    if (action) where.action = { [Op.like]: `%${action}%` };
+    if (action) where.action = { [Op.like]: `%${escapeLike(action)}%` };
     if (keyword) {
+      const safeKeyword = escapeLike(keyword);
       where[Op.or] = [
-        { detail: { [Op.like]: `%${keyword}%` } },
-        { action: { [Op.like]: `%${keyword}%` } }
+        { detail: { [Op.like]: `%${safeKeyword}%` } },
+        { action: { [Op.like]: `%${safeKeyword}%` } }
       ];
     }
     if (startDate && endDate) {
