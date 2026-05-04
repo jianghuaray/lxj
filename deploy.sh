@@ -21,6 +21,10 @@ tar czf /tmp/lexiujiang-deploy.tar.gz \
   --exclude='*.md' \
   --exclude='*.log' \
   --exclude='frontend/dist' \
+  --exclude='backend/data' \
+  --exclude='backend/*.xlsx' \
+  --exclude='backend/.env' \
+  --exclude='backend/.env.*' \
   backend frontend ecosystem.config.cjs nginx.conf.example
 echo "   打包完成"
 

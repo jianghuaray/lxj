@@ -275,7 +275,7 @@ function viewDetail(id) {
 
 function goToPage(p) {
   if (p !== '...') {
-    pagination.page = p
+    pagination.value.page = p
     fetchCustomers()
   }
 }
@@ -403,7 +403,7 @@ async function loadStats() {
 
 // Debounced search - wait 300ms after user stops typing
 const debouncedSearch = debounce(() => {
-  pagination.page = 1
+  pagination.value.page = 1
   fetchCustomers()
 }, 300)
 
