@@ -141,8 +141,6 @@ async function submitForm() {
     // Determine the technician ID from route params or query
     const techId = route.params.id || route.query.id
     if (techId) {
-      // Log the data being sent (for debugging)
-      console.log('Saving technician:', techId, 'Data:', form.value)
       await api.put(`/technicians/${techId}`, form.value)
       ElMessage.success('修改成功')
     } else {

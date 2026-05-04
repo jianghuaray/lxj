@@ -44,7 +44,12 @@ const CallbackRecord = sequelize.define('CallbackRecord', {
   }
 }, {
   tableName: 'callback_records',
-  underscored: true
+  underscored: true,
+  indexes: [
+    { fields: ['order_id'] },
+    { fields: ['callback_by'] },
+    { fields: ['callback_at'] }
+  ]
 });
 
 module.exports = CallbackRecord;

@@ -57,7 +57,12 @@ const Construction = sequelize.define('Construction', {
   }
 }, {
   tableName: 'constructions',
-  underscored: true
+  underscored: true,
+  indexes: [
+    { fields: ['order_id'] },
+    { fields: ['technician_id'] },
+    { fields: ['created_at'] }
+  ]
 });
 
 module.exports = Construction;

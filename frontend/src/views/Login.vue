@@ -158,12 +158,10 @@ async function handleSubmit() {
   loading.value = true
 
   try {
-    const result = await authStore.login({
+    await authStore.login({
       username: form.value.username,
       password: form.value.password
     })
-    console.log('Login success, token:', result.token ? '已获取' : '未获取')
-    console.log('isAuthenticated:', authStore.isAuthenticated)
     ElMessage.success('登录成功')
     // Use replace to avoid back-button returning to login
     await router.replace('/')
