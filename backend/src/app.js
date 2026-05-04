@@ -68,7 +68,7 @@ app.get('/api/health', (req, res) => {
 
 // 生产环境：服务前端静态文件
 if (isProduction) {
-  const frontendDist = path.join(__dirname, '../frontend/dist');
+  const frontendDist = path.join(__dirname, '../../frontend/dist');
   app.use(express.static(frontendDist));
   // SPA fallback：非 API 请求返回 index.html
   app.get('*', (req, res) => {

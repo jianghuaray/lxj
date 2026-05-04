@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
 const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
-const { auth } = require('../middleware/auth');
+const { auth, authAdmin } = require('../middleware/auth');
 const { escapeLike, validatePhone, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
@@ -705,6 +705,25 @@ router.post('/:id/callback', auth, async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('提交回访失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 删除工单（仅管理员可操作）
+router.delete('/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const order = await WorkOrder.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: '工单不存在' });
+    }
+    await sequelize.transaction(async (transaction) => {
+      await CallbackRecord.destroy({ where: { order_id: order.id }, transaction });
+      await Construction.destroy({ where: { order_id: order.id }, transaction });
+      await order.destroy({ transaction });
+    });
+    res.json({ message: '工单已删除' });
+  } catch (error) {
+    console.error('删除工单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
