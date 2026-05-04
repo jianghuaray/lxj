@@ -55,8 +55,8 @@
           </div>
           <div class="stat-divider"></div>
           <div class="overview-stat">
-            <div class="overview-stat-value">{{ formatDateShort(volunteer.createdAt) }}</div>
-            <div class="overview-stat-label">登记时间</div>
+            <div class="overview-stat-value">{{ totalDurationText }}</div>
+            <div class="overview-stat-label">服务时长</div>
           </div>
           <div class="stat-divider"></div>
           <div class="overview-stat">
@@ -135,7 +135,7 @@
                   <span class="badge badge-yellow table-badge">{{ row.serviceCommunity }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="时长" prop="serviceDuration" width="100" />
+              <el-table-column label="服务时长" prop="serviceDuration" width="100" />
               <el-table-column label="备注" prop="remark" min-width="120">
                 <template #default="{ row }">{{ row.remark || '-' }}</template>
               </el-table-column>
@@ -175,37 +175,11 @@
               </div>
             </div>
           </div>
-
-          <div class="card service-eval-card">
-            <div class="card-header">
-              <h3 class="card-title">服务评价</h3>
-            </div>
-            <div class="eval-score">
-              <span class="eval-number">{{ evalScore }}</span>
-              <div class="eval-stars">
-                <svg v-for="i in 5" :key="i" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" :fill="i <= Math.round(evalScore) ? 'var(--secondary)' : 'none'" :stroke="i <= Math.round(evalScore) ? 'var(--secondary)' : 'var(--muted-fg)'" stroke-width="1.5" class="star-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              </div>
-            </div>
-            <div class="eval-stats">
-              <div class="eval-stat-row">
-                <span class="eval-stat-label">总时长</span>
-                <span class="eval-stat-value">{{ totalDurationText }}</span>
-              </div>
-              <div class="eval-stat-row">
-                <span class="eval-stat-label">好评率</span>
-                <span class="eval-stat-value">100%</span>
-              </div>
-              <div class="eval-stat-row">
-                <span class="eval-stat-label">最近服务</span>
-                <span class="eval-stat-value">{{ latestServiceDate || '暂无' }}</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </template>
 
-    <el-dialog v-model="showEditModal" title="编辑志愿者信息" width="640px" :border-radius="'24px'">
+    <el-dialog v-model="showEditModal" title="编辑志愿者信息" width="640px">
       <el-form :model="editForm" label-width="100px" :rules="editRules" ref="editFormRef">
         <el-form-item label="姓名" prop="name">
           <el-input v-model="editForm.name" placeholder="请输入姓名" />
@@ -252,7 +226,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showServiceModal" :title="editingService ? '编辑服务记录' : '添加服务记录'" width="600px" :border-radius="'24px'">
+    <el-dialog v-model="showServiceModal" :title="editingService ? '编辑服务记录' : '添加服务记录'" width="600px">
       <el-form :model="serviceForm" label-width="100px" :rules="serviceRules" ref="serviceFormRef">
         <el-form-item label="服务日期" prop="serviceDate">
           <el-date-picker v-model="serviceForm.serviceDate" type="date" placeholder="请选择日期" style="width:100%" value-format="YYYY-MM-DD" />
@@ -264,7 +238,7 @@
           <el-input v-model="serviceForm.serviceCommunity" placeholder="请输入服务社区" />
         </el-form-item>
         <el-form-item label="服务时长" prop="serviceDuration">
-          <el-input v-model="serviceForm.serviceDuration" placeholder="例如：2小时、半天、1天" />
+          <el-input v-model="serviceForm.serviceDuration" placeholder="例如：2（默认按小时计算）" />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
           <el-input v-model="serviceForm.remark" type="textarea" :rows="2" placeholder="请输入备注" />
@@ -354,26 +328,21 @@ const totalDurationText = computed(() => {
   let totalHours = 0
   services.value.forEach(s => {
     const d = s.serviceDuration || ''
+    // 优先匹配数字+小时
     const hourMatch = d.match(/(\d+)\s*小时/)
     if (hourMatch) totalHours += parseInt(hourMatch[1])
-    else if (d.includes('半天')) totalHours += 4
-    else if (d.includes('天')) {
-      const dayMatch = d.match(/(\d+)\s*天/)
-      totalHours += (dayMatch ? parseInt(dayMatch[1]) : 1) * 8
+    // 匹配数字（默认按小时计算）
+    else {
+      const numMatch = d.match(/^(\d+)/)
+      if (numMatch) totalHours += parseInt(numMatch[1])
+      else if (d.includes('半天')) totalHours += 4
+      else if (d.includes('天')) {
+        const dayMatch = d.match(/(\d+)\s*天/)
+        totalHours += (dayMatch ? parseInt(dayMatch[1]) : 1) * 8
+      }
     }
   })
   return totalHours > 0 ? `${totalHours}小时` : '0小时'
-})
-
-const latestServiceDate = computed(() => {
-  if (services.value.length === 0) return ''
-  const sorted = [...services.value].sort((a, b) => new Date(b.serviceDate) - new Date(a.serviceDate))
-  return formatDateShort(sorted[0].serviceDate)
-})
-
-const evalScore = computed(() => {
-  if (services.value.length === 0) return 0
-  return Math.min(5, 3 + services.value.length * 0.2).toFixed(1)
 })
 
 function getPoliticalStatusLabel(status) {
@@ -1000,54 +969,16 @@ onMounted(() => {
   transition: width 0.6s ease;
 }
 
-.eval-score {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(222, 216, 207, 0.3);
+:deep(.el-dialog) {
+  border-radius: 24px;
 }
 
-.eval-number {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 36px;
-  color: var(--secondary);
-  line-height: 1;
+:deep(.el-dialog__header) {
+  padding: 20px 24px 16px;
 }
 
-.eval-stars {
-  display: flex;
-  gap: 2px;
-}
-
-.star-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.eval-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.eval-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.eval-stat-label {
-  font-size: 13px;
-  color: var(--muted-fg);
-}
-
-.eval-stat-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--fg);
+:deep(.el-dialog__body) {
+  padding: 0 24px 24px;
 }
 
 @media (max-width: 900px) {

@@ -53,10 +53,11 @@
     </div>
 
     <div class="filter-toolbar">
-      <div class="search-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" class="filter-search" v-model="searchQuery" placeholder="搜索姓名/电话" @keyup.enter="fetchVolunteers" />
-      </div>
+      <el-input v-model="searchQuery" class="filter-input-el" placeholder="搜索姓名/电话" clearable @clear="resetPageAndFetch" @keyup.enter="resetPageAndFetch">
+        <template #prefix>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted-fg)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </template>
+      </el-input>
       <el-select v-model="communityFilter" class="filter-select-el" placeholder="所属社区" clearable @change="fetchVolunteers">
         <el-option v-for="c in communities" :key="c" :label="c" :value="c" />
       </el-select>
@@ -82,16 +83,14 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width:7%">姓名</th>
-            <th style="width:10%">联系方式</th>
-            <th style="width:5%">年龄</th>
-            <th style="width:5%">性别</th>
-            <th style="width:7%">政治面貌</th>
-            <th style="width:9%">所属社区</th>
-            <th style="width:14%">家庭住址</th>
-            <th style="width:9%">个人特长</th>
-            <th style="width:9%">服务意向</th>
-            <th style="width:10%">操作</th>
+            <th style="width:8%">姓名</th>
+            <th style="width:12%">联系方式</th>
+            <th style="width:6%">年龄</th>
+            <th style="width:6%">性别</th>
+            <th style="width:8%">政治面貌</th>
+            <th style="width:10%">所属社区</th>
+            <th style="width:36%">家庭住址</th>
+            <th style="width:14%">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -99,23 +98,21 @@
             <td>{{ vol.name }}</td>
             <td>{{ vol.phone }}</td>
             <td>{{ vol.age }}</td>
-            <td>
+            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
               <span class="gender-pill" :class="vol.gender">{{ vol.gender === 'male' ? '男' : '女' }}</span>
             </td>
-            <td>
+            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
               <span class="political-badge" :class="vol.politicalStatus">{{ getPoliticalStatusLabel(vol.politicalStatus) }}</span>
             </td>
             <td>{{ vol.community }}</td>
             <td :title="vol.address">{{ vol.address || '-' }}</td>
-            <td :title="vol.specialty">{{ vol.specialty || '-' }}</td>
-            <td :title="vol.serviceIntention">{{ vol.serviceIntention || '-' }}</td>
-            <td>
+            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
               <button class="action-btn" @click="router.push(`/volunteers/${vol.id}`)">查看详情</button>
               <button class="action-btn" @click="router.push(`/volunteers/edit/${vol.id}`)">编辑</button>
             </td>
           </tr>
           <tr v-if="!loading && volunteers.length === 0">
-            <td colspan="10" class="empty-cell">
+            <td colspan="8" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 <p>暂无志愿者数据</p>
@@ -145,7 +142,8 @@
           :key="p"
           class="page-btn"
           :class="{ active: p === page }"
-          @click="page = p; fetchVolunteers()"
+          :disabled="p === '...'"
+          @click="goToPage(p)"
         >{{ p }}</button>
         <button class="page-btn nav-arrow" :disabled="page >= totalPages" @click="page++; fetchVolunteers()">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg>
@@ -186,10 +184,20 @@ const stats = ref({
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1)
 const pageButtons = computed(() => {
+  const total = totalPages.value
+  const current = page.value
   const pages = []
-  const start = Math.max(1, page.value - 2)
-  const end = Math.min(totalPages.value, page.value + 2)
+  if (total <= 5) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+    return pages
+  }
+  let start = Math.max(1, current - 2)
+  let end = Math.min(total, current + 2)
+  if (start > 1) pages.push(1)
+  if (start > 2) pages.push('...')
   for (let i = start; i <= end; i++) pages.push(i)
+  if (end < total - 1) pages.push('...')
+  if (end < total) pages.push(total)
   return pages
 })
 
@@ -263,6 +271,18 @@ function resetFilters() {
   genderFilter.value = ''
   page.value = 1
   fetchVolunteers()
+}
+
+function resetPageAndFetch() {
+  page.value = 1
+  fetchVolunteers()
+}
+
+function goToPage(p) {
+  if (p !== '...') {
+    page.value = p
+    fetchVolunteers()
+  }
 }
 
 async function handleDelete(vol) {
@@ -463,39 +483,29 @@ onMounted(() => {
   padding: 14px 20px;
 }
 
-.search-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-
-  svg {
-    position: absolute;
-    left: 14px;
-    width: 16px;
-    height: 16px;
-    color: var(--muted-fg);
-    pointer-events: none;
-    z-index: 1;
+.filter-input-el {
+  flex: 1;
+  min-width: 200px;
+  :deep(.el-input__wrapper) {
+    border-radius: 999px !important;
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    background: rgba(255,255,255,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(222,216,207,0.8) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
   }
-}
-
-.filter-search {
-  height: 40px !important;
-  padding: 0 16px 0 40px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(222, 216, 207, 0.8) !important;
-  background: rgba(255, 255, 255, 0.5) !important;
-  color: var(--fg) !important;
-  font-family: var(--font-body) !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  outline: none !important;
-  width: 200px !important;
-  transition: all 0.2s ease !important;
-
-  &::placeholder { color: var(--muted-fg); }
-  &:hover { border-color: var(--primary); }
-  &:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74, 127, 181, 0.15); }
+  :deep(.el-input__inner) {
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 14px !important;
+    color: var(--fg) !important;
+  }
+  :deep(.el-input__prefix-inner) {
+    color: var(--muted-fg) !important;
+  }
 }
 
 .filter-select-el {
@@ -646,7 +656,7 @@ onMounted(() => {
 }
 
 .data-table tbody td:first-child { padding-left: 24px; }
-.data-table tbody td:last-child { padding-right: 24px; text-align: center; }
+.data-table tbody td:last-child { padding-right: 24px; text-align: center; overflow: visible; text-overflow: unset; }
 
 .gender-pill {
   display: inline-flex;

@@ -102,14 +102,12 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('数据库连接成功');
 
-    // 生产环境不做自动 sync，用 init:db 脚本
-    // await sequelize.sync({ alter: true });
+    // 同步数据库：创建缺失的表，不修改已有表结构（SQLite alter 不稳定）
+    await sequelize.sync();
+    console.log('数据库同步完成');
 
     app.listen(PORT, () => {
       console.log(`服务器运行在 http://localhost:${PORT}`);
-      if (!isProduction) {
-        console.log('使用 npm run init:db 初始化数据库');
-      }
     });
   } catch (error) {
     console.error('服务器启动失败:', error);

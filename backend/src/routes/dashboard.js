@@ -7,7 +7,8 @@ const {
   CallbackRecord,
   Technician,
   Customer,
-  Volunteer
+  Volunteer,
+  VolunteerService
 } = require('../models');
 const { auth } = require('../middleware/auth');
 
@@ -50,7 +51,8 @@ router.get('/', auth, async (req, res) => {
       todayOrders,
       pendingCallbackCount,
       pendingCount,
-      volunteerCount
+      volunteerCount,
+      volunteerServices
     ] = await Promise.all([
       // Single grouped query replaces 3 separate count queries
       WorkOrder.findAll({
@@ -73,7 +75,8 @@ router.get('/', auth, async (req, res) => {
       WorkOrder.count({ where: { created_at: { [Op.gte]: todayStart } } }),
       WorkOrder.count({ where: { status: 'completed' } }),
       WorkOrder.count({ where: { status: 'pending' } }),
-      Volunteer.count()
+      Volunteer.count(),
+      VolunteerService.findAll({ attributes: ['serviceDuration'] })
     ]);
 
     // Compute derived stats from single statusCounts query
@@ -85,6 +88,23 @@ router.get('/', auth, async (req, res) => {
     const completionRate = totalOrders > 0 ? (completedOrders / totalOrders * 100).toFixed(1) : 0;
     const cancelRate = totalOrders > 0 ? (cancelledOrders / totalOrders * 100).toFixed(1) : 0;
 
+    // Calculate total volunteer service hours (parse duration strings)
+    let totalServiceHours = 0;
+    (volunteerServices || []).forEach(s => {
+      const d = s.serviceDuration || '';
+      const hourMatch = d.match(/(\d+)\s*小时/);
+      if (hourMatch) totalServiceHours += parseInt(hourMatch[1]);
+      else {
+        const numMatch = d.match(/^(\d+)/);
+        if (numMatch) totalServiceHours += parseInt(numMatch[1]);
+        else if (d.includes('半天')) totalServiceHours += 4;
+        else if (d.includes('天')) {
+          const dayMatch = d.match(/(\d+)\s*天/);
+          totalServiceHours += (dayMatch ? parseInt(dayMatch[1]) : 1) * 8;
+        }
+      }
+    });
+
     res.json({
       totalOrders,
       todayOrders,
@@ -94,7 +114,8 @@ router.get('/', auth, async (req, res) => {
       totalRevenue: totalRevenue || 0,
       pendingCallbackCount,
       pendingCount,
-      volunteerCount
+      volunteerCount,
+      serviceHours: totalServiceHours
     });
   } catch (error) {
     console.error('获取仪表盘数据失败:', error);

@@ -105,6 +105,16 @@
         <div class="kpi-value">{{ stats.volunteerCount || 0 }}</div>
         <div class="kpi-label">志愿者总数</div>
       </div>
+
+      <div class="kpi-card" :style="{ borderRadius: kpiRadius[7] }">
+        <div class="kpi-top">
+          <div class="kpi-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value">{{ stats.serviceHours || 0 }}<span class="kpi-unit">小时</span></div>
+        <div class="kpi-label">志愿服务时长</div>
+      </div>
     </div>
 
     <!-- Charts: only 2 in a row, matching design -->
@@ -260,7 +270,8 @@ const kpiRadius = [
   '24px 24px 20px 24px',
   '20px 24px 24px 24px',
   '24px 20px 24px 24px',
-  '24px 24px 20px 20px'
+  '24px 24px 20px 20px',
+  '20px 24px 20px 24px'
 ]
 
 const rankRadius = [
