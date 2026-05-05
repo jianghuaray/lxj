@@ -108,7 +108,7 @@
             <td>{{ formatDate(customer.lastOrderAt) }}</td>
             <td>
               <button class="action-btn" @click.stop="viewDetail(customer.id)">查看</button>
-              <button class="btn-new-order" @click.stop="$router.push(`/customers/edit/${customer.id}`)">编辑</button>
+              <button class="action-btn" @click.stop="$router.push(`/customers/edit/${customer.id}`)">编辑</button>
             </td>
           </tr>
           <tr v-if="!loading && customers.length === 0">

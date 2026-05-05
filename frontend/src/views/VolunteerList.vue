@@ -83,14 +83,13 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width:8%">姓名</th>
-            <th style="width:12%">联系方式</th>
-            <th style="width:6%">年龄</th>
-            <th style="width:6%">性别</th>
-            <th style="width:8%">政治面貌</th>
-            <th style="width:10%">所属社区</th>
-            <th style="width:36%">家庭住址</th>
-            <th style="width:14%">操作</th>
+            <th style="width:10%">姓名</th>
+            <th style="width:14%">联系方式</th>
+            <th style="width:8%">年龄</th>
+            <th style="width:8%">性别</th>
+            <th style="width:12%">政治面貌</th>
+            <th style="width:18%">所属社区</th>
+            <th style="width:18%">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -105,14 +104,13 @@
               <span class="political-badge" :class="vol.politicalStatus">{{ getPoliticalStatusLabel(vol.politicalStatus) }}</span>
             </td>
             <td>{{ vol.community }}</td>
-            <td :title="vol.address">{{ vol.address || '-' }}</td>
             <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
               <button class="action-btn" @click="router.push(`/volunteers/${vol.id}`)">查看详情</button>
               <button class="action-btn" @click="router.push(`/volunteers/edit/${vol.id}`)">编辑</button>
             </td>
           </tr>
           <tr v-if="!loading && volunteers.length === 0">
-            <td colspan="8" class="empty-cell">
+            <td colspan="7" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 <p>暂无志愿者数据</p>
