@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
 const { User } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
+const { validatePassword, validateLength, escapeLike } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -14,9 +15,10 @@ router.get('/', auth, authAdmin, async (req, res) => {
     const where = {};
     if (role) where.role = role;
     if (keyword) {
+      const safeKeyword = escapeLike(keyword);
       where[Op.or] = [
-        { username: { [Op.like]: `%${keyword}%` } },
-        { real_name: { [Op.like]: `%${keyword}%` } }
+        { username: { [Op.like]: `%${safeKeyword}%` } },
+        { real_name: { [Op.like]: `%${safeKeyword}%` } }
       ];
     }
 
@@ -62,6 +64,12 @@ router.post('/', auth, authAdmin, async (req, res) => {
 
     if (!username || !password || !realName) {
       return res.status(400).json({ error: '用户名、密码和姓名为必填项' });
+    }
+
+    // Password strength validation (consistent with change-password and reset-password)
+    const pwdCheck = validatePassword(password);
+    if (!pwdCheck.valid) {
+      return res.status(400).json({ error: `密码不符合要求：${pwdCheck.error}` });
     }
 
     const existingUser = await User.findOne({ where: { username } });

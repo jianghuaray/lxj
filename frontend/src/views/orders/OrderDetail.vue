@@ -2,7 +2,7 @@
   <div class="order-detail-page">
     <div class="detail-header">
       <div class="detail-header-left">
-        <button class="btn-back" @click="$router.back()">
+        <button class="btn-back" @click="$router.push('/orders')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
           返回列表
         </button>
@@ -33,6 +33,10 @@
         <button class="btn-outline danger" v-if="['pending', 'dispatched'].includes(order.status)" @click="cancelOrder">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
           取消工单
+        </button>
+        <button class="btn-outline danger" @click="confirmDeleteOrder">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          删除工单
         </button>
       </div>
     </div>
@@ -960,6 +964,27 @@ async function cancelOrder() {
     ElMessage.success('工单已取消')
     await fetchOrderDetail()
   } catch (e) {
+  }
+}
+
+async function confirmDeleteOrder() {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除工单「${order.value.orderNo}」吗？此操作不可恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    await api.delete(`/orders/${orderId}`)
+    ElMessage.success('工单已删除')
+    router.push('/orders')
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 

@@ -2,6 +2,7 @@ const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const { Customer, WorkOrder, Construction, CallbackRecord, Technician } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
+const { escapeLike, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -34,10 +35,11 @@ router.get('/', auth, async (req, res) => {
     if (level) where.level = level;
     if (area) where.area = area;
     if (keyword) {
+      const safeKeyword = escapeLike(keyword);
       where[Op.or] = [
-        { name: { [Op.like]: `%${keyword}%` } },
-        { phone: { [Op.like]: `%${keyword}%` } },
-        { address: { [Op.like]: `%${keyword}%` } }
+        { name: { [Op.like]: `%${safeKeyword}%` } },
+        { phone: { [Op.like]: `%${safeKeyword}%` } },
+        { address: { [Op.like]: `%${safeKeyword}%` } }
       ];
     }
 
@@ -149,6 +151,10 @@ router.post('/', auth, async (req, res) => {
   try {
     const {
       name, phone, area, address, level, tags, remark, sourceChannel } = req.body;
+
+    // Input validation
+    if (!name || !name.trim()) return res.status(400).json({ error: '客户姓名不能为空' });
+    if (!phone) return res.status(400).json({ error: '手机号不能为空' });
 
     const existingCustomer = await Customer.findOne({ where: { phone } });
     if (existingCustomer) {

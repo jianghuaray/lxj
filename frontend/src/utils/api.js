@@ -8,6 +8,19 @@ const api = axios.create({
   timeout: 30000
 })
 
+// 防止相同错误消息短时间内重复弹出
+let lastErrorMsg = ''
+let lastErrorTime = 0
+const ERROR_DEDUPE_MS = 2000
+
+function showError(msg) {
+  const now = Date.now()
+  if (msg === lastErrorMsg && now - lastErrorTime < ERROR_DEDUPE_MS) return
+  lastErrorMsg = msg
+  lastErrorTime = now
+  showError(msg)
+}
+
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
@@ -34,15 +47,15 @@ api.interceptors.response.use(
     if (!error.response) {
       // 网络错误或超时
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        ElMessage.error('请求超时，请检查网络后重试')
+        showError('请求超时，请检查网络后重试')
       } else {
-        ElMessage.error('网络连接失败，请检查网络设置')
+        showError('网络连接失败，请检查网络设置')
       }
     } else {
       const { status, data } = error.response
       switch (status) {
         case 401:
-          ElMessage.error('登录已过期，请重新登录')
+          showError('登录已过期，请重新登录')
           // 通过 store 统一处理登出，保持 Store 与 localStorage 同步
           try {
             const authStore = useAuthStore()
@@ -55,19 +68,19 @@ api.interceptors.response.use(
           router.push('/login')
           break
         case 403:
-          ElMessage.error('没有权限执行此操作')
+          showError('没有权限执行此操作')
           break
         case 404:
-          ElMessage.error(data?.error || '请求的资源不存在')
+          showError(data?.error || '请求的资源不存在')
           break
         case 422:
-          ElMessage.error(data?.error || '提交数据验证失败')
+          showError(data?.error || '提交数据验证失败')
           break
         case 500:
-          ElMessage.error('服务器内部错误，请稍后重试')
+          showError('服务器内部错误，请稍后重试')
           break
         default:
-          ElMessage.error(data?.error || '请求失败')
+          showError(data?.error || '请求失败')
       }
     }
     return Promise.reject(error)

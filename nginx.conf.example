@@ -1,0 +1,30 @@
+server {
+    listen 80;
+    server_name your-domain.com;  # 替换为你的域名或 IP
+
+    # 前端静态文件
+    location / {
+        root /opt/lexiujiang/frontend/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;  # SPA fallback
+    }
+
+    # API 反向代理
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 静态资源缓存（可选）
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        root /opt/lexiujiang/frontend/dist;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 限制上传大小
+    client_max_body_size 1m;
+}

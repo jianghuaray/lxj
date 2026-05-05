@@ -48,6 +48,18 @@ const router = createRouter({
           meta: { title: '客户管理' }
         },
         {
+          path: 'customers/add',
+          name: 'customer-add',
+          component: () => import('@/views/CustomerAdd.vue'),
+          meta: { title: '新增客户' }
+        },
+        {
+          path: 'customers/edit/:id',
+          name: 'customer-edit',
+          component: () => import('@/views/CustomerAdd.vue'),
+          meta: { title: '编辑客户' }
+        },
+        {
           path: 'customers/:id',
           name: 'customer-detail',
           component: () => import('@/views/CustomerDetail.vue'),
@@ -70,6 +82,30 @@ const router = createRouter({
           name: 'technician-edit',
           component: () => import('@/views/TechnicianAdd.vue'),
           meta: { title: '编辑师傅' }
+        },
+        {
+          path: 'volunteers',
+          name: 'volunteers',
+          component: () => import('@/views/VolunteerList.vue'),
+          meta: { title: '志愿者管理' }
+        },
+        {
+          path: 'volunteers/add',
+          name: 'volunteer-add',
+          component: () => import('@/views/VolunteerAdd.vue'),
+          meta: { title: '新增志愿者' }
+        },
+        {
+          path: 'volunteers/edit/:id',
+          name: 'volunteer-edit',
+          component: () => import('@/views/VolunteerAdd.vue'),
+          meta: { title: '编辑志愿者' }
+        },
+        {
+          path: 'volunteers/:id',
+          name: 'volunteer-detail',
+          component: () => import('@/views/VolunteerDetail.vue'),
+          meta: { title: '志愿者档案' }
         },
         {
           path: 'fees',

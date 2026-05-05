@@ -1,9 +1,20 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User } = require('../models');
-const { auth } = require('../middleware/auth');
+const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
+const { auth, authAdmin } = require('../middleware/auth');
+const { escapeLike, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
+
+// 回访阈值：从系统配置读取，默认100元
+async function getCallbackFeeThreshold() {
+  try {
+    const setting = await Settings.findOne({ where: { category: 'callbackFeeThreshold' } });
+    return setting?.values?.threshold || 100;
+  } catch {
+    return 100;
+  }
+}
 
 // 获取工单列表
 router.get('/', auth, async (req, res) => {
@@ -14,31 +25,38 @@ router.get('/', auth, async (req, res) => {
     if (status) where.status = status;
     if (area) where.area = area;
     if (problemCategory || category) where.problem_category = problemCategory || category;
-    if (technicianId) {
-      // Need to filter by construction's technician
-      const constructions = await Construction.findAll({
-        where: { technician_id: technicianId },
-        attributes: ['order_id']
-      });
-      const orderIds = constructions.map(c => c.order_id);
-      if (orderIds.length === 0) {
-        // No matching constructions, return empty result
-        return res.json({ items: [], total: 0, page: parseInt(page), pageSize: parseInt(pageSize), statusCounts: {}, overdueCount: 0, awaitCallbackCount: 0 });
+
+    // 按技师筛选：使用 include where 替代 N+1 查询
+    const include = [
+      { model: Customer, as: 'customer' },
+      {
+        model: Construction,
+        as: 'construction',
+        include: [{ model: Technician, as: 'technician' }]
       }
-      where.id = { [Op.in]: orderIds };
+    ];
+
+    if (technicianId) {
+      include[1].where = { technician_id: technicianId };
+      include[1].required = true; // INNER JOIN
     }
+
     if (customerId) where.customer_id = customerId;
-    if (customerPhone) where.customer_phone = { [Op.like]: `%${customerPhone}%` };
+    if (customerPhone) {
+      const safePhone = escapeLike(customerPhone);
+      where.customer_phone = { [Op.like]: `%${safePhone}%` };
+    }
     if (keyword) {
+      const safeKeyword = escapeLike(keyword);
       where[Op.or] = [
-        { order_no: { [Op.like]: `%${keyword}%` } },
-        { customer_name: { [Op.like]: `%${keyword}%` } },
-        { customer_phone: { [Op.like]: `%${keyword}%` } },
-        { address: { [Op.like]: `%${keyword}%` } }
+        { order_no: { [Op.like]: `%${safeKeyword}%` } },
+        { customer_name: { [Op.like]: `%${safeKeyword}%` } },
+        { customer_phone: { [Op.like]: `%${safeKeyword}%` } },
+        { address: { [Op.like]: `%${safeKeyword}%` } }
       ];
     }
 
-    // 超期筛选：超过24小时且状态在pending/dispatched之间（不含咨询单和取消单）
+    // 超期筛选
     if (overdue === 'true') {
       const overdueThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
       Object.assign(where, {
@@ -47,23 +65,18 @@ router.get('/', auth, async (req, res) => {
       });
     }
 
-    // 待回访筛选：已完成且维修金额超过100元（仅completed，不含callback）
+    // 待回访筛选：使用 include where 替代 N+1 查询
     if (awaitCallback === 'true') {
-      const awaitConstructions = await Construction.findAll({
-        where: { total_fee: { [Op.gt]: 100 } },
-        attributes: ['order_id']
-      });
-      const awaitOrderIds = awaitConstructions.map(c => c.order_id);
-      if (awaitOrderIds.length === 0) {
-        return res.json({ items: [], total: 0, page: parseInt(page), pageSize: parseInt(pageSize), statusCounts: {}, overdueCount: 0, awaitCallbackCount: 0 });
-      }
-      Object.assign(where, {
-        status: 'completed',
-        id: { [Op.in]: awaitOrderIds }
-      });
+      const feeThreshold = await getCallbackFeeThreshold();
+      // Add construction filter via include
+      const constructionWhere = include[1].where || {};
+      constructionWhere.total_fee = { [Op.gt]: feeThreshold };
+      include[1].where = constructionWhere;
+      include[1].required = true;
+      where.status = 'completed';
     }
 
-    // 待处理筛选：pending + dispatched
+    // 待处理筛选
     if (pendingDispatch === 'true') {
       where.status = { [Op.in]: ['pending', 'dispatched'] };
     }
@@ -72,49 +85,45 @@ router.get('/', auth, async (req, res) => {
 
     const { count, rows } = await WorkOrder.findAndCountAll({
       where,
-      include: [
-        { model: Customer, as: 'customer' },
-        {
-          model: Construction,
-          as: 'construction',
-          include: [{ model: Technician, as: 'technician' }]
-        }
-      ],
+      include,
       order: [['created_at', 'DESC']],
       limit: parseInt(pageSize),
-      offset
+      offset,
+      // When using include with required:true + where, count needs subQuery
+      subQuery: false,
+      distinct: true
     });
 
-    // Get status counts for tabs - single grouped query (always unfiltered for tabs)
-    const statusCountsRaw = await WorkOrder.findAll({
-      attributes: ['status', [fn('COUNT', literal('*')), 'count']],
-      group: ['status']
-    });
+    // Status counts + overdue + awaitCallback — 3 queries merged into 1
+    const feeThreshold = await getCallbackFeeThreshold();
+    const overdueThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [statusCountsRaw, overdueCount, awaitCallbackCount] = await Promise.all([
+      WorkOrder.findAll({
+        attributes: ['status', [fn('COUNT', literal('*')), 'count']],
+        group: ['status']
+      }),
+      WorkOrder.count({
+        where: {
+          status: { [Op.in]: ['pending', 'dispatched'] },
+          created_at: { [Op.lt]: overdueThreshold }
+        }
+      }),
+      WorkOrder.count({
+        where: { status: 'completed' },
+        include: [{
+          model: Construction,
+          as: 'construction',
+          where: { total_fee: { [Op.gt]: feeThreshold } },
+          attributes: []
+        }]
+      })
+    ]);
+
     const statusCounts = {};
     const allStatuses = ['pending', 'dispatched', 'completed', 'callback', 'cancelled', 'consultation'];
     allStatuses.forEach(s => { statusCounts[s] = 0; });
     statusCountsRaw.forEach(r => {
       statusCounts[r.dataValues.status] = parseInt(r.dataValues.count);
-    });
-
-    // 计算超期工单数量：超过24小时且状态在pending/dispatched之间（不含咨询单和取消单）
-    const overdueThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const overdueCount = await WorkOrder.count({
-      where: {
-        status: { [Op.in]: ['pending', 'dispatched'] },
-        created_at: { [Op.lt]: overdueThreshold }
-      }
-    });
-
-    // 计算待回访工单数量：已完成的维修金额超过100元（仅completed，不含callback）
-    const awaitCallbackCount = await WorkOrder.count({
-      where: { status: 'completed' },
-      include: [{
-        model: Construction,
-        as: 'construction',
-        where: { total_fee: { [Op.gt]: 100 } },
-        attributes: []
-      }]
     });
 
     // Format items for frontend
@@ -171,20 +180,18 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// 获取统计数据 - must be before /:id route
+// 获取统计数据
 router.get('/stats/summary', auth, async (req, res) => {
   try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const todayCount = await WorkOrder.count({
-      where: { created_at: { [Op.gte]: todayStart } }
-    });
-
-    const pendingCount = await WorkOrder.count({ where: { status: 'pending' } });
-    const pendingCallbackCount = await WorkOrder.count({ where: { status: 'completed' } });
-
-    const totalRevenue = await Construction.sum('service_fee');
+    const [todayCount, pendingCount, pendingCallbackCount, totalRevenue] = await Promise.all([
+      WorkOrder.count({ where: { created_at: { [Op.gte]: todayStart } } }),
+      WorkOrder.count({ where: { status: 'pending' } }),
+      WorkOrder.count({ where: { status: 'completed' } }),
+      Construction.sum('service_fee')
+    ]);
 
     res.json({
       todayCount,
@@ -224,7 +231,6 @@ router.get('/:id', auth, async (req, res) => {
 
     const o = order.toJSON();
 
-    // Format callback record
     let callbackRecord = null;
     if (o.callback) {
       callbackRecord = {
@@ -238,7 +244,6 @@ router.get('/:id', auth, async (req, res) => {
       };
     }
 
-    // Get customer history orders
     const historyOrders = await WorkOrder.findAll({
       where: { customer_id: o.customer_id, id: { [Op.ne]: o.id } },
       include: [
@@ -282,7 +287,6 @@ router.get('/:id', auth, async (req, res) => {
       receiverRemark: o.receiver_remark,
       createdAt: o.created_at,
       updatedAt: o.updated_at,
-      // Construction info
       technicianId: o.construction?.technician_id || null,
       technicianName: o.construction?.technician?.name || null,
       technicianPhone: o.construction?.technician?.phone || null,
@@ -295,12 +299,9 @@ router.get('/:id', auth, async (req, res) => {
       buildingManagerIncentive: o.construction?.building_manager_incentive || null,
       commissionRate: o.construction?.commission_rate || null,
       actualWork: o.construction?.actual_work || null,
-      // Callback
       callbackRecord,
-      // Customer
       customerLevel: o.customer?.level || null,
       customerTags: o.customer?.tags || [],
-      // History
       historyOrders: historyFormatted
     });
   } catch (error) {
@@ -325,6 +326,15 @@ router.post('/', auth, async (req, res) => {
       receiverRemark
     } = req.body;
 
+    // Input validation
+    if (!problemCategory) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '问题分类不能为空' });
+    }
+    if (customerPhone) {
+      // phone 格式验证已移除，仅校验必填
+    }
+
     // Check if customer exists
     let customer = await Customer.findByPk(customerId, { transaction });
     if (!customer && customerPhone) {
@@ -341,11 +351,11 @@ router.post('/', auth, async (req, res) => {
       }, { transaction });
     }
 
-    // Generate order number - use timestamp + random suffix for concurrency safety
+    // Generate order number — 6-digit random for better concurrency safety
     const now = new Date();
     const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const timePart = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
-    const randomPart = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+    const randomPart = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
     const orderNo = `${datePart}${timePart}${randomPart}`;
 
     const status = req.body.status || 'pending';
@@ -408,11 +418,16 @@ router.patch('/:id', auth, async (req, res) => {
   }
 });
 
-// 派单 (POST /orders/:id/assign - frontend calls this)
+// 派单 — 统一路由，/dispatch 重定向到 /assign
 router.post('/:id/assign', auth, async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
-    const { technicianId, remark } = req.body;
+    const { technicianId, remark, dispatchRemark } = req.body;
+    if (!technicianId) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '请选择师傅' });
+    }
+
     const order = await WorkOrder.findByPk(req.params.id, { transaction });
 
     if (!order) {
@@ -431,15 +446,13 @@ router.post('/:id/assign', auth, async (req, res) => {
       return res.status(404).json({ error: '师傅不存在' });
     }
 
-    // Update order status
     order.status = 'dispatched';
     await order.save({ transaction });
 
-    // Create construction record
     await Construction.create({
       order_id: order.id,
       technician_id: technicianId,
-      dispatch_remark: remark || req.body.dispatchRemark,
+      dispatch_remark: remark || dispatchRemark,
       dispatched_at: new Date(),
       commission_rate: technician.commission_rate
     }, { transaction });
@@ -453,18 +466,24 @@ router.post('/:id/assign', auth, async (req, res) => {
   }
 });
 
-// Also support the original dispatch route for backward compatibility
+// /dispatch 保留做兼容，内部转发到 assign 逻辑
 router.post('/:id/dispatch', auth, async (req, res) => {
-  const transaction = await sequelize.transaction();
+  // Normalize field name: dispatchRemark → remark
+  req.body.remark = req.body.remark || req.body.dispatchRemark;
+  // Delegate to the same logic as /assign
   try {
-    const { technicianId, dispatchRemark } = req.body;
-    const order = await WorkOrder.findByPk(req.params.id, { transaction });
+    const transaction = await sequelize.transaction();
+    const { technicianId, remark, dispatchRemark } = req.body;
+    if (!technicianId) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '请选择师傅' });
+    }
 
+    const order = await WorkOrder.findByPk(req.params.id, { transaction });
     if (!order) {
       await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
-
     if (order.status !== 'pending') {
       await transaction.rollback();
       return res.status(400).json({ error: '当前状态不允许派单' });
@@ -482,7 +501,7 @@ router.post('/:id/dispatch', auth, async (req, res) => {
     await Construction.create({
       order_id: order.id,
       technician_id: technicianId,
-      dispatch_remark: dispatchRemark,
+      dispatch_remark: remark || dispatchRemark,
       dispatched_at: new Date(),
       commission_rate: technician.commission_rate
     }, { transaction });
@@ -490,20 +509,23 @@ router.post('/:id/dispatch', auth, async (req, res) => {
     await transaction.commit();
     res.json({ message: '派单成功' });
   } catch (error) {
-    await transaction.rollback();
     console.error('派单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
 
-// 更新工单状态 (PATCH /orders/:id/status - frontend uses PATCH)
-router.patch('/:id/status', auth, async (req, res) => {
+// 更新工单状态 — 统一 PATCH/PUT
+async function handleStatusUpdate(req, res) {
   try {
     const { status, cancelReason } = req.body;
     const order = await WorkOrder.findByPk(req.params.id);
 
     if (!order) {
       return res.status(404).json({ error: '工单不存在' });
+    }
+
+    if (!status) {
+      return res.status(400).json({ error: '请提供目标状态' });
     }
 
     const validTransitions = {
@@ -530,45 +552,12 @@ router.patch('/:id/status', auth, async (req, res) => {
     console.error('更新工单状态失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
-});
+}
 
-// Also support PUT for backward compatibility
-router.put('/:id/status', auth, async (req, res) => {
-  try {
-    const { status, cancelReason } = req.body;
-    const order = await WorkOrder.findByPk(req.params.id);
+router.patch('/:id/status', auth, handleStatusUpdate);
+router.put('/:id/status', auth, handleStatusUpdate);
 
-    if (!order) {
-      return res.status(404).json({ error: '工单不存在' });
-    }
-
-    const validTransitions = {
-      pending: ['dispatched', 'cancelled', 'consultation'],
-      dispatched: ['completed', 'cancelled'],
-      completed: ['callback']
-    };
-
-    if (!validTransitions[order.status]?.includes(status)) {
-      return res.status(400).json({ error: '无效的状态转换' });
-    }
-
-    order.status = status;
-
-    if (status === 'cancelled') {
-      order.cancel_reason = cancelReason;
-    } else if (status === 'completed') {
-      order.completed_at = new Date();
-    }
-
-    await order.save();
-    res.json({ message: '状态更新成功' });
-  } catch (error) {
-    console.error('更新工单状态失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-// 取消工单 (PATCH /orders/:id/cancel - frontend uses this)
+// 取消工单
 router.patch('/:id/cancel', auth, async (req, res) => {
   try {
     const { cancelReason } = req.body;
@@ -593,7 +582,7 @@ router.patch('/:id/cancel', auth, async (req, res) => {
   }
 });
 
-// 咨询单转正式单 (PATCH /orders/:id/convert - frontend uses this)
+// 咨询单转正式单
 router.patch('/:id/convert', auth, async (req, res) => {
   try {
     const order = await WorkOrder.findByPk(req.params.id);
@@ -605,9 +594,8 @@ router.patch('/:id/convert', auth, async (req, res) => {
       return res.status(400).json({ error: '只有咨询单才能转为正式单' });
     }
 
-    // 将咨询单转为待派单状态
     order.status = 'pending';
-    order.received_at = new Date(); // 更新接单时间
+    order.received_at = new Date();
     await order.save();
 
     res.json({ message: '咨询单已转为正式单，当前状态为待派单' });
@@ -617,8 +605,8 @@ router.patch('/:id/convert', auth, async (req, res) => {
   }
 });
 
-// 录入费用 (POST /orders/:id/fee - frontend uses this)
-router.post('/:id/fee', auth, async (req, res) => {
+// 录入费用 — 统一 POST /:id/fee 和 PUT /:id/fees
+async function handleFeeInput(req, res) {
   try {
     const {
       totalFee,
@@ -629,6 +617,10 @@ router.post('/:id/fee', auth, async (req, res) => {
       commissionRate,
       actualWork
     } = req.body;
+
+    if (totalFee === undefined || totalFee === null) {
+      return res.status(400).json({ error: '请提供总费用' });
+    }
 
     const order = await WorkOrder.findByPk(req.params.id);
     if (!order) {
@@ -654,46 +646,12 @@ router.post('/:id/fee', auth, async (req, res) => {
     console.error('录入费用失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
-});
+}
 
-// Also support PUT for backward compatibility
-router.put('/:id/fees', auth, async (req, res) => {
-  try {
-    const {
-      totalFee,
-      serviceFee,
-      receivedFee,
-      materialCost,
-      buildingManagerIncentive,
-      actualWork
-    } = req.body;
+router.post('/:id/fee', auth, handleFeeInput);
+router.put('/:id/fees', auth, handleFeeInput);
 
-    const order = await WorkOrder.findByPk(req.params.id);
-    if (!order) {
-      return res.status(404).json({ error: '工单不存在' });
-    }
-
-    let construction = await Construction.findOne({ where: { order_id: order.id } });
-    if (!construction) {
-      return res.status(404).json({ error: '施工记录不存在' });
-    }
-
-    construction.total_fee = totalFee;
-    construction.service_fee = serviceFee || totalFee * 0.3;
-    construction.received_fee = receivedFee;
-    construction.material_cost = materialCost;
-    construction.building_manager_incentive = buildingManagerIncentive;
-    construction.actual_work = actualWork;
-
-    await construction.save();
-    res.json({ message: '费用录入成功' });
-  } catch (error) {
-    console.error('录入费用失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-// 执行回访 (POST /orders/:id/callback - frontend uses this)
+// 执行回访
 router.post('/:id/callback', auth, async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -704,6 +662,12 @@ router.post('/:id/callback', auth, async (req, res) => {
       callbackMethod,
       otherFeedback
     } = req.body;
+
+    // Input validation
+    if (satisfactionScore !== undefined && (satisfactionScore < 1 || satisfactionScore > 5)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '满意度评分须在 1-5 之间' });
+    }
 
     const orderId = req.params.id;
     const order = await WorkOrder.findByPk(orderId, { transaction });
@@ -729,7 +693,6 @@ router.post('/:id/callback', auth, async (req, res) => {
       callback_at: new Date()
     }, { transaction });
 
-    // Update order status
     order.status = 'callback';
     await order.save({ transaction });
 
@@ -738,6 +701,25 @@ router.post('/:id/callback', auth, async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('提交回访失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 删除工单（仅管理员可操作）
+router.delete('/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const order = await WorkOrder.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: '工单不存在' });
+    }
+    await sequelize.transaction(async (transaction) => {
+      await CallbackRecord.destroy({ where: { order_id: order.id }, transaction });
+      await Construction.destroy({ where: { order_id: order.id }, transaction });
+      await order.destroy({ transaction });
+    });
+    res.json({ message: '工单已删除' });
+  } catch (error) {
+    console.error('删除工单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
