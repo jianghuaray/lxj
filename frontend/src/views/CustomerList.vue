@@ -2,7 +2,7 @@
   <div class="customer-list-page">
     <div class="page-header">
       <h1 class="page-title">客户管理</h1>
-      <button class="btn-new-order" @click="showDialog()">
+      <button class="btn-new-order" @click="$router.push('/customers/add')">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         添加客户
       </button>
@@ -95,7 +95,7 @@
             <td>{{ customer.area }}</td>
             <td :title="customer.address">{{ customer.address || '-' }}</td>
             <td>
-              <span class="level-badge" :class="customer.level">{{ getLevelText(customer.level) }}</span>
+              <span class="level-badge" :class="getLevelClass(customer.level)">{{ getLevelText(customer.level) }}</span>
             </td>
             <td>
               <div class="tags-cell">
@@ -108,7 +108,7 @@
             <td>{{ formatDate(customer.lastOrderAt) }}</td>
             <td>
               <button class="action-btn" @click.stop="viewDetail(customer.id)">查看</button>
-              <button class="action-btn" @click.stop="showDialog(customer)">编辑</button>
+              <button class="btn-new-order" @click.stop="$router.push(`/customers/edit/${customer.id}`)">编辑</button>
             </td>
           </tr>
           <tr v-if="!loading && customers.length === 0">
@@ -150,40 +150,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Add/Edit Dialog -->
-    <el-dialog v-model="dialogVisible" :title="editingCustomer ? '编辑客户' : '新增客户'" width="500px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="姓名" prop="name">
-          <el-input v-model="form.name" placeholder="请输入姓名" />
-        </el-form-item>
-        <el-form-item label="电话" prop="phone">
-          <el-input v-model="form.phone" placeholder="请输入电话" />
-        </el-form-item>
-        <el-form-item label="区域">
-          <el-select v-model="form.area" class="form-select-el" placeholder="请选择区域" clearable>
-            <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="详细地址">
-          <el-input v-model="form.address" placeholder="请输入地址" />
-        </el-form-item>
-        <el-form-item label="客户等级">
-          <el-select v-model="form.level" class="form-select-el">
-            <el-option label="普通客户" value="normal" />
-            <el-option label="VIP客户" value="vip" />
-            <el-option label="黑名单" value="blacklist" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注/偏好">
-          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注信息" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -198,11 +164,6 @@ import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
 const router = useRouter()
 const loading = ref(false)
-const submitLoading = ref(false)
-const dialogVisible = ref(false)
-const editingCustomer = ref(null)
-const formRef = ref(null)
-
 const customers = ref([])
 const searchQuery = ref('')
 const levelFilter = ref('')
@@ -213,13 +174,8 @@ const pagination = ref({ page: 1, pageSize: 12, total: 0 })
 const stats = ref({ total: 0, vip: 0, newThisMonth: 0, blacklist: 0 })
 const areas = ['新城区', '未央区', '高新区', '灞桥区']
 
-const form = ref({ name: '', phone: '', area: '', address: '', level: 'normal', remark: '' })
-const rules = {
-  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
-}
+const totalPages = computed(() => Math.max(1, Math.ceil(pagination.value.total / pagination.value.pageSize)))
 
-const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.pageSize) || 1)
 const displayPages = computed(() => {
   const total = totalPages.value
   const current = pagination.value.page
@@ -241,6 +197,11 @@ const displayPages = computed(() => {
 function getLevelText(level) {
   const map = { normal: '普通', vip: 'VIP', blacklist: '黑名单' }
   return map[level] || '普通'
+}
+
+function getLevelClass(level) {
+  const map = { '普通客户': 'normal', 'VIP客户': 'vip', '黑名单': 'blacklist' }
+  return map[level] || level
 }
 
 function filterByCard(type) {
@@ -280,35 +241,6 @@ function goToPage(p) {
   }
 }
 
-function showDialog(customer = null) {
-  editingCustomer.value = customer
-  if (customer) {
-    form.value = { ...customer }
-  } else {
-    form.value = { name: '', phone: '', area: '', address: '', level: 'normal', remark: '' }
-  }
-  dialogVisible.value = true
-}
-
-async function submitForm() {
-  try { await formRef.value.validate() } catch(e) { return }
-  submitLoading.value = true
-  try {
-    if (editingCustomer.value) {
-      await api.patch(`/customers/${editingCustomer.value.id}`, form.value)
-      ElMessage.success('更新成功')
-    } else {
-      await api.post('/customers', form.value)
-      ElMessage.success('添加成功')
-    }
-    dialogVisible.value = false
-    await fetchCustomers()
-  } catch (error) {
-    ElMessage.error('操作失败')
-  } finally {
-    submitLoading.value = false
-  }
-}
 
 function resetFilters() {
   searchQuery.value = ''
