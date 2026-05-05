@@ -73,7 +73,6 @@
         v-for="(tech, index) in technicians"
         :key="tech.id"
         class="tech-card"
-        :class="{ 'odd': index % 2 === 0, 'even': index % 2 !== 0 }"
       >
         <div class="tech-card-header">
           <div class="tech-avatar">{{ tech.name?.charAt(0) || '?' }}</div>
@@ -630,7 +629,7 @@ onMounted(() => {
 /* Technician Card Grid */
 .technician-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -638,12 +637,14 @@ onMounted(() => {
 .tech-card {
   background: var(--card-bg);
   border: 1px solid rgba(222, 216, 207, 0.5);
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
 
-  &.odd { border-radius: 24px 16px 24px 16px; }
-  &.even { border-radius: 16px 24px 16px 24px; }
+  /* 3-column alternating radius */
+  &:nth-child(6n+1), &:nth-child(6n+4) { border-radius: 24px 16px 24px 16px; }
+  &:nth-child(6n+2), &:nth-child(6n+5) { border-radius: 16px 24px 16px 24px; }
+  &:nth-child(6n+3), &:nth-child(6n+6) { border-radius: 24px 24px 16px 16px; }
 
   &:hover {
     transform: translateY(-2px);
@@ -724,10 +725,12 @@ onMounted(() => {
   margin-left: auto;
   font-size: 12px;
   font-weight: 600;
+  font-family: var(--font-body);
   color: var(--secondary);
   background: rgba(232, 184, 75, 0.1);
   padding: 2px 10px;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .tech-skills {
@@ -907,7 +910,12 @@ onMounted(() => {
 .summary-label { font-size: 14px; color: var(--fg); }
 .summary-value { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--primary); }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .technician-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr; }
   .technician-grid { grid-template-columns: 1fr; }
 }
