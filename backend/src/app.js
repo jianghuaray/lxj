@@ -106,8 +106,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('数据库连接成功');
 
-    // 同步数据库：确保所有表都存在
-    await sequelize.sync({ alter: true });
+    // 同步数据库：创建缺失的表
+    await sequelize.sync();
     console.log('数据库同步完成');
 
     app.listen(PORT, () => {

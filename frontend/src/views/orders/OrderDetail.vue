@@ -2,7 +2,7 @@
   <div class="order-detail-page">
     <div class="detail-header">
       <div class="detail-header-left">
-        <button class="btn-back" @click="$router.back()">
+        <button class="btn-back" @click="$router.push('/orders')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg>
           返回列表
         </button>
