@@ -79,46 +79,53 @@
       </button>
     </div>
 
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width:10%">姓名</th>
-            <th style="width:14%">联系方式</th>
-            <th style="width:8%">年龄</th>
-            <th style="width:8%">性别</th>
-            <th style="width:12%">政治面貌</th>
-            <th style="width:18%">所属社区</th>
-            <th style="width:18%">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="vol in volunteers" :key="vol.id">
-            <td>{{ vol.name }}</td>
-            <td>{{ vol.phone }}</td>
-            <td>{{ vol.age }}</td>
-            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
-              <span class="gender-pill" :class="vol.gender">{{ vol.gender === 'male' ? '男' : '女' }}</span>
-            </td>
-            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
-              <span class="political-badge" :class="vol.politicalStatus">{{ getPoliticalStatusLabel(vol.politicalStatus) }}</span>
-            </td>
-            <td>{{ vol.community }}</td>
-            <td style="white-space:nowrap;overflow:visible;text-overflow:unset">
-              <button class="action-btn" @click="router.push(`/volunteers/${vol.id}`)">查看详情</button>
-              <button class="action-btn" @click="router.push(`/volunteers/edit/${vol.id}`)">编辑</button>
-            </td>
-          </tr>
-          <tr v-if="!loading && volunteers.length === 0">
-            <td colspan="7" class="empty-cell">
-              <div class="empty-state">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                <p>暂无志愿者数据</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="volunteer-grid">
+      <div v-for="vol in volunteers" :key="vol.id" class="vol-card">
+        <div class="vol-card-header">
+          <div class="vol-avatar">{{ vol.name[0] }}</div>
+          <div class="vol-info">
+            <div class="vol-name">{{ vol.name }}</div>
+            <div class="vol-contact">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              {{ vol.phone }}
+            </div>
+          </div>
+          <div class="vol-badges">
+            <span class="political-badge" :class="vol.politicalStatus">{{ getPoliticalStatusLabel(vol.politicalStatus) }}</span>
+            <span class="gender-pill" :class="vol.gender">{{ vol.gender === 'male' ? '男' : '女' }}</span>
+          </div>
+        </div>
+        <div class="vol-stats-row">
+          <div class="vol-stat-item">
+            <div class="vol-stat-value">{{ vol.serviceHours || 0 }}h</div>
+            <div class="vol-stat-label">服务时长</div>
+          </div>
+          <div class="vol-stat-item">
+            <div class="vol-stat-value">{{ vol.serviceCount || 0 }}</div>
+            <div class="vol-stat-label">服务次数</div>
+          </div>
+          <div class="vol-stat-item">
+            <div class="vol-stat-value sm">{{ vol.community }}</div>
+            <div class="vol-stat-label">所属社区</div>
+          </div>
+        </div>
+        <div class="vol-card-footer">
+          <button class="vol-action-link primary" @click="router.push(`/volunteers/${vol.id}`)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            查看详情
+          </button>
+          <button class="vol-action-link muted" @click="router.push(`/volunteers/edit/${vol.id}`)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            编辑
+          </button>
+        </div>
+      </div>
+      <div v-if="!loading && volunteers.length === 0" class="empty-card">
+        <div class="empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <p>暂无志愿者数据</p>
+        </div>
+      </div>
     </div>
 
     <div class="pagination-bar" v-if="volunteers.length > 0">
@@ -608,53 +615,85 @@ onMounted(() => {
   }
 }
 
-.table-container {
+.volunteer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.vol-card {
   background: var(--card-bg);
   border: 1px solid rgba(222, 216, 207, 0.5);
-  border-radius: 24px;
+  padding: 24px;
   box-shadow: var(--shadow-soft);
-  overflow: hidden;
-  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:nth-child(odd) { border-radius: 24px 16px 24px 16px; }
+  &:nth-child(even) { border-radius: 16px 24px 16px 24px; }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+.vol-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
 }
 
-.data-table thead th {
-  padding: 14px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted-fg);
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  background: transparent;
+.vol-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(74, 127, 181, 0.15), rgba(74, 127, 181, 0.25));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
-.data-table thead th:first-child { padding-left: 24px; }
-.data-table thead th:last-child { padding-right: 24px; text-align: center; }
-
-.data-table tbody tr {
-  height: 48px;
-  transition: background 0.3s ease;
+.vol-info {
+  flex: 1;
+  margin-left: 16px;
 }
 
-.data-table tbody tr:hover { background: rgba(240, 235, 229, 0.4); }
-
-.data-table tbody td {
-  padding: 0 16px;
-  font-size: 13px;
+.vol-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
   color: var(--fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-bottom: 4px;
 }
 
-.data-table tbody td:first-child { padding-left: 24px; }
-.data-table tbody td:last-child { padding-right: 24px; text-align: center; overflow: visible; text-overflow: unset; }
+.vol-contact {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted-fg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.vol-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
 
 .gender-pill {
   display: inline-flex;
@@ -708,110 +747,98 @@ onMounted(() => {
   }
 }
 
-.action-btn {
-  background: none;
-  border: none;
-  color: var(--primary);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(74, 127, 181, 0.08);
-    color: #3D6A9A;
-  }
-
-  & + .action-btn {
-    margin-left: 4px;
-  }
+.vol-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 18px 0;
+  border-top: 1px solid rgba(222, 216, 207, 0.4);
+  border-bottom: 1px solid rgba(222, 216, 207, 0.4);
+  margin-bottom: 18px;
 }
 
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
-}
-
-.pagination-info {
-  font-size: 13px;
-  color: var(--muted-fg);
-
-  strong {
-    color: var(--fg);
-    font-weight: 600;
-  }
-}
-
-.page-size-select {
-  width: 72px !important;
-  margin: 0 4px;
-
-  :deep(.el-select__wrapper) {
-    border-radius: 999px !important;
-    min-height: 28px !important;
-    height: 28px !important;
-    padding: 0 28px 0 10px !important;
-    background: rgba(255, 255, 255, 0.5) !important;
-    box-shadow: 0 0 0 1px rgba(222, 216, 207, 0.8) !important;
-    font-size: 13px !important;
-  }
-
-  :deep(.el-select__placeholder),
-  :deep(.el-select__selected-item) {
-    font-size: 13px !important;
-    line-height: 28px !important;
-  }
-}
-
-.pagination-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.page-btn {
-  min-width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  border: none;
-  background: transparent;
-  color: var(--muted-fg);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-
-  &:hover:not(:disabled) { background: rgba(230, 220, 205, 0.4); }
-  &.active { background: var(--primary); color: white; box-shadow: var(--shadow-soft); }
-  &:disabled { opacity: 0.3; cursor: not-allowed; }
-  &.nav-arrow { padding: 0 10px; }
-  svg { width: 16px; height: 16px; stroke-width: 2; }
-}
-
-.empty-cell {
-  text-align: center !important;
-  padding: 48px 24px !important;
-}
-
-.empty-state {
+.vol-stat-item {
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  color: var(--muted-fg);
-  font-size: 14px;
+  justify-content: center;
 }
 
-@media (max-width: 900px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+.vol-stat-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--fg);
+  line-height: 1.2;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vol-stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-fg);
+  margin-top: 2px;
+}
+
+.vol-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vol-action-link {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &.primary {
+    color: var(--primary);
+    &:hover { color: #3D6A9A; }
+  }
+
+  &.muted {
+    color: var(--muted-fg);
+    &:hover { color: var(--fg); }
+  }
+}
+
+.vol-stat-value.sm {
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 600;
+}
+
+.empty-card {
+  grid-column: 1 / -1;
+  background: var(--card-bg);
+  border: 1px solid rgba(222, 216, 207, 0.5);
+  border-radius: 24px;
+  padding: 48px 24px;
+}
+
+@media (max-width: 1200px) {
+  .volunteer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .volunteer-grid { grid-template-columns: 1fr; }
 }
 </style>

@@ -75,17 +75,23 @@
         class="tech-card"
       >
         <div class="tech-card-header">
-          <div class="tech-avatar">{{ tech.name?.charAt(0) || '?' }}</div>
-          <span class="status-pill" :class="tech.status === 1 ? 'active' : 'disabled'">
-            <span class="status-dot" :class="tech.status === 1 ? 'active' : 'disabled'"></span>
-            {{ tech.status === 1 ? '启用' : '停用' }}
-          </span>
-        </div>
-        <div class="tech-name">{{ tech.name }}</div>
-        <div class="tech-contact">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          {{ tech.phone }}
-          <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
+          <div class="tech-header-left">
+            <div class="tech-avatar">{{ tech.name?.charAt(0) || '?' }}</div>
+            <div>
+              <div class="tech-name">{{ tech.name }}</div>
+              <div class="tech-contact">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                {{ tech.phone }}
+              </div>
+            </div>
+          </div>
+          <div class="tech-header-right">
+            <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
+            <span class="status-pill" :class="tech.status === 1 ? 'active' : 'disabled'">
+              <span class="status-dot" :class="tech.status === 1 ? 'active' : 'disabled'"></span>
+              {{ tech.status === 1 ? '启用' : '停用' }}
+            </span>
+          </div>
         </div>
         <div class="tech-skills">
           <span v-for="s in (tech.specialties || [])" :key="s" class="skill-tag">{{ s }}</span>
@@ -105,7 +111,7 @@
           </div>
         </div>
         <div class="tech-card-actions">
-          <button class="action-link muted" @click="showSettlement(tech)">
+          <button class="action-link primary" @click="showSettlement(tech)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             结算
           </button>
@@ -114,7 +120,7 @@
             编辑
           </button>
           <button class="action-link danger" @click="handleDelete(tech)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             删除
           </button>
         </div>
@@ -641,10 +647,9 @@ onMounted(() => {
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
 
-  /* 3-column alternating radius */
-  &:nth-child(6n+1), &:nth-child(6n+4) { border-radius: 24px 16px 24px 16px; }
-  &:nth-child(6n+2), &:nth-child(6n+5) { border-radius: 16px 24px 16px 24px; }
-  &:nth-child(6n+3), &:nth-child(6n+6) { border-radius: 24px 24px 16px 16px; }
+  /* 2-column alternating radius (匹配设计稿) */
+  &:nth-child(odd) { border-radius: 24px 16px 24px 16px; }
+  &:nth-child(even) { border-radius: 16px 24px 16px 24px; }
 
   &:hover {
     transform: translateY(-2px);
@@ -656,7 +661,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.tech-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tech-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .tech-avatar {
@@ -722,7 +741,6 @@ onMounted(() => {
 }
 
 .commission-badge {
-  margin-left: auto;
   font-size: 12px;
   font-weight: 600;
   font-family: var(--font-body);

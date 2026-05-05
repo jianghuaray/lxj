@@ -393,7 +393,7 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: '师傅不存在' });
     }
 
-    await technician.update({ status: 0 });
+    await technician.destroy();
     res.json({ message: '删除成功' });
   } catch (error) {
     console.error('删除师傅失败:', error);
