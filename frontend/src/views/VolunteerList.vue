@@ -667,8 +667,8 @@ onMounted(() => {
 }
 
 .vol-name {
-  font-family: var(--font-display);
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-weight: 600;
   font-size: 18px;
   color: var(--fg);
   margin-bottom: 4px;
