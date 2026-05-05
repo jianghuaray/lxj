@@ -2,7 +2,6 @@ const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const { Volunteer, VolunteerService } = require('../models');
 const { auth } = require('../middleware/auth');
-const { validatePhone } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -140,9 +139,7 @@ router.post('/', auth, async (req, res) => {
     if (!politicalStatus) return res.status(400).json({ error: '政治面貌不能为空' });
     if (!community) return res.status(400).json({ error: '所属社区不能为空' });
     // address 选填，不校验
-
-    const phoneCheck = validatePhone(phone);
-    if (!phoneCheck.valid) return res.status(400).json({ error: phoneCheck.error });
+    // phone 格式验证已移除，仅保证必填
 
     const existing = await Volunteer.findOne({ where: { phone } });
     if (existing) {

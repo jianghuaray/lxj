@@ -2,7 +2,7 @@ const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
 const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
-const { escapeLike, validatePhone, validateLength } = require('../utils/sanitize');
+const { escapeLike, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -332,11 +332,7 @@ router.post('/', auth, async (req, res) => {
       return res.status(400).json({ error: '问题分类不能为空' });
     }
     if (customerPhone) {
-      const phoneCheck = validatePhone(customerPhone);
-      if (!phoneCheck.valid) {
-        await transaction.rollback();
-        return res.status(400).json({ error: phoneCheck.error });
-      }
+      // phone 格式验证已移除，仅校验必填
     }
 
     // Check if customer exists

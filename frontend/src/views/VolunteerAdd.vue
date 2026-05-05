@@ -20,7 +20,7 @@
         </div>
         <div class="form-field">
           <label class="form-label">联系方式<span class="required">*</span></label>
-          <input type="tel" class="form-input" v-model="form.phone" placeholder="请输入手机号" maxlength="11" />
+          <input type="text" class="form-input" v-model="phoneProxy" placeholder="请输入手机号" maxlength="11" inputmode="numeric" />
           <span class="field-error" v-if="errors.phone">{{ errors.phone }}</span>
         </div>
         <div class="form-field">
@@ -76,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
@@ -85,6 +85,11 @@ const route = useRoute()
 const router = useRouter()
 const submitLoading = ref(false)
 const isEdit = ref(false)
+
+const phoneProxy = computed({
+  get: () => form.value.phone,
+  set: (val) => { form.value.phone = val.replace(/[^0-9]/g, '') }
+})
 
 const communityOptions = ['幸福社区', '凤城社区', '锦业社区', '金色阳光社区', '紫薇社区', '龙湖社区']
 
@@ -108,8 +113,6 @@ function validate() {
   if (!form.value.name.trim()) e.name = '请输入姓名'
   if (!form.value.phone.trim()) {
     e.phone = '请输入联系方式'
-  } else if (!/^1[3-9]\d{9}$/.test(form.value.phone)) {
-    e.phone = '请输入正确的手机号'
   }
   if (!form.value.age) e.age = '请输入年龄'
   else if (form.value.age < 1 || form.value.age > 120) e.age = '请输入有效年龄'

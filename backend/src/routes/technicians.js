@@ -2,7 +2,7 @@ const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
 const { Technician, Construction, WorkOrder, CallbackRecord } = require('../models');
 const { auth } = require('../middleware/auth');
-const { escapeLike, validatePhone, validateLength } = require('../utils/sanitize');
+const { escapeLike, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -275,8 +275,7 @@ router.post('/', auth, async (req, res) => {
 
     // Input validation
     if (!name || !name.trim()) return res.status(400).json({ error: '师傅姓名不能为空' });
-    const phoneCheck = validatePhone(phone);
-    if (!phoneCheck.valid) return res.status(400).json({ error: phoneCheck.error });
+    if (!phone) return res.status(400).json({ error: '手机号不能为空' });
     const nameLenCheck = validateLength(name, '姓名', 50);
     if (!nameLenCheck.valid) return res.status(400).json({ error: nameLenCheck.error });
 
