@@ -82,7 +82,6 @@
     <div class="volunteer-grid">
       <div v-for="vol in volunteers" :key="vol.id" class="vol-card">
         <div class="vol-card-header">
-          <div class="vol-avatar">{{ vol.name[0] }}</div>
           <div class="vol-info">
             <div class="vol-name">{{ vol.name }}</div>
             <div class="vol-contact">
@@ -646,24 +645,8 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
-.vol-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(74, 127, 181, 0.15), rgba(74, 127, 181, 0.25));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-
 .vol-info {
   flex: 1;
-  margin-left: 16px;
 }
 
 .vol-name {
@@ -677,7 +660,7 @@ onMounted(() => {
 .vol-contact {
   font-size: 13px;
   font-weight: 400;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -767,9 +750,9 @@ onMounted(() => {
 
 .vol-stat-value {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--fg);
+  color: #5A5A50;
   line-height: 1.2;
   min-height: 22px;
   display: flex;
@@ -780,7 +763,7 @@ onMounted(() => {
 .vol-stat-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   margin-top: 2px;
 }
 

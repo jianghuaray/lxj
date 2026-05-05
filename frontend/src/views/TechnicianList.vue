@@ -45,9 +45,13 @@
       <el-select v-model="specialtyFilter" class="filter-select-el" placeholder="全部类型" clearable @change="fetchTechnicians">
         <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
       </el-select>
-      <el-select v-model="statusFilter" class="filter-select-el" placeholder="全部状态" clearable @change="fetchTechnicians">
-        <el-option label="启用" value="1" />
-        <el-option label="停用" value="0" />
+      <el-select v-model="sortBy" class="filter-select-el" placeholder="默认排序" clearable @change="fetchTechnicians">
+        <el-option label="本月单量由高到低" value="orderCount_desc" />
+        <el-option label="本月单量由低到高" value="orderCount_asc" />
+        <el-option label="满意度由高到低" value="avgSatisfaction_desc" />
+        <el-option label="满意度由低到高" value="avgSatisfaction_asc" />
+        <el-option label="营收由高到低" value="totalRevenue_desc" />
+        <el-option label="营收由低到高" value="totalRevenue_asc" />
       </el-select>
       <div class="search-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -69,29 +73,21 @@
 
     <!-- Technician Card Grid -->
     <div class="technician-grid" v-if="technicians.length > 0">
-      <div
+        <div
         v-for="(tech, index) in technicians"
         :key="tech.id"
         class="tech-card"
+        :style="{ borderLeftColor: tech.status !== 1 ? 'var(--destructive)' : '#4CAF50', borderLeftWidth: '3px', borderLeftStyle: 'solid' }"
       >
         <div class="tech-card-header">
-          <div class="tech-header-left">
-            <div class="tech-avatar">{{ tech.name?.charAt(0) || '?' }}</div>
-            <div>
-              <div class="tech-name">{{ tech.name }}</div>
-              <div class="tech-contact">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                {{ tech.phone }}
-              </div>
+          <div>
+            <div class="tech-name">{{ tech.name }}</div>
+            <div class="tech-contact">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              {{ tech.phone }}
             </div>
           </div>
-          <div class="tech-header-right">
-            <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
-            <span class="status-pill" :class="tech.status === 1 ? 'active' : 'disabled'">
-              <span class="status-dot" :class="tech.status === 1 ? 'active' : 'disabled'"></span>
-              {{ tech.status === 1 ? '启用' : '停用' }}
-            </span>
-          </div>
+          <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
         </div>
         <div class="tech-skills">
           <span v-for="s in (tech.specialties || [])" :key="s" class="skill-tag">{{ s }}</span>
@@ -213,7 +209,7 @@ const total = ref(0)
 const page = ref(1)
 const pageSize = ref(12)
 const searchQuery = ref('')
-const statusFilter = ref('')
+const sortBy = ref('')
 const specialtyFilter = ref('')
 
 const stats = ref({
@@ -257,7 +253,7 @@ function formatRevenue(tech) {
 
 function resetFilters() {
   searchQuery.value = ''
-  statusFilter.value = ''
+  sortBy.value = ''
   specialtyFilter.value = ''
   page.value = 1
   fetchTechnicians()
@@ -284,7 +280,7 @@ async function fetchTechnicians() {
   try {
     const params = { page: page.value, pageSize: pageSize.value }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (sortBy.value) params.sort = sortBy.value
     if (specialtyFilter.value) params.specialty = specialtyFilter.value
     const response = await api.get('/technicians', { params })
     technicians.value = response.data.items || response.data || []
@@ -350,9 +346,9 @@ async function exportTechnicians() {
     // 获取所有筛选条件下的数据（不分页）
     const params = { page: 1, pageSize: 9999 }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (sortBy.value) params.sort = sortBy.value
     if (specialtyFilter.value) params.specialty = specialtyFilter.value
-    
+
     const response = await api.get('/technicians', { params })
     const allTechnicians = response.data.items || response.data || []
     
@@ -646,8 +642,8 @@ onMounted(() => {
   padding: 20px;
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
+  border-radius: 20px;
 
-  /* 2-column alternating radius (匹配设计稿) */
   &:nth-child(odd) { border-radius: 24px 16px 24px 16px; }
   &:nth-child(even) { border-radius: 16px 24px 16px 24px; }
 
@@ -665,70 +661,11 @@ onMounted(() => {
   gap: 12px;
 }
 
-.tech-header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.tech-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.tech-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(74, 127, 181, 0.15), rgba(74, 127, 181, 0.25));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-body);
-
-  &.active { background: rgba(76, 175, 80, 0.1); color: #388E3C; }
-  &.disabled { background: rgba(212, 114, 106, 0.1); color: var(--destructive); }
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-
-  &.active { background: #4CAF50; }
-  &.disabled { background: var(--destructive); }
-}
-
-.tech-name {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--fg);
-  margin-bottom: 4px;
-}
-
 .tech-contact {
   font-size: 13px;
   font-weight: 400;
-  color: var(--muted-fg);
-  margin-bottom: 12px;
+  color: #9A9A8E;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -749,6 +686,14 @@ onMounted(() => {
   padding: 2px 10px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.tech-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--fg);
+  margin-bottom: 4px;
 }
 
 .tech-skills {
@@ -787,16 +732,16 @@ onMounted(() => {
 
 .tech-stat-value {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--fg);
+  color: #5A5A50;
   line-height: 1.2;
 }
 
 .tech-stat-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   margin-top: 2px;
 }
 
