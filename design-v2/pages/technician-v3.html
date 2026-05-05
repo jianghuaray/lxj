@@ -10,7 +10,7 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
   --bg: #FDFCF8;
-  --fg: #2C2C24;
+  --fg: #3D3D35;
   --primary: #4A7FB5;
   --primary-fg: #FFFFFF;
   --secondary: #E8B84B;
@@ -485,9 +485,13 @@ body::before {
 .tech-card {
   background: var(--card-bg);
   border: 1px solid rgba(222,216,207,0.5);
+  border-left: 3px solid #4CAF50;
   padding: 20px;
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
+}
+.tech-card.disabled {
+  border-left-color: var(--destructive);
 }
 .tech-card:nth-child(odd) { border-radius: 24px 16px 24px 16px; }
 .tech-card:nth-child(even) { border-radius: 16px 24px 16px 24px; }
@@ -535,15 +539,15 @@ body::before {
   color: var(--destructive);
 }
 .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 .status-dot.active { background: #4CAF50; }
 .status-dot.disabled { background: var(--destructive); }
 .tech-name {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
   color: var(--fg);
   margin-bottom: 4px;
@@ -551,7 +555,7 @@ body::before {
 .tech-contact {
   font-size: 13px;
   font-weight: 400;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -589,15 +593,15 @@ body::before {
 }
 .tech-stat-value {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--fg);
+  color: #5A5A50;
   line-height: 1.2;
 }
 .tech-stat-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   margin-top: 2px;
 }
 .tech-card-actions {
@@ -857,25 +861,16 @@ function renderCards(data) {
     const statusClass = t.status === '启用' ? 'active' : 'disabled';
     const skillsHtml = t.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
     return `
-      <div class="tech-card">
+      <div class="tech-card${t.status === '停用' ? ' disabled' : ''}">
         <div class="tech-card-header">
-          <div style="display:flex;align-items:center;">
-            <div class="tech-avatar">${t.name.charAt(0)}</div>
-            <div>
-              <div class="tech-name">${t.name}</div>
-              <div class="tech-contact">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                ${t.phone}
-              </div>
+          <div>
+            <div class="tech-name">${t.name}</div>
+            <div class="tech-contact">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              ${t.phone}
             </div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:12px;color:var(--secondary);font-weight:600;background:rgba(232,184,75,0.1);padding:2px 10px;border-radius:999px;">抽成 ${t.commission}</span>
-            <span class="status-pill ${statusClass}">
-              <span class="status-dot ${statusClass}"></span>
-              ${t.status}
-            </span>
-          </div>
+          <span style="font-size:12px;color:var(--secondary);font-weight:600;background:rgba(232,184,75,0.1);padding:2px 10px;border-radius:999px;white-space:nowrap;">抽成 ${t.commission}</span>
         </div>
         <div class="tech-skills">${skillsHtml}</div>
         <div class="tech-stats-row">
