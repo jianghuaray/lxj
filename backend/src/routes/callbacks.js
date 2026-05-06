@@ -211,48 +211,6 @@ router.post('/:id/complete', auth, async (req, res) => {
   }
 });
 
-// Also support original route
-router.post('/:orderId', auth, async (req, res) => {
-  const transaction = await sequelize.transaction();
-  try {
-    const {
-      isSatisfied, satisfactionScore, feeConsistent, callbackMethod, otherFeedback } = req.body;
-    const orderId = req.params.orderId;
-
-    const order = await WorkOrder.findByPk(orderId, { transaction });
-    if (!order) {
-      await transaction.rollback();
-      return res.status(404).json({ error: '工单不存在' });
-    }
-
-    if (order.status !== 'completed') {
-      await transaction.rollback();
-      return res.status(400).json({ error: '当前状态不允许回访' });
-    }
-
-    const callback = await CallbackRecord.create({
-      order_id: orderId,
-      is_satisfied: isSatisfied,
-      satisfaction_score: satisfactionScore,
-      fee_consistent: feeConsistent,
-      callback_method: callbackMethod,
-      callback_by: req.user.id,
-      other_feedback: otherFeedback,
-      callback_at: new Date()
-    }, { transaction });
-
-    order.status = 'callback';
-    await order.save({ transaction });
-
-    await transaction.commit();
-    res.status(201).json(callback);
-  } catch (error) {
-    await transaction.rollback();
-    console.error('提交回访失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
 // 标记无需回访 (PATCH /callbacks/:id - frontend uses this)
 router.patch('/:id', auth, async (req, res) => {
   try {

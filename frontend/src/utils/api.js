@@ -18,7 +18,7 @@ function showError(msg) {
   if (msg === lastErrorMsg && now - lastErrorTime < ERROR_DEDUPE_MS) return
   lastErrorMsg = msg
   lastErrorTime = now
-  showError(msg)
+  ElMessage.error(msg)
 }
 
 // 请求拦截器

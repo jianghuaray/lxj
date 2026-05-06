@@ -2,6 +2,7 @@ const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const { Volunteer, VolunteerService } = require('../models');
 const { auth } = require('../middleware/auth');
+const { escapeLike } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -43,9 +44,10 @@ router.get('/', auth, async (req, res) => {
 
     const where = {};
     if (keyword) {
+      const kw = `%${escapeLike(keyword)}%`;
       where[Op.or] = [
-        { name: { [Op.like]: `%${keyword}%` } },
-        { phone: { [Op.like]: `%${keyword}%` } }
+        { name: { [Op.like]: kw } },
+        { phone: { [Op.like]: kw } }
       ];
     }
     if (community) {

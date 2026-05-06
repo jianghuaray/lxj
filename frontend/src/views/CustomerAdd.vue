@@ -56,7 +56,7 @@
           <label class="form-label">区域<span class="required">*</span></label>
           <select class="form-select" v-model="form.area">
             <option value="" disabled>请选择区域</option>
-            <option v-for="a in areaOptions" :key="a" :value="a">{{ a }}</option>
+            <option v-for="a in settingsStore.areas" :key="a" :value="a">{{ a }}</option>
           </select>
           <span class="field-error" v-if="errors.area">{{ errors.area }}</span>
         </div>
@@ -77,7 +77,7 @@
           <label class="form-label">来源渠道</label>
           <select class="form-select" v-model="form.sourceChannel">
             <option value="" disabled selected>请选择来源渠道</option>
-            <option v-for="s in sourceOptions" :key="s" :value="s">{{ s }}</option>
+            <option v-for="s in settingsStore.channels" :key="s" :value="s">{{ s }}</option>
           </select>
         </div>
         <div class="form-field full-width">
@@ -122,16 +122,15 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
+import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
 const router = useRouter()
+const settingsStore = useSettingsStore()
 const submitLoading = ref(false)
 const isEdit = ref(false)
 const tagCurrentArea = ref(null)
 const customTagInput = ref(null)
-
-const areaOptions = ['新城区', '未央区', '高新区', '灞桥区']
-const sourceOptions = ['社区宣传', '客户推荐', '电话咨询', '线上推广', '其他']
 
 const defaultAvailableTags = ['某小区业主', '价格敏感', '周末预约', '老人家庭', '新客户', '回头客']
 const availableTags = ref([...defaultAvailableTags])
@@ -283,6 +282,7 @@ async function submitForm() {
 }
 
 onMounted(() => {
+  if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchCustomer()
 })
 </script>

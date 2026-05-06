@@ -48,7 +48,8 @@ const CallbackRecord = sequelize.define('CallbackRecord', {
   indexes: [
     { fields: ['order_id'] },
     { fields: ['callback_by'] },
-    { fields: ['callback_at'] }
+    { fields: ['callback_at'] },
+    { fields: ['satisfaction_score'] }
   ]
 });
 

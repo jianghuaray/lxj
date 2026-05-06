@@ -195,8 +195,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import api from '@/utils/api'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
 import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
@@ -207,6 +208,7 @@ const loading = ref(false)
 const technicians = ref([])
 const total = ref(0)
 const page = ref(1)
+let fetchTechCancel = null
 const pageSize = ref(12)
 const searchQuery = ref('')
 const sortBy = ref('')
@@ -276,16 +278,22 @@ async function fetchStats() {
 }
 
 async function fetchTechnicians() {
+  // 取消上一个未完成的请求
+  if (fetchTechCancel) fetchTechCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchTechCancel = cancel
+
   loading.value = true
   try {
     const params = { page: page.value, pageSize: pageSize.value }
     if (searchQuery.value) params.keyword = searchQuery.value
     if (sortBy.value) params.sort = sortBy.value
     if (specialtyFilter.value) params.specialty = specialtyFilter.value
-    const response = await api.get('/technicians', { params })
+    const response = await api.get('/technicians', { params, signal })
     technicians.value = response.data.items || response.data || []
     total.value = response.data.total || technicians.value.length
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取师傅列表失败')
   } finally {
     loading.value = false
@@ -379,6 +387,9 @@ onMounted(() => {
   if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchTechnicians()
   fetchStats()
+})
+onUnmounted(() => {
+  if (fetchTechCancel) fetchTechCancel()
 })
 </script>
 

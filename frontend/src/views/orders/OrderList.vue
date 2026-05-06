@@ -184,7 +184,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/utils/api'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatTime } from '@/utils/format'
@@ -195,6 +196,7 @@ const settingsStore = useSettingsStore()
 
 const router = useRouter()
 const loading = ref(false)
+let fetchOrdersCancel = null
 const orders = ref([])
 const searchQuery = ref('')
 const activeTab = ref('')
@@ -345,6 +347,11 @@ function resetFilters() {
 }
 
 async function fetchOrders() {
+  // 取消上一个未完成的请求
+  if (fetchOrdersCancel) fetchOrdersCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchOrdersCancel = cancel
+
   loading.value = true
   try {
     const params = {
@@ -361,7 +368,7 @@ async function fetchOrders() {
     if (categoryFilter.value) params.problemCategory = categoryFilter.value
     if (technicianFilter.value) params.technicianId = technicianFilter.value
 
-    const response = await api.get('/orders', { params })
+    const response = await api.get('/orders', { params, signal })
     orders.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || orders.value.length
 
@@ -379,6 +386,7 @@ async function fetchOrders() {
     const sc = response.data.statusCounts || {}
     stats.value.total = Object.values(sc).reduce((a, b) => a + b, 0)
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取工单列表失败')
     console.error(error)
   } finally {
@@ -406,7 +414,10 @@ onMounted(() => {
   fetchOrders()
   fetchTechnicians()
 })
-onUnmounted(() => { debouncedSearch.cancel() })
+onUnmounted(() => { 
+  debouncedSearch.cancel()
+  if (fetchOrdersCancel) fetchOrdersCancel()
+})
 
 async function exportOrders() {
   try {

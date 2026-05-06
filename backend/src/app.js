@@ -38,7 +38,7 @@ app.use(helmet({
 
 // CORS — 生产环境从环境变量读取前端域名
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173'),
   credentials: true
 }));
 

@@ -376,6 +376,10 @@ router.post('/', auth, async (req, res) => {
       receiver_remark: receiverRemark
     }, { transaction });
 
+    // 维护客户统计字段
+    await Customer.increment('total_orders', { where: { id: customer.id }, transaction });
+    await Customer.update({ last_order_at: new Date() }, { where: { id: customer.id }, transaction });
+
     await transaction.commit();
     res.status(201).json(order);
   } catch (error) {
@@ -418,8 +422,7 @@ router.patch('/:id', auth, async (req, res) => {
   }
 });
 
-// 派单 — 统一路由，/dispatch 重定向到 /assign
-router.post('/:id/assign', auth, async (req, res) => {
+async function handleAssign(req, res) {
   const transaction = await sequelize.transaction();
   try {
     const { technicianId, remark, dispatchRemark } = req.body;
@@ -464,54 +467,14 @@ router.post('/:id/assign', auth, async (req, res) => {
     console.error('派单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
-});
+}
 
-// /dispatch 保留做兼容，内部转发到 assign 逻辑
-router.post('/:id/dispatch', auth, async (req, res) => {
-  // Normalize field name: dispatchRemark → remark
+router.post('/:id/assign', auth, handleAssign);
+
+// /dispatch 保留做兼容，转发到 assign 逻辑
+router.post('/:id/dispatch', auth, (req, res) => {
   req.body.remark = req.body.remark || req.body.dispatchRemark;
-  // Delegate to the same logic as /assign
-  try {
-    const transaction = await sequelize.transaction();
-    const { technicianId, remark, dispatchRemark } = req.body;
-    if (!technicianId) {
-      await transaction.rollback();
-      return res.status(400).json({ error: '请选择师傅' });
-    }
-
-    const order = await WorkOrder.findByPk(req.params.id, { transaction });
-    if (!order) {
-      await transaction.rollback();
-      return res.status(404).json({ error: '工单不存在' });
-    }
-    if (order.status !== 'pending') {
-      await transaction.rollback();
-      return res.status(400).json({ error: '当前状态不允许派单' });
-    }
-
-    const technician = await Technician.findByPk(technicianId, { transaction });
-    if (!technician) {
-      await transaction.rollback();
-      return res.status(404).json({ error: '师傅不存在' });
-    }
-
-    order.status = 'dispatched';
-    await order.save({ transaction });
-
-    await Construction.create({
-      order_id: order.id,
-      technician_id: technicianId,
-      dispatch_remark: remark || dispatchRemark,
-      dispatched_at: new Date(),
-      commission_rate: technician.commission_rate
-    }, { transaction });
-
-    await transaction.commit();
-    res.json({ message: '派单成功' });
-  } catch (error) {
-    console.error('派单失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
+  return handleAssign(req, res);
 });
 
 // 更新工单状态 — 统一 PATCH/PUT
@@ -632,6 +595,7 @@ async function handleFeeInput(req, res) {
       return res.status(404).json({ error: '施工记录不存在' });
     }
 
+    const oldTotalFee = construction.total_fee || 0;
     construction.total_fee = totalFee;
     construction.service_fee = serviceFee || (totalFee * (commissionRate || 0.3));
     construction.received_fee = receivedFee;
@@ -641,6 +605,13 @@ async function handleFeeInput(req, res) {
     construction.actual_work = actualWork;
 
     await construction.save();
+
+    // 维护客户统计字段：按费用差额更新 total_amount
+    const feeDiff = (totalFee || 0) - oldTotalFee;
+    if (feeDiff !== 0) {
+      await Customer.increment('total_amount', { by: feeDiff, where: { id: order.customer_id } });
+    }
+
     res.json({ message: '费用录入成功' });
   } catch (error) {
     console.error('录入费用失败:', error);
@@ -712,11 +683,23 @@ router.delete('/:id', auth, authAdmin, async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: '工单不存在' });
     }
+
+    // 先查施工记录，获取需要扣减的费用
+    const construction = await Construction.findOne({ where: { order_id: order.id } });
+    const feeToDeduct = construction?.total_fee || 0;
+
     await sequelize.transaction(async (transaction) => {
       await CallbackRecord.destroy({ where: { order_id: order.id }, transaction });
       await Construction.destroy({ where: { order_id: order.id }, transaction });
       await order.destroy({ transaction });
+
+      // 维护客户统计字段：扣减工单数、费用总额
+      await Customer.decrement('total_orders', { by: 1, where: { id: order.customer_id }, transaction });
+      if (feeToDeduct > 0) {
+        await Customer.decrement('total_amount', { by: feeToDeduct, where: { id: order.customer_id }, transaction });
+      }
     });
+
     res.json({ message: '工单已删除' });
   } catch (error) {
     console.error('删除工单失败:', error);

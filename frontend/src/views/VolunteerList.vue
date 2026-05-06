@@ -159,9 +159,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/utils/api'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { exportToExcel } from '@/utils/exportExcel'
 
@@ -177,6 +178,7 @@ const communityFilter = ref('')
 const politicalStatusFilter = ref('')
 const genderFilter = ref('')
 const communities = ref([])
+let fetchVolCancel = null
 
 const stats = ref({
   totalVolunteers: 0,
@@ -211,6 +213,11 @@ function getPoliticalStatusLabel(status) {
 }
 
 async function fetchVolunteers() {
+  // 取消上一个未完成的请求
+  if (fetchVolCancel) fetchVolCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchVolCancel = cancel
+
   loading.value = true
   try {
     const params = { page: page.value, pageSize: pageSize.value }
@@ -218,7 +225,7 @@ async function fetchVolunteers() {
     if (communityFilter.value) params.community = communityFilter.value
     if (politicalStatusFilter.value) params.politicalStatus = politicalStatusFilter.value
     if (genderFilter.value) params.gender = genderFilter.value
-    const response = await api.get('/volunteers', { params })
+    const response = await api.get('/volunteers', { params, signal })
     volunteers.value = response.data.items || response.data || []
     total.value = response.data.total || volunteers.value.length
     const uniqueCommunities = new Set()
@@ -227,6 +234,7 @@ async function fetchVolunteers() {
     })
     communities.value = [...uniqueCommunities]
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取志愿者列表失败')
   } finally {
     loading.value = false
@@ -336,6 +344,9 @@ async function exportVolunteers() {
 onMounted(() => {
   fetchVolunteers()
   fetchStats()
+})
+onUnmounted(() => {
+  if (fetchVolCancel) fetchVolCancel()
 })
 </script>
 
