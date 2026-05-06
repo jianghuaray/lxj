@@ -344,8 +344,16 @@ h1,h2,h3,h4{font-family:'Fraunces','PingFang SC','Microsoft YaHei',serif}
         回访管理
       </a>
       <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        投诉管理
+        <span style="font-size:16px;width:20px;text-align:center;flex-shrink:0;">💰</span>
+        维修费用
+      </a>
+      <a class="nav-item" href="#">
+        <span style="font-size:16px;width:20px;text-align:center;flex-shrink:0;">❤️</span>
+        志愿者服务
+      </a>
+      <a class="nav-item" href="#">
+        <span style="font-size:16px;width:20px;text-align:center;flex-shrink:0;">🌱</span>
+        碳积分
       </a>
       <a class="nav-item" href="#">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -384,6 +392,45 @@ h1,h2,h3,h4{font-family:'Fraunces','PingFang SC','Microsoft YaHei',serif}
           <button class="time-btn" onclick="switchTime(this)">本周</button>
           <button class="time-btn active" onclick="switchTime(this)">本月</button>
           <button class="time-btn" onclick="switchTime(this)">本季</button>
+        </div>
+      </div>
+
+      <!-- ===== Eco Dashboard ===== -->
+      <div class="eco-dashboard" style="background:linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 50%,#A7F3D0 100%);border:1px solid rgba(16,185,129,0.15);border-radius:28px 20px 28px 20px;padding:32px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:0 8px 32px -4px rgba(16,185,129,0.12);">
+        <div style="position:absolute;top:-30px;right:-20px;width:180px;height:180px;background:rgba(16,185,129,0.08);border-radius:60% 40% 30% 70%/60% 30% 70% 40%;pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-20px;left:40px;width:120px;height:120px;background:rgba(52,211,153,0.08);border-radius:40% 60% 70% 30%/40% 70% 30% 60%;pointer-events:none;"></div>
+        <div style="font-family:'Fraunces',serif;font-weight:700;font-size:20px;color:#065F46;margin-bottom:24px;display:flex;align-items:center;gap:10px;position:relative;z-index:1;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="width:26px;height:26px;"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/><path d="M2 2l7.58 11.58"/><circle cx="11" cy="11" r="2"/></svg>
+          环保贡献总览
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;position:relative;z-index:1;">
+          <div style="background:rgba(255,255,255,0.7);backdrop-filter:blur(8px);border:1px solid rgba(16,185,129,0.12);border-radius:20px 14px 20px 14px;padding:24px 20px;text-align:center;transition:all 0.3s ease;box-shadow:0 4px 16px -2px rgba(16,185,129,0.08);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -4px rgba(16,185,129,0.15)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+            <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(16,185,129,0.12);">🌱</div>
+            <div style="font-family:'Fraunces',serif;font-weight:800;font-size:32px;color:#065F46;line-height:1.1;margin-bottom:4px;">86,420</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:500;font-size:14px;color:#065F46;opacity:0.7;">积分</div>
+            <div style="font-size:13px;font-weight:600;color:#065F46;margin-top:6px;">累计积分</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.7);backdrop-filter:blur(8px);border:1px solid rgba(16,185,129,0.12);border-radius:14px 20px 14px 20px;padding:24px 20px;text-align:center;transition:all 0.3s ease;box-shadow:0 4px 16px -2px rgba(16,185,129,0.08);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -4px rgba(16,185,129,0.15)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+            <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(232,184,75,0.15);">💡</div>
+            <div style="font-family:'Fraunces',serif;font-weight:800;font-size:32px;color:#065F46;line-height:1.1;margin-bottom:4px;">25,926</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:500;font-size:14px;color:#065F46;opacity:0.7;">kWh</div>
+            <div style="font-size:13px;font-weight:600;color:#065F46;margin-top:6px;">节约电量</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.7);backdrop-filter:blur(8px);border:1px solid rgba(16,185,129,0.12);border-radius:20px 20px 14px 14px;padding:24px 20px;text-align:center;transition:all 0.3s ease;box-shadow:0 4px 16px -2px rgba(16,185,129,0.08);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -4px rgba(16,185,129,0.15)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+            <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(74,127,181,0.1);">🏠</div>
+            <div style="font-family:'Fraunces',serif;font-weight:800;font-size:32px;color:#065F46;line-height:1.1;margin-bottom:4px;">1,286</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:500;font-size:14px;color:#065F46;opacity:0.7;">户</div>
+            <div style="font-size:13px;font-weight:600;color:#065F46;margin-top:6px;">服务家庭</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.7);backdrop-filter:blur(8px);border:1px solid rgba(16,185,129,0.12);border-radius:14px 14px 20px 20px;padding:24px 20px;text-align:center;transition:all 0.3s ease;box-shadow:0 4px 16px -2px rgba(16,185,129,0.08);" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 28px -4px rgba(16,185,129,0.15)';" onmouseout="this.style.transform='';this.style.boxShadow='';">
+            <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:rgba(52,211,153,0.12);">♻️</div>
+            <div style="font-family:'Fraunces',serif;font-weight:800;font-size:32px;color:#065F46;line-height:1.1;margin-bottom:4px;">12,963</div>
+            <div style="font-family:'Nunito',sans-serif;font-weight:500;font-size:14px;color:#065F46;opacity:0.7;">kg</div>
+            <div style="font-size:13px;font-weight:600;color:#065F46;margin-top:6px;">减少碳排放</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(16,185,129,0.15);position:relative;z-index:1;">
+          <p style="font-family:'Fraunces',serif;font-weight:600;font-size:16px;color:#065F46;opacity:0.7;letter-spacing:0.5px;">每一次维修，都是对地球的一次温柔守护 <span style="display:inline-block;margin:0 4px;font-size:14px;opacity:0.5;">🍃</span></p>
         </div>
       </div>
 

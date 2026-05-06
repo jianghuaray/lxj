@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>碳积分 - 乐修匠社区维修管理系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #FDFCF8;
+  --fg: #3D3D35;
+  --primary: #4A7FB5;
+  --primary-fg: #FFFFFF;
+  --secondary: #E8B84B;
+  --secondary-fg: #FFFFFF;
+  --accent: #E6DCCD;
+  --accent-fg: #4A4A40;
+  --muted: #F0EBE5;
+  --muted-fg: #78786C;
+  --border: #DED8CF;
+  --destructive: #D4726A;
+  --card-bg: #FEFEFA;
+  --shadow-soft: 0 4px 20px -2px rgba(74, 127, 181, 0.15);
+  --shadow-float: 0 10px 40px -10px rgba(232, 184, 75, 0.2);
+  --shadow-hover: 0 20px 40px -10px rgba(74, 127, 181, 0.15);
+  --nav-width: 220px;
+  --topbar-height: 56px;
+  --font-display: 'Fraunces', 'PingFang SC', 'Microsoft YaHei', serif;
+  --font-body: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 碳积分绿色主题 */
+  --eco: #10B981;
+  --eco-light: #34D399;
+  --eco-dark: #059669;
+  --eco-bg: #ECFDF5;
+  --eco-bg2: #D1FAE5;
+}
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+.app-layout { display: flex; height: 100vh; width: 100vw; }
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: var(--nav-width); min-width: var(--nav-width); height: 100vh;
+  background: rgba(253,252,248,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(222,216,207,0.5);
+  display: flex; flex-direction: column; padding: 20px 0; z-index: 10; position: relative;
+}
+.sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 0 20px; margin-bottom: 8px; }
+.logo-img { height: 36px; width: auto; flex-shrink: 0; }
+.logo-text h1 { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--fg); line-height: 1.2; }
+.logo-text p { font-family: var(--font-body); font-weight: 400; font-size: 11px; color: var(--muted-fg); margin-top: 2px; }
+.sidebar-nav { flex: 1; padding: 16px 0; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; height: 44px; margin: 0 12px; padding: 0 14px;
+  border-radius: 12px; cursor: pointer; transition: all 0.3s ease; text-decoration: none;
+  color: var(--muted-fg); font-size: 14px; font-weight: 500; position: relative;
+}
+.nav-item:hover { background: rgba(230,220,205,0.3); }
+.nav-item.active { background: rgba(16,185,129,0.1); color: var(--eco); font-weight: 600; }
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--eco);
+}
+.nav-item svg { width: 20px; height: 20px; stroke-width: 2; flex-shrink: 0; }
+.nav-item .nav-icon-emoji { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+.sidebar-footer { padding: 0 20px; font-size: 11px; color: var(--muted-fg); font-weight: 400; opacity: 0.7; }
+
+/* ===== Main ===== */
+.main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--bg); }
+.main-content::before {
+  content: ''; position: absolute; top: -60px; right: -40px; width: 200px; height: 200px;
+  background: var(--eco); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  filter: blur(80px); opacity: 0.06; pointer-events: none; z-index: 0;
+}
+.main-content::after {
+  content: ''; position: absolute; bottom: -40px; left: -30px; width: 160px; height: 160px;
+  background: var(--secondary); border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+  filter: blur(60px); opacity: 0.05; pointer-events: none; z-index: 0;
+}
+
+/* ===== Topbar ===== */
+.topbar {
+  height: var(--topbar-height); min-height: var(--topbar-height);
+  background: rgba(253,252,248,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(222,216,207,0.3);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 28px;
+  position: relative; z-index: 5;
+}
+.breadcrumb { font-size: 13px; color: var(--muted-fg); font-weight: 400; }
+.breadcrumb span { opacity: 0.5; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.notification-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--primary); transition: all 0.3s ease; position: relative;
+}
+.notification-btn:hover { background: rgba(74,127,181,0.08); }
+.notification-btn .badge { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--destructive); }
+.user-info { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 600; font-family: var(--font-body); }
+.user-name { font-size: 13px; font-weight: 600; color: var(--fg); }
+
+/* ===== Page Content ===== */
+.page-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px 28px 20px; position: relative; z-index: 1; }
+.page-content::-webkit-scrollbar { width: 6px; }
+.page-content::-webkit-scrollbar-track { background: transparent; }
+.page-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ===== Eco Dashboard Section ===== */
+.eco-dashboard {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%);
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 28px 20px 28px 20px;
+  padding: 36px 32px 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px -4px rgba(16,185,129,0.12);
+}
+/* Decorative blobs */
+.eco-dashboard::before {
+  content: ''; position: absolute; top: -30px; right: -20px; width: 180px; height: 180px;
+  background: rgba(16,185,129,0.08); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  pointer-events: none;
+}
+.eco-dashboard::after {
+  content: ''; position: absolute; bottom: -20px; left: 40px; width: 120px; height: 120px;
+  background: rgba(52,211,153,0.08); border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+  pointer-events: none;
+}
+.eco-dashboard-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--eco-dark);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.eco-dashboard-title svg { width: 26px; height: 26px; color: var(--eco); }
+
+/* Eco Metric Cards */
+.eco-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+.eco-metric-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(16,185,129,0.12);
+  border-radius: 20px 14px 20px 14px;
+  padding: 24px 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px -2px rgba(16,185,129,0.08);
+}
+.eco-metric-card:nth-child(2) { border-radius: 14px 20px 14px 20px; }
+.eco-metric-card:nth-child(3) { border-radius: 20px 20px 14px 14px; }
+.eco-metric-card:nth-child(4) { border-radius: 14px 14px 20px 20px; }
+.eco-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -4px rgba(16,185,129,0.15);
+}
+.eco-metric-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+}
+.eco-metric-icon.icon-points { background: rgba(16,185,129,0.12); }
+.eco-metric-icon.icon-power { background: rgba(232,184,75,0.15); }
+.eco-metric-icon.icon-family { background: rgba(74,127,181,0.1); }
+.eco-metric-icon.icon-carbon { background: rgba(52,211,153,0.12); }
+.eco-metric-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 36px;
+  color: var(--eco-dark);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+.eco-metric-unit {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--eco-dark);
+  opacity: 0.7;
+}
+.eco-metric-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #065F46;
+  margin-top: 6px;
+}
+
+/* Eco Slogan */
+.eco-slogan {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(16,185,129,0.15);
+  position: relative;
+  z-index: 1;
+}
+.eco-slogan p {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  color: #065F46;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+}
+.eco-slogan-leaf {
+  display: inline-block;
+  margin: 0 4px;
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+/* ===== Filter Toolbar ===== */
+.filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-input {
+  flex: 1; min-width: 180px; height: 44px; border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.8); background: rgba(255,255,255,0.5);
+  padding: 0 18px; font-family: var(--font-body); font-size: 13px; color: var(--fg);
+  outline: none; transition: all 0.3s ease;
+}
+.filter-input::placeholder { color: var(--muted-fg); opacity: 0.7; }
+.filter-input:focus { box-shadow: 0 0 0 2px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3); background: rgba(255,255,255,0.8); }
+.filter-select {
+  height: 44px; border-radius: 999px; border: 1px solid rgba(222,216,207,0.8);
+  background: rgba(255,255,255,0.5); padding: 0 16px; font-family: var(--font-body);
+  font-size: 13px; color: var(--fg); outline: none; cursor: pointer; transition: all 0.3s ease;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%2378786C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+}
+.filter-select:focus { box-shadow: 0 0 0 2px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3); }
+.btn-query {
+  height: 44px; padding: 0 24px; border-radius: 999px; border: none;
+  background: var(--eco); color: white; font-family: var(--font-body);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 16px -2px rgba(16,185,129,0.25); transition: all 0.3s ease; white-space: nowrap;
+}
+.btn-query:hover { transform: scale(1.05); box-shadow: 0 6px 20px -2px rgba(16,185,129,0.3); }
+.btn-query:active { transform: scale(0.95); }
+.btn-reset {
+  height: 44px; padding: 0 20px; border-radius: 999px; border: 2px solid var(--secondary);
+  background: transparent; color: var(--secondary); font-family: var(--font-body);
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;
+}
+.btn-reset:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-reset:active { transform: scale(0.95); }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 20px;
+  border-radius: 999px; border: 2px solid var(--secondary); background: transparent;
+  color: var(--secondary); font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease; white-space: nowrap; margin-left: auto;
+}
+.btn-export:hover { background: rgba(232,184,75,0.08); transform: scale(1.05); }
+.btn-export:active { transform: scale(0.95); }
+.btn-export svg { width: 16px; height: 16px; stroke-width: 2; }
+
+/* ===== Points Table ===== */
+.table-container {
+  background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5);
+  border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; margin-bottom: 16px;
+}
+.data-table { width: 100%; border-collapse: collapse; table-layout: auto; }
+.data-table thead th {
+  padding: 14px 16px; font-size: 12px; font-weight: 600; color: var(--muted-fg);
+  text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; background: transparent;
+}
+.data-table thead th:first-child { padding-left: 24px; }
+.data-table thead th:last-child { padding-right: 24px; text-align: center; }
+.data-table tbody tr { height: 52px; transition: background 0.3s ease; }
+.data-table tbody tr:hover { background: rgba(240,235,229,0.4); }
+.data-table tbody td {
+  padding: 10px 16px; font-size: 13px; color: var(--fg); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+}
+.data-table tbody td:first-child { padding-left: 24px; }
+.data-table tbody td:last-child { padding-right: 24px; text-align: center; }
+.customer-link {
+  color: var(--eco); font-weight: 600; cursor: pointer; text-decoration: none;
+  transition: color 0.2s ease;
+}
+.customer-link:hover { color: var(--eco-dark); }
+.points-badge {
+  display: inline-flex; align-items: center; padding: 3px 12px; border-radius: 999px;
+  font-size: 13px; font-weight: 700; font-family: var(--font-display);
+}
+.points-badge.positive { background: rgba(16,185,129,0.1); color: var(--eco-dark); }
+.points-badge.negative { background: rgba(212,114,106,0.1); color: var(--destructive); }
+.points-badge.zero { background: rgba(120,120,108,0.1); color: var(--muted-fg); }
+.action-btn {
+  background: none; border: none; color: var(--eco); font-family: var(--font-body);
+  font-size: 13px; font-weight: 500; cursor: pointer; padding: 4px 8px;
+  border-radius: 8px; transition: all 0.3s ease;
+}
+.action-btn:hover { background: rgba(16,185,129,0.08); color: var(--eco-dark); }
+
+/* ===== Pagination ===== */
+.pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.pagination-info { font-size: 13px; color: var(--muted-fg); }
+.pagination-info select { border: none; background: transparent; font-family: var(--font-body); font-size: 13px; color: var(--muted-fg); cursor: pointer; outline: none; }
+.pagination-buttons { display: flex; align-items: center; gap: 6px; }
+.page-btn {
+  min-width: 36px; height: 36px; border-radius: 999px; border: none; background: transparent;
+  color: var(--muted-fg); font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;
+}
+.page-btn:hover { background: rgba(230,220,205,0.4); }
+.page-btn.active { background: var(--eco); color: white; box-shadow: 0 4px 16px -2px rgba(16,185,129,0.25); }
+.page-btn.nav-arrow { padding: 0 10px; }
+.page-btn svg { width: 16px; height: 16px; stroke-width: 2; }
+
+/* ===== Point Detail Dialog ===== */
+.dialog-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(44, 44, 36, 0.3); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  opacity: 0; visibility: hidden; transition: all 0.3s ease;
+}
+.dialog-overlay.active { opacity: 1; visibility: visible; }
+.dialog {
+  background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5);
+  border-radius: 24px 16px 24px 16px;
+  box-shadow: 0 20px 60px -15px rgba(44, 44, 36, 0.2);
+  padding: 28px 32px; width: 560px; max-width: 90vw; max-height: 80vh;
+  transform: scale(0.9) translateY(10px); transition: all 0.3s ease;
+  display: flex; flex-direction: column;
+}
+.dialog-overlay.active .dialog { transform: scale(1) translateY(0); }
+.dialog-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.dialog-title {
+  font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--fg);
+  display: flex; align-items: center; gap: 10px;
+}
+.dialog-title .points-summary {
+  font-size: 14px; font-weight: 600; color: var(--eco-dark);
+  background: rgba(16,185,129,0.1); padding: 3px 12px; border-radius: 999px;
+}
+.dialog-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: transparent;
+  color: var(--muted-fg); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s ease;
+}
+.dialog-close:hover { background: rgba(222,216,207,0.4); color: var(--fg); }
+.dialog-close svg { width: 18px; height: 18px; stroke-width: 2; }
+.dialog-body { flex: 1; overflow-y: auto; }
+.dialog-body::-webkit-scrollbar { width: 4px; }
+.dialog-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Point record items */
+.point-record {
+  display: flex; align-items: center; gap: 14px; padding: 14px 0;
+  border-bottom: 1px solid rgba(222,216,207,0.3);
+}
+.point-record:last-child { border-bottom: none; }
+.point-record-icon {
+  width: 36px; height: 36px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.point-record-icon.earn { background: rgba(16,185,129,0.1); color: var(--eco); }
+.point-record-icon.spend { background: rgba(212,114,106,0.1); color: var(--destructive); }
+.point-record-icon svg { width: 16px; height: 16px; stroke-width: 2; }
+.point-record-info { flex: 1; min-width: 0; }
+.point-record-type { font-size: 13px; font-weight: 600; color: var(--fg); margin-bottom: 2px; }
+.point-record-detail { font-size: 12px; color: var(--muted-fg); }
+.point-record-right { text-align: right; flex-shrink: 0; }
+.point-record-amount { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.point-record-amount.positive { color: var(--eco-dark); }
+.point-record-amount.negative { color: var(--destructive); }
+.point-record-time { font-size: 11px; color: var(--muted-fg); margin-top: 2px; }
+
+/* Deduct form in dialog */
+.deduct-form {
+  background: rgba(212,114,106,0.04);
+  border: 1px dashed rgba(212,114,106,0.2);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+  display: none;
+}
+.deduct-form.active { display: block; }
+.deduct-form h4 {
+  font-family: var(--font-display); font-weight: 600; font-size: 14px;
+  color: var(--destructive); margin-bottom: 12px;
+}
+.form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: center; }
+.form-label { font-size: 13px; font-weight: 500; color: var(--muted-fg); min-width: 70px; }
+.form-input {
+  flex: 1; height: 38px; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--card-bg); padding: 0 14px; font-family: var(--font-body);
+  font-size: 13px; color: var(--fg); outline: none; transition: all 0.3s ease;
+}
+.form-input:focus { border-color: var(--destructive); box-shadow: 0 0 0 2px rgba(212,114,106,0.15); }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+.btn-sm {
+  height: 34px; padding: 0 18px; border-radius: 999px; border: none;
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease;
+}
+.btn-sm.danger { background: var(--destructive); color: white; }
+.btn-sm.danger:hover { opacity: 0.9; }
+.btn-sm.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted-fg); }
+.btn-sm.ghost:hover { border-color: var(--fg); color: var(--fg); }
+.btn-deduct {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px;
+  border-radius: 999px; border: 1px solid rgba(212,114,106,0.3);
+  background: rgba(212,114,106,0.05); color: var(--destructive);
+  font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.3s ease; margin-top: 12px;
+}
+.btn-deduct:hover { background: rgba(212,114,106,0.1); border-color: rgba(212,114,106,0.5); }
+.btn-deduct svg { width: 14px; height: 14px; stroke-width: 2; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-img" src="../assets/logo.png" alt="乐修匠">
+      <div class="logo-text"><h1>乐修匠</h1><p>社区维修管理系统</p></div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg><span>工单管理</span></a>
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>客户管理</span></a>
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>师傅管理</span></a>
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span>社区管理</span></a>
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span>数据统计</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon-emoji">💰</span><span>维修费用</span></a>
+      <a class="nav-item" href="#"><span class="nav-icon-emoji">❤️</span><span>志愿者服务</span></a>
+      <a class="nav-item active" href="#"><span class="nav-icon-emoji">🌱</span><span>碳积分</span></a>
+      <a class="nav-item" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span>系统设置</span></a>
+    </nav>
+    <div class="sidebar-footer">v2.1.0</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="breadcrumb">首页 <span>/</span> 碳积分</div>
+      <div class="topbar-right">
+        <button class="notification-btn" title="通知">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="badge"></span>
+        </button>
+        <div class="user-info"><div class="user-avatar">管</div><span class="user-name">管理员</span></div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- ===== Eco Dashboard ===== -->
+      <div class="eco-dashboard">
+        <div class="eco-dashboard-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/><path d="M2 2l7.58 11.58"/><circle cx="11" cy="11" r="2"/></svg>
+          环保贡献总览
+        </div>
+        <div class="eco-metrics">
+          <div class="eco-metric-card">
+            <div class="eco-metric-icon icon-points">🌱</div>
+            <div class="eco-metric-value">86,420</div>
+            <div class="eco-metric-unit">积分</div>
+            <div class="eco-metric-label">累计积分</div>
+          </div>
+          <div class="eco-metric-card">
+            <div class="eco-metric-icon icon-power">💡</div>
+            <div class="eco-metric-value">25,926</div>
+            <div class="eco-metric-unit">kWh</div>
+            <div class="eco-metric-label">节约电量</div>
+          </div>
+          <div class="eco-metric-card">
+            <div class="eco-metric-icon icon-family">🏠</div>
+            <div class="eco-metric-value">1,286</div>
+            <div class="eco-metric-unit">户</div>
+            <div class="eco-metric-label">服务家庭</div>
+          </div>
+          <div class="eco-metric-card">
+            <div class="eco-metric-icon icon-carbon">♻️</div>
+            <div class="eco-metric-value">12,963</div>
+            <div class="eco-metric-unit">kg</div>
+            <div class="eco-metric-label">减少碳排放</div>
+          </div>
+        </div>
+        <div class="eco-slogan">
+          <p>每一次维修，都是对地球的一次温柔守护 <span class="eco-slogan-leaf">🍃</span></p>
+        </div>
+      </div>
+
+      <!-- ===== Filter Toolbar ===== -->
+      <div class="filter-toolbar">
+        <input class="filter-input" type="text" placeholder="搜索姓名/手机号...">
+        <select class="filter-select">
+          <option value="">全部社区</option>
+          <option>幸福社区</option>
+          <option>凤城社区</option>
+          <option>锦业社区</option>
+        </select>
+        <select class="filter-select">
+          <option value="">积分范围</option>
+          <option>500分以上</option>
+          <option>1000分以上</option>
+          <option>负积分</option>
+        </select>
+        <button class="btn-query">查询</button>
+        <button class="btn-reset">重置</button>
+        <button class="btn-export">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          导出Excel
+        </button>
+      </div>
+
+      <!-- ===== Points Table ===== -->
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>客户姓名</th>
+              <th>联系方式</th>
+              <th>当前积分</th>
+              <th>累计获得</th>
+              <th>累计消耗</th>
+              <th>最近变动</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('张三')">张三</a></td>
+              <td>138****5678</td>
+              <td><span class="points-badge positive">1,280</span></td>
+              <td>1,450</td>
+              <td>170</td>
+              <td>2026-05-01</td>
+              <td><button class="action-btn" onclick="openDetail('张三')">积分明细</button></td>
+            </tr>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('李秀兰')">李秀兰</a></td>
+              <td>139****1234</td>
+              <td><span class="points-badge positive">860</span></td>
+              <td>860</td>
+              <td>0</td>
+              <td>2026-04-28</td>
+              <td><button class="action-btn" onclick="openDetail('李秀兰')">积分明细</button></td>
+            </tr>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('王建国')">王建国</a></td>
+              <td>136****9876</td>
+              <td><span class="points-badge positive">2,350</span></td>
+              <td>2,500</td>
+              <td>150</td>
+              <td>2026-04-30</td>
+              <td><button class="action-btn" onclick="openDetail('王建国')">积分明细</button></td>
+            </tr>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('赵丽华')">赵丽华</a></td>
+              <td>137****4567</td>
+              <td><span class="points-badge zero">0</span></td>
+              <td>0</td>
+              <td>0</td>
+              <td>-</td>
+              <td><button class="action-btn" onclick="openDetail('赵丽华')">积分明细</button></td>
+            </tr>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('孙志强')">孙志强</a></td>
+              <td>135****7890</td>
+              <td><span class="points-badge negative">-50</span></td>
+              <td>200</td>
+              <td>250</td>
+              <td>2026-05-03</td>
+              <td><button class="action-btn" onclick="openDetail('孙志强')">积分明细</button></td>
+            </tr>
+            <tr>
+              <td><a class="customer-link" onclick="openDetail('周美玲')">周美玲</a></td>
+              <td>158****2345</td>
+              <td><span class="points-badge positive">520</span></td>
+              <td>520</td>
+              <td>0</td>
+              <td>2026-04-25</td>
+              <td><button class="action-btn" onclick="openDetail('周美玲')">积分明细</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination-bar">
+        <div class="pagination-info">共 1,286 条，每页 <select><option>20</option><option>50</option></select> 条</div>
+        <div class="pagination-buttons">
+          <button class="page-btn nav-arrow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">...</button>
+          <button class="page-btn">65</button>
+          <button class="page-btn nav-arrow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===== Point Detail Dialog ===== -->
+<div class="dialog-overlay" id="pointDetailDialog" onclick="closeDetail(event)">
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-title">
+        张三 的积分明细
+        <span class="points-summary">当前 1,280 积分</span>
+      </div>
+      <button class="dialog-close" onclick="closeDetail()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="dialog-body">
+      <!-- Records -->
+      <div class="point-record">
+        <div class="point-record-icon earn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="point-record-info">
+          <div class="point-record-type">工单完成 - 水电维修</div>
+          <div class="point-record-detail">工单号 WO20260501001</div>
+        </div>
+        <div class="point-record-right">
+          <div class="point-record-amount positive">+150</div>
+          <div class="point-record-time">2026-05-01 14:30</div>
+        </div>
+      </div>
+      <div class="point-record">
+        <div class="point-record-icon spend">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+        </div>
+        <div class="point-record-info">
+          <div class="point-record-type">兑换物品 - LED灯泡×2</div>
+          <div class="point-record-detail">手动扣减</div>
+        </div>
+        <div class="point-record-right">
+          <div class="point-record-amount negative">-80</div>
+          <div class="point-record-time">2026-04-28 10:15</div>
+        </div>
+      </div>
+      <div class="point-record">
+        <div class="point-record-icon earn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="point-record-info">
+          <div class="point-record-type">工单完成 - 家电维修</div>
+          <div class="point-record-detail">工单号 WO20260425003</div>
+        </div>
+        <div class="point-record-right">
+          <div class="point-record-amount positive">+200</div>
+          <div class="point-record-time">2026-04-25 16:00</div>
+        </div>
+      </div>
+      <div class="point-record">
+        <div class="point-record-icon earn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div class="point-record-info">
+          <div class="point-record-type">工单完成 - 下水疏通</div>
+          <div class="point-record-detail">工单号 WO20260420008</div>
+        </div>
+        <div class="point-record-right">
+          <div class="point-record-amount positive">+120</div>
+          <div class="point-record-time">2026-04-20 11:20</div>
+        </div>
+      </div>
+      <div class="point-record">
+        <div class="point-record-icon spend">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+        </div>
+        <div class="point-record-info">
+          <div class="point-record-type">兑换物品 - 节水龙头×1</div>
+          <div class="point-record-detail">手动扣减</div>
+        </div>
+        <div class="point-record-right">
+          <div class="point-record-amount negative">-90</div>
+          <div class="point-record-time">2026-04-15 09:30</div>
+        </div>
+      </div>
+
+      <!-- Deduct Button -->
+      <button class="btn-deduct" onclick="toggleDeductForm()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        扣减积分（兑换物品）
+      </button>
+
+      <!-- Deduct Form -->
+      <div class="deduct-form" id="deductForm">
+        <h4>扣减积分</h4>
+        <div class="form-row">
+          <span class="form-label">扣减积分</span>
+          <input class="form-input" type="number" placeholder="输入扣减的积分数量" min="1">
+        </div>
+        <div class="form-row">
+          <span class="form-label">兑换物品</span>
+          <input class="form-input" type="text" placeholder="如：LED灯泡×2、节水龙头×1">
+        </div>
+        <div class="form-row">
+          <span class="form-label">备注</span>
+          <input class="form-input" type="text" placeholder="选填">
+        </div>
+        <div class="form-actions">
+          <button class="btn-sm ghost" onclick="toggleDeductForm()">取消</button>
+          <button class="btn-sm danger">确认扣减</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openDetail(name) {
+  document.getElementById('pointDetailDialog').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeDetail(event) {
+  if (event && event.target !== event.currentTarget) return;
+  document.getElementById('pointDetailDialog').classList.remove('active');
+  document.getElementById('deductForm').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function toggleDeductForm() {
+  document.getElementById('deductForm').classList.toggle('active');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.dialog-overlay.active').forEach(d => d.classList.remove('active'));
+    document.getElementById('deductForm').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+});
+</script>
+</body>
+</html>
