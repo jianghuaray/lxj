@@ -820,6 +820,77 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+/* Pagination */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.pagination-info {
+  font-size: 13px;
+  color: var(--muted-fg);
+
+  select {
+    border: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--muted-fg);
+    cursor: pointer;
+    outline: none;
+  }
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--muted-fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(230, 220, 205, 0.4);
+  }
+
+  &.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-soft);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &.nav-arrow {
+    padding: 0 10px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+    }
+  }
+}
+
 .empty-card {
   grid-column: 1 / -1;
   background: var(--card-bg);
