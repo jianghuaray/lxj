@@ -74,7 +74,8 @@ import {
   DataAnalysis,
   Money,
   Setting,
-  Service
+  Service,
+  TrendCharts
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -90,6 +91,7 @@ const menuItems = [
   { path: '/technicians', title: '师傅管理', icon: Tools },
   { path: '/volunteers', title: '志愿者管理', icon: Service },
   { path: '/fees', title: '维修费用', icon: Money },
+  { path: '/carbon-points', title: '碳积分管理', icon: TrendCharts },
   { path: '/system', title: '系统设置', icon: Setting }
 ]
 

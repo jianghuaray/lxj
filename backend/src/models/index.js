@@ -10,6 +10,7 @@ const Volunteer = require('./Volunteer');
 const VolunteerService = require('./VolunteerService');
 const Settings = require('./Settings');
 const OperationLog = require('./OperationLog');
+const PointRecord = require('./PointRecord');
 
 // 定义模型关联
 
@@ -45,6 +46,10 @@ OperationLog.belongsTo(User, { foreignKey: 'operator_id', as: 'operator', onDele
 Volunteer.hasMany(VolunteerService, { foreignKey: 'volunteer_id', as: 'services', onDelete: 'CASCADE' });
 VolunteerService.belongsTo(Volunteer, { foreignKey: 'volunteer_id', as: 'volunteer', onDelete: 'CASCADE' });
 
+// 客户与积分记录的关系
+Customer.hasMany(PointRecord, { foreignKey: 'customer_id', as: 'pointRecords', onDelete: 'CASCADE' });
+PointRecord.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'CASCADE' });
+
 module.exports = {
   sequelize,
   User,
@@ -56,5 +61,6 @@ module.exports = {
   Volunteer,
   VolunteerService,
   Settings,
-  OperationLog
+  OperationLog,
+  PointRecord
 };

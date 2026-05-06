@@ -165,6 +165,44 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+// 获取师傅满意度排行
+router.get('/ranking', auth, async (req, res) => {
+  try {
+    const technicians = await Technician.findAll({
+      where: { status: 1 }
+    });
+
+    if (technicians.length === 0) {
+      return res.json([]);
+    }
+
+    const techIds = technicians.map(t => t.id);
+    const { orderCountMap, avgSatisfactionMap, totalRevenueMap } =
+      await computeTechStats(techIds, new Date(0), new Date());
+
+    const ranking = technicians.map(tech => {
+      const t = tech.toJSON();
+      return {
+        id: t.id,
+        name: t.name,
+        orderCount: orderCountMap[t.id] || 0,
+        avgSatisfaction: avgSatisfactionMap[t.id] || '-',
+        totalRevenue: totalRevenueMap[t.id] || 0
+      };
+    }).filter(tech => tech.avgSatisfaction !== '-')
+      .sort((a, b) => {
+        const scoreA = parseFloat(a.avgSatisfaction) || 0;
+        const scoreB = parseFloat(b.avgSatisfaction) || 0;
+        return scoreB - scoreA;
+      });
+
+    res.json(ranking);
+  } catch (error) {
+    console.error('获取师傅排行失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 获取师傅详情
 router.get('/:id', auth, async (req, res) => {
   try {

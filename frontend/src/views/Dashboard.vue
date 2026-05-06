@@ -13,6 +13,47 @@
       </div>
     </div>
 
+    <!-- Eco Dashboard -->
+    <div class="eco-dashboard">
+      <div class="eco-dashboard-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/>
+          <path d="M2 2l7.58 11.58"/>
+          <circle cx="11" cy="11" r="2"/>
+        </svg>
+        环保贡献总览
+      </div>
+      <div class="eco-metrics">
+        <div class="eco-metric-card" style="border-radius: 20px 14px 20px 14px;">
+          <div class="eco-metric-icon icon-points">🌱</div>
+          <div class="eco-metric-value">{{ ecoConfig.totalPoints }}</div>
+          <div class="eco-metric-unit">积分</div>
+          <div class="eco-metric-label">累计积分</div>
+        </div>
+        <div class="eco-metric-card" style="border-radius: 14px 20px 14px 20px;">
+          <div class="eco-metric-icon icon-power">💡</div>
+          <div class="eco-metric-value">{{ ecoConfig.savedPower }}</div>
+          <div class="eco-metric-unit">kWh</div>
+          <div class="eco-metric-label">节约电量</div>
+        </div>
+        <div class="eco-metric-card" style="border-radius: 20px 20px 14px 14px;">
+          <div class="eco-metric-icon icon-family">🏠</div>
+          <div class="eco-metric-value">{{ ecoConfig.servedFamilies }}</div>
+          <div class="eco-metric-unit">户</div>
+          <div class="eco-metric-label">服务家庭</div>
+        </div>
+        <div class="eco-metric-card" style="border-radius: 14px 14px 20px 20px;">
+          <div class="eco-metric-icon icon-carbon">♻️</div>
+          <div class="eco-metric-value">{{ ecoConfig.reducedCarbon }}</div>
+          <div class="eco-metric-unit">kg</div>
+          <div class="eco-metric-label">减少碳排放</div>
+        </div>
+      </div>
+      <div class="eco-slogan">
+        <p>每一次维修，都是对地球的一次温柔守护 <span class="eco-slogan-leaf">🍃</span></p>
+      </div>
+    </div>
+
     <!-- KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card" :style="{ borderRadius: kpiRadius[0] }">
@@ -248,6 +289,12 @@ const timeRange = ref('month')
 const stats = ref({})
 const techRanking = ref([])
 const areaStats = ref([])
+const ecoConfig = ref({
+  totalPoints: 0,
+  savedPower: 0,
+  servedFamilies: 0,
+  reducedCarbon: 0
+})
 const lineChartRef = ref(null)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
@@ -291,8 +338,20 @@ async function fetchAll() {
     fetchAreaDist(),
     fetchAreaStats(),
     fetchRevenueTrend(),
-    fetchTechRanking()
+    fetchTechRanking(),
+    fetchEcoConfig()
   ])
+}
+
+async function fetchEcoConfig() {
+  try {
+    const response = await api.get('/points/eco/config')
+    if (response.data.success) {
+      ecoConfig.value = response.data.data
+    }
+  } catch (error) {
+    console.error('获取环保配置失败', error)
+  }
 }
 
 async function fetchStats() {
@@ -334,6 +393,7 @@ async function fetchAreaDist() {
 async function fetchAreaStats() {
   try {
     const response = await api.get('/dashboard/area-stats')
+    console.log('社区维度数据:', response.data)
     areaStats.value = response.data || []
   } catch (error) {
     console.error('获取区域统计失败', error)
@@ -351,8 +411,9 @@ async function fetchRevenueTrend() {
 
 async function fetchTechRanking() {
   try {
-    const response = await api.get('/dashboard/technician-ranking')
-    techRanking.value = response.data
+    const response = await api.get('/technicians/ranking')
+    console.log('师傅排行数据:', response.data)
+    techRanking.value = response.data || []
   } catch (error) {
     console.error('获取师傅排行失败', error)
   }
@@ -538,6 +599,151 @@ onUnmounted(() => {
 
   &:hover { color: var(--fg); }
   &.active { background: var(--primary); color: #fff; box-shadow: var(--shadow-soft); }
+}
+
+/* Eco Dashboard */
+.eco-dashboard {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%);
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 28px 20px 28px 20px;
+  padding: 32px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px -4px rgba(16,185,129,0.12);
+
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+
+  &::before {
+    top: -30px;
+    right: -20px;
+    width: 180px;
+    height: 180px;
+    background: rgba(16,185,129,0.08);
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+
+  &::after {
+    bottom: -20px;
+    left: 40px;
+    width: 120px;
+    height: 120px;
+    background: rgba(52,211,153,0.08);
+    border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+  }
+}
+
+.eco-dashboard-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: #065F46;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+
+  svg {
+    width: 26px;
+    height: 26px;
+    color: #10B981;
+  }
+}
+
+.eco-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.eco-metric-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(16,185,129,0.12);
+  padding: 24px 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px -2px rgba(16,185,129,0.08);
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -4px rgba(16,185,129,0.15);
+  }
+}
+
+.eco-metric-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+
+  &.icon-points { background: rgba(16,185,129,0.12); }
+  &.icon-power { background: rgba(232,184,75,0.15); }
+  &.icon-family { background: rgba(74,127,181,0.1); }
+  &.icon-carbon { background: rgba(52,211,153,0.12); }
+}
+
+.eco-metric-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 32px;
+  color: #065F46;
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.eco-metric-unit {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: #065F46;
+  opacity: 0.7;
+}
+
+.eco-metric-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #065F46;
+  margin-top: 6px;
+}
+
+.eco-slogan {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(16,185,129,0.15);
+  position: relative;
+  z-index: 1;
+
+  p {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    color: #065F46;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+    margin: 0;
+  }
+}
+
+.eco-slogan-leaf {
+  display: inline-block;
+  margin: 0 4px;
+  font-size: 14px;
+  opacity: 0.5;
 }
 
 /* KPI Grid */
