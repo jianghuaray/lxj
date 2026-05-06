@@ -19,7 +19,7 @@ const WorkOrder = sequelize.define('WorkOrder', {
   },
   customer_id: {
     type: DataTypes.BIGINT,
-    allowNull: false
+    allowNull: true
   },
   customer_name: {
     type: DataTypes.STRING(50),

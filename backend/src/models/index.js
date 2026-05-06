@@ -22,8 +22,8 @@ User.hasMany(CallbackRecord, { foreignKey: 'callback_by', as: 'callbacks', onDel
 CallbackRecord.belongsTo(User, { foreignKey: 'callback_by', as: 'callbackUser', onDelete: 'SET NULL' });
 
 // 客户与工单的关系
-Customer.hasMany(WorkOrder, { foreignKey: 'customer_id', as: 'orders', onDelete: 'RESTRICT' });
-WorkOrder.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'RESTRICT' });
+Customer.hasMany(WorkOrder, { foreignKey: 'customer_id', as: 'orders', onDelete: 'SET NULL' });
+WorkOrder.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'SET NULL' });
 
 // 师傅与施工记录的关系
 Technician.hasMany(Construction, { foreignKey: 'technician_id', as: 'constructions', onDelete: 'RESTRICT' });

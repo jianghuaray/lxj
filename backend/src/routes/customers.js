@@ -297,10 +297,13 @@ router.delete('/:id', auth, authAdmin, async (req, res) => {
       return res.status(404).json({ error: '客户不存在' });
     }
 
-    // Check if customer has associated work orders
+    // Check if customer has associated work orders — keep orders, clear customer_id
     const orderCount = await WorkOrder.count({ where: { customer_id: req.params.id } });
     if (orderCount > 0) {
-      return res.status(400).json({ error: `无法删除：该客户有 ${orderCount} 条关联工单，请先删除相关工单` });
+      await WorkOrder.update(
+        { customer_id: null },
+        { where: { customer_id: req.params.id } }
+      );
     }
 
     await customer.destroy();

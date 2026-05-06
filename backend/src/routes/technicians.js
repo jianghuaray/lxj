@@ -435,11 +435,24 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: '师傅不存在' });
     }
 
-    // Check if technician has associated constructions
-    const constructionCount = await Construction.count({ where: { technician_id: req.params.id } });
-    if (constructionCount > 0) {
-      return res.status(400).json({ error: `无法删除：该师傅有 ${constructionCount} 条关联派工记录，请先删除相关记录` });
+    // Check if technician has dispatched (已派单) constructions — those block deletion
+    const dispatchedCount = await Construction.count({
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        where: { status: 'dispatched' },
+        required: true
+      }],
+      where: { technician_id: req.params.id }
+    });
+    if (dispatchedCount > 0) {
+      return res.status(400).json({ error: `无法删除：该师傅有 ${dispatchedCount} 条已派单工单，请先完成或取消相关工单` });
     }
+
+    // Delete non-dispatched constructions to release FK constraint
+    await Construction.destroy({
+      where: { technician_id: req.params.id }
+    });
 
     await technician.destroy();
     res.json({ message: '删除成功' });

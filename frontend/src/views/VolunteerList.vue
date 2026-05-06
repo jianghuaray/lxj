@@ -163,7 +163,10 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api, { createCancelToken } from '@/utils/api'
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
+
+const { confirmDelete } = useDeleteConfirm()
 import { exportToExcel } from '@/utils/exportExcel'
 
 const router = useRouter()
@@ -299,10 +302,10 @@ function goToPage(p) {
 
 async function handleDelete(vol) {
   try {
-    await ElMessageBox.confirm('确定要删除该志愿者吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+    await confirmDelete({
+      title: '确认删除志愿者',
+      message: `确定要删除志愿者 <strong>${vol.name}</strong> 的信息吗？删除后数据将无法恢复。`,
+      warning: '删除后该志愿者的所有服务记录也将一并删除，请谨慎操作。'
     })
     await api.delete(`/volunteers/${vol.id}`)
     ElMessage.success('删除成功')

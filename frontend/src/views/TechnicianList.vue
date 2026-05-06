@@ -198,7 +198,10 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api, { createCancelToken } from '@/utils/api'
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
+
+const { confirmDelete } = useDeleteConfirm()
 import { useSettingsStore } from '@/stores/settings'
 import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
@@ -337,8 +340,10 @@ async function exportSettlement() {
 
 async function handleDelete(tech) {
   try {
-    await ElMessageBox.confirm('确定要删除该师傅吗？', '提示', {
-      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+    await confirmDelete({
+      title: '确认删除师傅',
+      message: `确定要删除师傅 <strong>${tech.name}</strong> 的信息吗？删除后该师傅的所有历史数据将无法恢复。`,
+      warning: '如果师傅有已派单工单，则无法删除！'
     })
     await api.delete(`/technicians/${tech.id}`)
     ElMessage.success('删除成功')

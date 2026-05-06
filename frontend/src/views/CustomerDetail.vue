@@ -18,9 +18,9 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
           调整等级
         </button>
-        <button class="btn-pill danger-outline" @click="confirmDelete">
+        <button class="btn-pill danger-outline" @click="confirmDeleteCustomer">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          删除客户
+          <span>删除客户</span>
         </button>
       </div>
     </div>
@@ -241,11 +241,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
 import { formatDate, formatCurrency } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
+const { confirmDelete } = useDeleteConfirm()
 const customerId = route.params.id
 
 const customer = ref({})
@@ -365,17 +367,13 @@ async function changeLevel(level) {
   }
 }
 
-async function confirmDelete() {
+async function confirmDeleteCustomer() {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除客户「${customer.value.name}」吗？此操作不可恢复。`,
-      '确认删除',
-      {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    )
+    await confirmDelete({
+      title: '确认删除客户',
+      message: `确定要删除客户 <strong>${customer.value.name}</strong> 吗？删除后数据将无法恢复。`,
+      warning: '该客户的工单记录将保留，但客户关联信息将被清除。'
+    })
     await api.delete(`/customers/${customerId}`)
     ElMessage.success('客户已删除')
     router.push('/customers')
@@ -509,6 +507,14 @@ onMounted(() => {
 }
 .btn-pill.secondary-outline:hover {
   background: rgba(232,184,75,0.08);
+}
+.btn-pill.danger-outline {
+  background: transparent;
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+.btn-pill.danger-outline:hover {
+  background: rgba(212,114,106,0.08);
 }
 
 /* ===== 2. Customer Overview Card ===== */
