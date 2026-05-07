@@ -129,7 +129,7 @@
     </div>
 
     <div v-if="showDetailModal" class="dialog-overlay active" @click="closeDetail">
-      <div class="dialog">
+      <div class="dialog" @click.stop>
         <div class="dialog-header">
           <div class="dialog-title">
             {{ detailCustomer?.name || '' }} 的积分明细
