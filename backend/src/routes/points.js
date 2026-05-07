@@ -121,6 +121,29 @@ router.post('/:customerId/deduct', async (req, res) => {
   }
 });
 
+router.get('/eco-config', async (req, res) => {
+  try {
+    const settings = await Settings.findOne({
+      where: { category: 'eco_dashboard' }
+    });
+    
+    let config = {
+      totalPoints: 0,
+      savedPower: 0,
+      servedFamilies: 0,
+      reducedCarbon: 0
+    };
+    
+    if (settings && settings.values) {
+      config = settings.values;
+    }
+    
+    res.json({ success: true, data: config });
+  } catch (error) {
+    res.status(500).json({ success: false, message: '获取环保配置失败', error: error.message });
+  }
+});
+
 router.get('/eco/config', async (req, res) => {
   try {
     const settings = await Settings.findOne({
