@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
+const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings, PointRecord } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
 const { escapeLike, validateLength } = require('../utils/sanitize');
 
@@ -376,6 +376,10 @@ router.post('/', auth, async (req, res) => {
       receiver_remark: receiverRemark
     }, { transaction });
 
+    // 维护客户统计字段
+    await Customer.increment('total_orders', { where: { id: customer.id }, transaction });
+    await Customer.update({ last_order_at: new Date() }, { where: { id: customer.id }, transaction });
+
     await transaction.commit();
     res.status(201).json(order);
   } catch (error) {
@@ -418,8 +422,7 @@ router.patch('/:id', auth, async (req, res) => {
   }
 });
 
-// 派单 — 统一路由，/dispatch 重定向到 /assign
-router.post('/:id/assign', auth, async (req, res) => {
+async function handleAssign(req, res) {
   const transaction = await sequelize.transaction();
   try {
     const { technicianId, remark, dispatchRemark } = req.body;
@@ -464,67 +467,30 @@ router.post('/:id/assign', auth, async (req, res) => {
     console.error('派单失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
-});
+}
 
-// /dispatch 保留做兼容，内部转发到 assign 逻辑
-router.post('/:id/dispatch', auth, async (req, res) => {
-  // Normalize field name: dispatchRemark → remark
+router.post('/:id/assign', auth, handleAssign);
+
+// /dispatch 保留做兼容，转发到 assign 逻辑
+router.post('/:id/dispatch', auth, (req, res) => {
   req.body.remark = req.body.remark || req.body.dispatchRemark;
-  // Delegate to the same logic as /assign
-  try {
-    const transaction = await sequelize.transaction();
-    const { technicianId, remark, dispatchRemark } = req.body;
-    if (!technicianId) {
-      await transaction.rollback();
-      return res.status(400).json({ error: '请选择师傅' });
-    }
-
-    const order = await WorkOrder.findByPk(req.params.id, { transaction });
-    if (!order) {
-      await transaction.rollback();
-      return res.status(404).json({ error: '工单不存在' });
-    }
-    if (order.status !== 'pending') {
-      await transaction.rollback();
-      return res.status(400).json({ error: '当前状态不允许派单' });
-    }
-
-    const technician = await Technician.findByPk(technicianId, { transaction });
-    if (!technician) {
-      await transaction.rollback();
-      return res.status(404).json({ error: '师傅不存在' });
-    }
-
-    order.status = 'dispatched';
-    await order.save({ transaction });
-
-    await Construction.create({
-      order_id: order.id,
-      technician_id: technicianId,
-      dispatch_remark: remark || dispatchRemark,
-      dispatched_at: new Date(),
-      commission_rate: technician.commission_rate
-    }, { transaction });
-
-    await transaction.commit();
-    res.json({ message: '派单成功' });
-  } catch (error) {
-    console.error('派单失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
+  return handleAssign(req, res);
 });
 
 // 更新工单状态 — 统一 PATCH/PUT
 async function handleStatusUpdate(req, res) {
+  const transaction = await sequelize.transaction();
   try {
     const { status, cancelReason } = req.body;
-    const order = await WorkOrder.findByPk(req.params.id);
+    const order = await WorkOrder.findByPk(req.params.id, { transaction });
 
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
     if (!status) {
+      await transaction.rollback();
       return res.status(400).json({ error: '请提供目标状态' });
     }
 
@@ -535,7 +501,16 @@ async function handleStatusUpdate(req, res) {
     };
 
     if (!validTransitions[order.status]?.includes(status)) {
+      await transaction.rollback();
       return res.status(400).json({ error: '无效的状态转换' });
+    }
+
+    // 检查是否要发放积分（工单完成）
+    let shouldEarnPoints = false;
+    let pointRecordId = null;
+    
+    if (status === 'completed' && order.status !== 'completed') {
+      shouldEarnPoints = true;
     }
 
     order.status = status;
@@ -546,9 +521,44 @@ async function handleStatusUpdate(req, res) {
       order.completed_at = new Date();
     }
 
-    await order.save();
+    await order.save({ transaction });
+
+    // 自动发放积分
+    if (shouldEarnPoints && order.customer_id) {
+      const construction = await Construction.findOne({ 
+        where: { order_id: order.id },
+        transaction 
+      });
+
+      if (construction && construction.total_fee > 0) {
+        const points = Math.floor(construction.total_fee);
+        
+        await PointRecord.create({
+          customerId: order.customer_id,
+          type: 'earn',
+          points: points,
+          orderId: order.id,
+          reason: '工单完成，发放积分'
+        }, { transaction });
+
+        await Customer.increment('current_points', { 
+          by: points, 
+          where: { id: order.customer_id },
+          transaction 
+        });
+        
+        await Customer.increment('total_earned_points', { 
+          by: points, 
+          where: { id: order.customer_id },
+          transaction 
+        });
+      }
+    }
+
+    await transaction.commit();
     res.json({ message: '状态更新成功' });
   } catch (error) {
+    await transaction.rollback();
     console.error('更新工单状态失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -607,6 +617,7 @@ router.patch('/:id/convert', auth, async (req, res) => {
 
 // 录入费用 — 统一 POST /:id/fee 和 PUT /:id/fees
 async function handleFeeInput(req, res) {
+  const transaction = await sequelize.transaction();
   try {
     const {
       totalFee,
@@ -619,30 +630,80 @@ async function handleFeeInput(req, res) {
     } = req.body;
 
     if (totalFee === undefined || totalFee === null) {
+      await transaction.rollback();
       return res.status(400).json({ error: '请提供总费用' });
     }
 
-    const order = await WorkOrder.findByPk(req.params.id);
+    const order = await WorkOrder.findByPk(req.params.id, { transaction });
     if (!order) {
+      await transaction.rollback();
       return res.status(404).json({ error: '工单不存在' });
     }
 
-    let construction = await Construction.findOne({ where: { order_id: order.id } });
+    let construction = await Construction.findOne({ where: { order_id: order.id }, transaction });
     if (!construction) {
+      await transaction.rollback();
       return res.status(404).json({ error: '施工记录不存在' });
     }
 
-    construction.total_fee = totalFee;
-    construction.service_fee = serviceFee || (totalFee * (commissionRate || 0.3));
+    const oldTotalFee = construction.total_fee || 0;
+    const newTotalFee = parseFloat(totalFee) || 0;
+    const feeDiff = newTotalFee - oldTotalFee;
+
+    construction.total_fee = newTotalFee;
+    construction.service_fee = serviceFee || (newTotalFee * (commissionRate || 0.3));
     construction.received_fee = receivedFee;
     construction.material_cost = materialCost;
     construction.building_manager_incentive = buildingManagerIncentive;
     construction.commission_rate = commissionRate;
     construction.actual_work = actualWork;
 
-    await construction.save();
+    await construction.save({ transaction });
+
+    // 维护客户统计字段：按费用差额更新 total_amount
+    if (feeDiff !== 0) {
+      await Customer.increment('total_amount', { by: feeDiff, where: { id: order.customer_id }, transaction });
+    }
+
+    // 积分联动调整：工单已完成且有客户ID时自动调整积分
+    if (['completed', 'callback'].includes(order.status) && order.customer_id && feeDiff !== 0) {
+      const pointDiff = Math.round(feeDiff);
+      
+      if (pointDiff !== 0) {
+        await PointRecord.create({
+          customerId: order.customer_id,
+          type: pointDiff > 0 ? 'earn' : 'spend',
+          points: pointDiff,
+          orderId: order.id,
+          reason: '工单费用调整'
+        }, { transaction });
+
+        await Customer.increment('current_points', { 
+          by: pointDiff, 
+          where: { id: order.customer_id },
+          transaction 
+        });
+        
+        if (pointDiff > 0) {
+          await Customer.increment('total_earned_points', { 
+            by: pointDiff, 
+            where: { id: order.customer_id },
+            transaction 
+          });
+        } else {
+          await Customer.increment('total_spent_points', { 
+            by: Math.abs(pointDiff), 
+            where: { id: order.customer_id },
+            transaction 
+          });
+        }
+      }
+    }
+
+    await transaction.commit();
     res.json({ message: '费用录入成功' });
   } catch (error) {
+    await transaction.rollback();
     console.error('录入费用失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
@@ -712,11 +773,23 @@ router.delete('/:id', auth, authAdmin, async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: '工单不存在' });
     }
+
+    // 先查施工记录，获取需要扣减的费用
+    const construction = await Construction.findOne({ where: { order_id: order.id } });
+    const feeToDeduct = construction?.total_fee || 0;
+
     await sequelize.transaction(async (transaction) => {
       await CallbackRecord.destroy({ where: { order_id: order.id }, transaction });
       await Construction.destroy({ where: { order_id: order.id }, transaction });
       await order.destroy({ transaction });
+
+      // 维护客户统计字段：扣减工单数、费用总额
+      await Customer.decrement('total_orders', { by: 1, where: { id: order.customer_id }, transaction });
+      if (feeToDeduct > 0) {
+        await Customer.decrement('total_amount', { by: feeToDeduct, where: { id: order.customer_id }, transaction });
+      }
     });
+
     res.json({ message: '工单已删除' });
   } catch (error) {
     console.error('删除工单失败:', error);

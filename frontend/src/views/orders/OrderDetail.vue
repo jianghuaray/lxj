@@ -574,8 +574,10 @@ import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
 import { useSettingsStore } from '@/stores/settings'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
 
 const settingsStore = useSettingsStore()
+const { confirmDelete } = useDeleteConfirm()
 
 const route = useRoute()
 const router = useRouter()
@@ -969,15 +971,10 @@ async function cancelOrder() {
 
 async function confirmDeleteOrder() {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除工单「${order.value.orderNo}」吗？此操作不可恢复。`,
-      '确认删除',
-      {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    )
+    await confirmDelete({
+      title: '确认删除工单',
+      message: `确定要删除工单 <strong>${order.value.orderNo}</strong> 吗？删除后数据将无法恢复。`
+    })
     await api.delete(`/orders/${orderId}`)
     ElMessage.success('工单已删除')
     router.push('/orders')

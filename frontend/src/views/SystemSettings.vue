@@ -14,6 +14,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
         基础数据管理
       </button>
+      <button class="system-tab" :class="{ active: activeTab === 'ecoConfig' }" @click="activeTab = 'ecoConfig'; fetchEcoConfig()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/><path d="M2 2l7.58 11.58"/><circle cx="11" cy="11" r="2"/></svg>
+        环保贡献配置
+      </button>
     </div>
 
     <!-- ===== Tab 1: User Management ===== -->
@@ -156,6 +160,77 @@
       </div>
     </div>
 
+    <!-- ===== Tab 3: Eco Contribution Config ===== -->
+    <div v-if="activeTab === 'ecoConfig'" class="tab-panel active" id="panel-eco-config">
+      <div class="eco-config-card">
+        <div class="eco-config-header">
+          <div class="eco-config-icon">🌱</div>
+          <div class="eco-config-title-section">
+            <h3 class="eco-config-title">环保贡献大屏配置</h3>
+            <p class="eco-config-desc">修改展示在数据看板和碳积分页面的环保贡献数据</p>
+          </div>
+        </div>
+        <div class="eco-config-form">
+          <div class="eco-config-row">
+            <div class="eco-config-item">
+              <label class="eco-config-label">累计积分</label>
+              <div class="eco-config-input-group">
+                <el-input 
+                  v-model="ecoConfigForm.totalPoints" 
+                  type="number" 
+                  class="eco-config-input"
+                  placeholder="请输入累计积分"
+                />
+                <span class="eco-config-unit">积分</span>
+              </div>
+            </div>
+            <div class="eco-config-item">
+              <label class="eco-config-label">节约电量</label>
+              <div class="eco-config-input-group">
+                <el-input 
+                  v-model="ecoConfigForm.savedPower" 
+                  type="number" 
+                  class="eco-config-input"
+                  placeholder="请输入节约电量"
+                />
+                <span class="eco-config-unit">kWh</span>
+              </div>
+            </div>
+          </div>
+          <div class="eco-config-row">
+            <div class="eco-config-item">
+              <label class="eco-config-label">服务家庭</label>
+              <div class="eco-config-input-group">
+                <el-input 
+                  v-model="ecoConfigForm.servedFamilies" 
+                  type="number" 
+                  class="eco-config-input"
+                  placeholder="请输入服务家庭数"
+                />
+                <span class="eco-config-unit">户</span>
+              </div>
+            </div>
+            <div class="eco-config-item">
+              <label class="eco-config-label">减少碳排放</label>
+              <div class="eco-config-input-group">
+                <el-input 
+                  v-model="ecoConfigForm.reducedCarbon" 
+                  type="number" 
+                  class="eco-config-input"
+                  placeholder="请输入减少碳排放量"
+                />
+                <span class="eco-config-unit">kg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="eco-config-actions">
+          <button class="btn-pill btn-cancel" @click="resetEcoConfig">取消</button>
+          <button class="btn-pill" @click="saveEcoConfig" :loading="ecoConfigSaving">保存配置</button>
+        </div>
+      </div>
+    </div>
+
     <!-- User Dialog -->
     <el-dialog v-model="userDialogVisible" :title="editingUser ? '编辑用户' : '新增用户'" width="500px">
       <el-form :model="userForm" label-position="top">
@@ -224,6 +299,16 @@ const baseDataOldName = ref('')    // old name (for edit mode, empty = add mode)
 const baseDataForm = ref({ name: '' })
 const baseDialogTitle = ref('')
 const baseDataLabel = ref('')
+
+// Eco config state
+const ecoConfigForm = ref({
+  totalPoints: 0,
+  savedPower: 0,
+  servedFamilies: 0,
+  reducedCarbon: 0
+})
+const ecoConfigSaving = ref(false)
+const originalEcoConfig = ref({})
 
 // Category display config
 const categoryConfig = {
@@ -382,6 +467,40 @@ function addItemDialog(listName) {
 
 function editItem(listName, item) {
   openEditDialog(listName, item)
+}
+
+// Eco config methods
+async function fetchEcoConfig() {
+  try {
+    const response = await api.get('/points/eco/config')
+    if (response.data.success) {
+      ecoConfigForm.value = { ...response.data.data }
+      originalEcoConfig.value = { ...response.data.data }
+    }
+  } catch (error) {
+    console.error('获取环保配置失败', error)
+  }
+}
+
+function resetEcoConfig() {
+  ecoConfigForm.value = { ...originalEcoConfig.value }
+}
+
+async function saveEcoConfig() {
+  ecoConfigSaving.value = true
+  try {
+    const response = await api.post('/points/eco/config', ecoConfigForm.value)
+    if (response.data.success) {
+      ElMessage.success('配置保存成功')
+      originalEcoConfig.value = { ...ecoConfigForm.value }
+    } else {
+      ElMessage.error('保存失败')
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  } finally {
+    ecoConfigSaving.value = false
+  }
 }
 
 onMounted(() => {
@@ -566,5 +685,140 @@ onMounted(() => {
 
 @media (max-width: 900px) {
   .data-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Eco Config Styles ===== */
+.eco-config-card {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+  border: 1px solid rgba(16,185,129,0.15);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 8px 32px -4px rgba(16,185,129,0.1);
+}
+
+.eco-config-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(16,185,129,0.15);
+}
+
+.eco-config-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(16,185,129,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.eco-config-title-section {
+  flex: 1;
+}
+
+.eco-config-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: #065F46;
+  margin: 0 0 4px;
+}
+
+.eco-config-desc {
+  font-size: 13px;
+  color: #065F46;
+  opacity: 0.6;
+  margin: 0;
+}
+
+.eco-config-form {
+  margin-bottom: 24px;
+}
+
+.eco-config-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.eco-config-item {
+  background: rgba(255,255,255,0.8);
+  border-radius: 16px;
+  padding: 16px 20px;
+  border: 1px solid rgba(16,185,129,0.1);
+}
+
+.eco-config-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #065F46;
+  margin-bottom: 8px;
+}
+
+.eco-config-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eco-config-input {
+  flex: 1;
+  :deep(.el-input__wrapper) {
+    border-radius: 12px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    background: rgba(240,255,245,0.5) !important;
+    box-shadow: 0 0 0 1px rgba(16,185,129,0.15) !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  :deep(.el-input__inner) {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 20px;
+    color: #065F46;
+    text-align: center;
+  }
+}
+
+.eco-config-unit {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: #065F46;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.eco-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancel {
+  background: rgba(255,255,255,0.8) !important;
+  color: var(--fg) !important;
+  border: 1px solid rgba(16,185,129,0.2) !important;
+  
+  &:hover {
+    background: rgba(255,255,255,1) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .eco-config-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

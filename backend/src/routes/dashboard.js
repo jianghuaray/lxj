@@ -207,6 +207,7 @@ router.get('/area-stats', auth, async (req, res) => {
       ],
       where: { area: { [Op.not]: null, [Op.ne]: '' } },
       group: ['area'],
+      order: [['area', 'ASC']],
       raw: true
     });
 

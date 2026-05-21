@@ -1,20 +1,66 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { Technician, Construction, WorkOrder, CallbackRecord } = require('../models');
+const { Technician, Construction, WorkOrder, CallbackRecord, sequelize } = require('../models');
 const { auth } = require('../middleware/auth');
 const { escapeLike, validateLength } = require('../utils/sanitize');
 
 const router = express.Router();
 
+// 批量计算师傅统计（orderCount / avgSatisfaction / totalRevenue）
+async function computeTechStats(techIds, monthStart, monthEnd) {
+  const orderCountMap = {};
+  const totalRevenueMap = {};
+  const avgSatisfactionMap = {};
+
+  if (techIds.length === 0) return { orderCountMap, avgSatisfactionMap, totalRevenueMap };
+
+  // 1. orderCount + totalRevenue（当月）
+  const orderCounts = await Construction.findAll({
+    attributes: [
+      'technician_id',
+      [fn('COUNT', literal('*')), 'orderCount'],
+      [fn('COALESCE', fn('SUM', col('total_fee')), 0), 'totalRevenue']
+    ],
+    where: {
+      technician_id: { [Op.in]: techIds },
+      created_at: { [Op.gte]: monthStart, [Op.lt]: monthEnd }
+    },
+    group: ['technician_id']
+  });
+  orderCounts.forEach(oc => {
+    orderCountMap[oc.dataValues.technician_id] = parseInt(oc.dataValues.orderCount);
+    totalRevenueMap[oc.dataValues.technician_id] = parseFloat(oc.dataValues.totalRevenue) || 0;
+  });
+
+  // 2. avgSatisfaction：一条 SQL JOIN 直接算出每个 technician 的平均分
+  const avgSql = `
+    SELECT c.technician_id, AVG(cr.satisfaction_score) as avg_score
+    FROM constructions c
+    INNER JOIN callback_records cr ON c.order_id = cr.order_id
+    WHERE c.technician_id IN (${techIds.map(() => '?').join(',')})
+      AND cr.satisfaction_score IS NOT NULL
+    GROUP BY c.technician_id
+  `;
+  const avgRows = await sequelize.query(avgSql, {
+    replacements: techIds,
+    type: sequelize.QueryTypes.SELECT
+  });
+  avgRows.forEach(r => {
+    avgSatisfactionMap[r.technician_id] = parseFloat(r.avg_score).toFixed(1);
+  });
+
+  return { orderCountMap, avgSatisfactionMap, totalRevenueMap };
+}
+
 // 获取师傅列表
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, pageSize = 20, keyword, status, specialty } = req.query;
+    const { page = 1, pageSize = 20, keyword, status, specialty, sort } = req.query;
 
     const where = {};
     if (status !== undefined && status !== '') {
-      const parsedStatus = parseInt(status);
-      if (!isNaN(parsedStatus)) {
+      const parsedStatus = Number(status);
+      if (!Number.isNaN(parsedStatus)) {
         where.status = parsedStatus;
       }
     }
@@ -31,94 +77,128 @@ router.get('/', auth, async (req, res) => {
       where.specialties = { [Op.like]: `%${safeSpecialty}%` };
     }
 
-    const offset = (page - 1) * pageSize;
+    // Compute current month range for revenue
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-    const { count, rows } = await Technician.findAndCountAll({
-      where,
-      order: [['created_at', 'DESC']],
-      limit: parseInt(pageSize),
-      offset
-    });
+    // If sorting by computed fields, fetch all matching records and sort in JS
+    const sortField = sort ? sort.split('_')[0] : ''; // orderCount, avgSatisfaction, totalRevenue
+    const sortDir = sort ? (sort.endsWith('_asc') ? 'ASC' : 'DESC') : 'DESC';
+    const needsPostSort = ['orderCount', 'avgSatisfaction', 'totalRevenue'].includes(sortField);
 
-    // Batch compute order counts and avg satisfaction - single query each
-    const techIds = rows.map(t => t.id);
+    // For post-sort, fetch without pagination first to compute stats, then paginate after sort
+    let items, total;
 
-    let orderCountMap = {};
-    let avgSatisfactionMap = {};
+    if (needsPostSort) {
+      // Fetch all matching technicians (no pagination)
+      const allRows = await Technician.findAll({ where });
 
-    if (techIds.length > 0) {
-      // Batch order count by technician_id
-      const orderCounts = await Construction.findAll({
-        attributes: [
-          'technician_id',
-          [fn('COUNT', literal('*')), 'orderCount']
-        ],
-        where: { technician_id: { [Op.in]: techIds } },
-        group: ['technician_id']
+      const techIds = allRows.map(t => t.id);
+      const { orderCountMap, avgSatisfactionMap, totalRevenueMap } =
+        await computeTechStats(techIds, monthStart, monthEnd);
+
+      // Merge stats and sort
+      const merged = allRows.map(tech => {
+        const t = tech.toJSON();
+        return {
+          ...t,
+          orderCount: orderCountMap[t.id] || 0,
+          avgSatisfaction: avgSatisfactionMap[t.id] || '-',
+          totalRevenue: totalRevenueMap[t.id] || 0
+        };
       });
-      orderCounts.forEach(oc => {
-        orderCountMap[oc.dataValues.technician_id] = parseInt(oc.dataValues.orderCount);
-      });
 
-      // Batch avg satisfaction: get order_ids per technician from Construction,
-      // then query CallbackRecord for those order_ids
-      const techOrderIds = await Construction.findAll({
-        attributes: ['technician_id', 'order_id'],
-        where: { technician_id: { [Op.in]: techIds } }
-      });
-      // Group order_ids by technician
-      const techOrderMap = {};
-      techOrderIds.forEach(r => {
-        if (!techOrderMap[r.technician_id]) techOrderMap[r.technician_id] = [];
-        techOrderMap[r.technician_id].push(r.order_id);
-      });
-      // Collect all order_ids that have callbacks
-      const allOrderIds = techOrderIds.map(r => r.order_id);
-      if (allOrderIds.length > 0) {
-        const callbackStats = await CallbackRecord.findAll({
-          attributes: [
-            'order_id',
-            [fn('AVG', col('satisfaction_score')), 'avg']
-          ],
-          where: {
-            order_id: { [Op.in]: allOrderIds },
-            satisfaction_score: { [Op.not]: null }
-          },
-          group: ['order_id']
-        });
-        // Map order_id -> avg score
-        const orderAvgMap = {};
-        callbackStats.forEach(cs => {
-          orderAvgMap[cs.dataValues.order_id] = parseFloat(cs.dataValues.avg).toFixed(1);
-        });
-        // Aggregate per technician: average of their orders' avg scores
-        for (const [techId, orderIds] of Object.entries(techOrderMap)) {
-          const scores = orderIds.map(oid => orderAvgMap[oid]).filter(s => s !== undefined);
-          if (scores.length > 0) {
-            avgSatisfactionMap[techId] = (scores.reduce((a, b) => a + parseFloat(b), 0) / scores.length).toFixed(1);
-          }
+      // Sort by computed field
+      merged.sort((a, b) => {
+        let valA, valB;
+        if (sortField === 'orderCount') {
+          valA = a.orderCount; valB = b.orderCount;
+        } else if (sortField === 'avgSatisfaction') {
+          valA = a.avgSatisfaction === '-' ? 0 : parseFloat(a.avgSatisfaction);
+          valB = b.avgSatisfaction === '-' ? 0 : parseFloat(b.avgSatisfaction);
+        } else if (sortField === 'totalRevenue') {
+          valA = a.totalRevenue; valB = b.totalRevenue;
         }
-      }
-    }
+        return sortDir === 'DESC' ? valB - valA : valA - valB;
+      });
 
-    // Merge computed fields into items
-    const items = rows.map(tech => {
-      const t = tech.toJSON();
-      return {
-        ...t,
-        orderCount: orderCountMap[t.id] || 0,
-        avgSatisfaction: avgSatisfactionMap[t.id] || '-'
-      };
-    });
+      total = merged.length;
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+      items = merged.slice(offset, offset + parseInt(pageSize));
+    } else {
+      // Default: DB-level sort by created_at
+      const offset = (parseInt(page) - 1) * parseInt(pageSize);
+
+      const { count, rows } = await Technician.findAndCountAll({
+        where,
+        order: [['created_at', 'DESC']],
+        limit: parseInt(pageSize),
+        offset
+      });
+
+      const techIds = rows.map(t => t.id);
+      const { orderCountMap, avgSatisfactionMap, totalRevenueMap } =
+        await computeTechStats(techIds, monthStart, monthEnd);
+
+      total = count;
+      items = rows.map(tech => {
+        const t = tech.toJSON();
+        return {
+          ...t,
+          orderCount: orderCountMap[t.id] || 0,
+          avgSatisfaction: avgSatisfactionMap[t.id] || '-',
+          totalRevenue: totalRevenueMap[t.id] || 0
+        };
+      });
+    }
 
     res.json({
       items,
-      total: count,
+      total,
       page: parseInt(page),
       pageSize: parseInt(pageSize)
     });
   } catch (error) {
     console.error('获取师傅列表失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 获取师傅满意度排行
+router.get('/ranking', auth, async (req, res) => {
+  try {
+    const technicians = await Technician.findAll({
+      where: { status: 1 }
+    });
+
+    if (technicians.length === 0) {
+      return res.json([]);
+    }
+
+    const techIds = technicians.map(t => t.id);
+    const { orderCountMap, avgSatisfactionMap, totalRevenueMap } =
+      await computeTechStats(techIds, new Date(0), new Date());
+
+    const ranking = technicians.map(tech => {
+      const t = tech.toJSON();
+      return {
+        id: t.id,
+        name: t.name,
+        orderCount: orderCountMap[t.id] || 0,
+        avgSatisfaction: avgSatisfactionMap[t.id] || '-',
+        totalRevenue: totalRevenueMap[t.id] || 0
+      };
+    }).filter(tech => tech.avgSatisfaction !== '-')
+      .sort((a, b) => {
+        const scoreA = parseFloat(a.avgSatisfaction) || 0;
+        const scoreB = parseFloat(b.avgSatisfaction) || 0;
+        return scoreB - scoreA;
+      });
+
+    res.json(ranking);
+  } catch (error) {
+    console.error('获取师傅排行失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
@@ -393,7 +473,26 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: '师傅不存在' });
     }
 
-    await technician.update({ status: 0 });
+    // Check if technician has dispatched (已派单) constructions — those block deletion
+    const dispatchedCount = await Construction.count({
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        where: { status: 'dispatched' },
+        required: true
+      }],
+      where: { technician_id: req.params.id }
+    });
+    if (dispatchedCount > 0) {
+      return res.status(400).json({ error: `无法删除：该师傅有 ${dispatchedCount} 条已派单工单，请先完成或取消相关工单` });
+    }
+
+    // Delete non-dispatched constructions to release FK constraint
+    await Construction.destroy({
+      where: { technician_id: req.params.id }
+    });
+
+    await technician.destroy();
     res.json({ message: '删除成功' });
   } catch (error) {
     console.error('删除师傅失败:', error);

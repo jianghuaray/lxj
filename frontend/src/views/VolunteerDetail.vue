@@ -256,10 +256,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
 
 const router = useRouter()
 const route = useRoute()
+const { confirmDelete } = useDeleteConfirm()
 
 const loading = ref(false)
 const volunteer = ref(null)
@@ -420,11 +422,10 @@ async function submitEditForm() {
 
 async function handleDeleteVolunteer() {
   try {
-    await ElMessageBox.confirm('确定要删除该志愿者吗？删除后不可恢复。', '确认删除', {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'warning',
-      confirmButtonClass: 'el-button--danger'
+    await confirmDelete({
+      title: '确认删除志愿者',
+      message: `确定要删除志愿者 <strong>${volunteer.value.name}</strong> 的信息吗？删除后数据将无法恢复。`,
+      warning: '删除后该志愿者的所有服务记录也将一并删除，请谨慎操作。'
     })
     await api.delete(`/volunteers/${volunteer.value.id}`)
     ElMessage.success('删除成功')
@@ -483,10 +484,9 @@ async function submitServiceForm() {
 
 async function handleDeleteService(service) {
   try {
-    await ElMessageBox.confirm('确定要删除该服务记录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+    await confirmDelete({
+      title: '确认删除服务记录',
+      message: `确定要删除该条服务记录吗？删除后数据将无法恢复。`
     })
     await api.delete(`/volunteers/${volunteer.value.id}/services/${service.id}`)
     ElMessage.success('删除成功')

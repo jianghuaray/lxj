@@ -10,7 +10,8 @@ const VolunteerService = sequelize.define('VolunteerService', {
   volunteerId: {
     type: DataTypes.BIGINT,
     allowNull: false,
-    field: 'volunteer_id'
+    field: 'volunteer_id',
+    index: true
   },
   serviceDate: {
     type: DataTypes.DATEONLY,

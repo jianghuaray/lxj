@@ -45,9 +45,13 @@
       <el-select v-model="specialtyFilter" class="filter-select-el" placeholder="全部类型" clearable @change="fetchTechnicians">
         <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
       </el-select>
-      <el-select v-model="statusFilter" class="filter-select-el" placeholder="全部状态" clearable @change="fetchTechnicians">
-        <el-option label="启用" value="1" />
-        <el-option label="停用" value="0" />
+      <el-select v-model="sortBy" class="filter-select-el" placeholder="默认排序" clearable @change="fetchTechnicians">
+        <el-option label="本月单量由高到低" value="orderCount_desc" />
+        <el-option label="本月单量由低到高" value="orderCount_asc" />
+        <el-option label="满意度由高到低" value="avgSatisfaction_desc" />
+        <el-option label="满意度由低到高" value="avgSatisfaction_asc" />
+        <el-option label="营收由高到低" value="totalRevenue_desc" />
+        <el-option label="营收由低到高" value="totalRevenue_asc" />
       </el-select>
       <div class="search-wrapper">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -69,23 +73,20 @@
 
     <!-- Technician Card Grid -->
     <div class="technician-grid" v-if="technicians.length > 0">
-      <div
+        <div
         v-for="(tech, index) in technicians"
         :key="tech.id"
         class="tech-card"
-        :class="{ 'odd': index % 2 === 0, 'even': index % 2 !== 0 }"
+        :style="{ borderLeftColor: tech.status !== 1 ? 'var(--destructive)' : '#4CAF50', borderLeftWidth: '3px', borderLeftStyle: 'solid' }"
       >
         <div class="tech-card-header">
-          <div class="tech-avatar">{{ tech.name?.charAt(0) || '?' }}</div>
-          <span class="status-pill" :class="tech.status === 1 ? 'active' : 'disabled'">
-            <span class="status-dot" :class="tech.status === 1 ? 'active' : 'disabled'"></span>
-            {{ tech.status === 1 ? '启用' : '停用' }}
-          </span>
-        </div>
-        <div class="tech-name">{{ tech.name }}</div>
-        <div class="tech-contact">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          {{ tech.phone }}
+          <div>
+            <div class="tech-name">{{ tech.name }}</div>
+            <div class="tech-contact">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              {{ tech.phone }}
+            </div>
+          </div>
           <span class="commission-badge">抽成 {{ tech.commission_rate ? Math.round(tech.commission_rate * 100) : 30 }}%</span>
         </div>
         <div class="tech-skills">
@@ -106,7 +107,7 @@
           </div>
         </div>
         <div class="tech-card-actions">
-          <button class="action-link muted" @click="showSettlement(tech)">
+          <button class="action-link primary" @click="showSettlement(tech)">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             结算
           </button>
@@ -115,7 +116,7 @@
             编辑
           </button>
           <button class="action-link danger" @click="handleDelete(tech)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             删除
           </button>
         </div>
@@ -194,9 +195,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import api from '@/utils/api'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import { useDeleteConfirm } from '@/composables/useDeleteConfirm'
+
+const { confirmDelete } = useDeleteConfirm()
 import { useSettingsStore } from '@/stores/settings'
 import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
@@ -206,9 +211,10 @@ const loading = ref(false)
 const technicians = ref([])
 const total = ref(0)
 const page = ref(1)
+let fetchTechCancel = null
 const pageSize = ref(12)
 const searchQuery = ref('')
-const statusFilter = ref('')
+const sortBy = ref('')
 const specialtyFilter = ref('')
 
 const stats = ref({
@@ -252,7 +258,7 @@ function formatRevenue(tech) {
 
 function resetFilters() {
   searchQuery.value = ''
-  statusFilter.value = ''
+  sortBy.value = ''
   specialtyFilter.value = ''
   page.value = 1
   fetchTechnicians()
@@ -275,16 +281,22 @@ async function fetchStats() {
 }
 
 async function fetchTechnicians() {
+  // 取消上一个未完成的请求
+  if (fetchTechCancel) fetchTechCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchTechCancel = cancel
+
   loading.value = true
   try {
     const params = { page: page.value, pageSize: pageSize.value }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (sortBy.value) params.sort = sortBy.value
     if (specialtyFilter.value) params.specialty = specialtyFilter.value
-    const response = await api.get('/technicians', { params })
+    const response = await api.get('/technicians', { params, signal })
     technicians.value = response.data.items || response.data || []
     total.value = response.data.total || technicians.value.length
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取师傅列表失败')
   } finally {
     loading.value = false
@@ -328,8 +340,10 @@ async function exportSettlement() {
 
 async function handleDelete(tech) {
   try {
-    await ElMessageBox.confirm('确定要删除该师傅吗？', '提示', {
-      confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+    await confirmDelete({
+      title: '确认删除师傅',
+      message: `确定要删除师傅 <strong>${tech.name}</strong> 的信息吗？删除后该师傅的所有历史数据将无法恢复。`,
+      warning: '如果师傅有已派单工单，则无法删除！'
     })
     await api.delete(`/technicians/${tech.id}`)
     ElMessage.success('删除成功')
@@ -345,9 +359,9 @@ async function exportTechnicians() {
     // 获取所有筛选条件下的数据（不分页）
     const params = { page: 1, pageSize: 9999 }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (statusFilter.value !== '') params.status = statusFilter.value
+    if (sortBy.value) params.sort = sortBy.value
     if (specialtyFilter.value) params.specialty = specialtyFilter.value
-    
+
     const response = await api.get('/technicians', { params })
     const allTechnicians = response.data.items || response.data || []
     
@@ -378,6 +392,9 @@ onMounted(() => {
   if (!settingsStore.loaded) settingsStore.fetchAll()
   fetchTechnicians()
   fetchStats()
+})
+onUnmounted(() => {
+  if (fetchTechCancel) fetchTechCancel()
 })
 </script>
 
@@ -630,7 +647,7 @@ onMounted(() => {
 /* Technician Card Grid */
 .technician-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -638,12 +655,13 @@ onMounted(() => {
 .tech-card {
   background: var(--card-bg);
   border: 1px solid rgba(222, 216, 207, 0.5);
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-soft);
   transition: all 0.3s ease;
+  border-radius: 20px;
 
-  &.odd { border-radius: 24px 16px 24px 16px; }
-  &.even { border-radius: 16px 24px 16px 24px; }
+  &:nth-child(odd) { border-radius: 24px 16px 24px 16px; }
+  &:nth-child(even) { border-radius: 16px 24px 16px 24px; }
 
   &:hover {
     transform: translateY(-2px);
@@ -655,60 +673,15 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
-}
-
-.tech-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(74, 127, 181, 0.15), rgba(74, 127, 181, 0.25));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  color: var(--primary);
-  flex-shrink: 0;
-}
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 14px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: var(--font-body);
-
-  &.active { background: rgba(76, 175, 80, 0.1); color: #388E3C; }
-  &.disabled { background: rgba(212, 114, 106, 0.1); color: var(--destructive); }
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-
-  &.active { background: #4CAF50; }
-  &.disabled { background: var(--destructive); }
-}
-
-.tech-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-  color: var(--fg);
-  margin-bottom: 4px;
+  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .tech-contact {
   font-size: 13px;
   font-weight: 400;
-  color: var(--muted-fg);
-  margin-bottom: 12px;
+  color: #9A9A8E;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -721,13 +694,22 @@ onMounted(() => {
 }
 
 .commission-badge {
-  margin-left: auto;
   font-size: 12px;
   font-weight: 600;
+  font-family: var(--font-body);
   color: var(--secondary);
   background: rgba(232, 184, 75, 0.1);
   padding: 2px 10px;
   border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tech-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--fg);
+  margin-bottom: 4px;
 }
 
 .tech-skills {
@@ -766,16 +748,16 @@ onMounted(() => {
 
 .tech-stat-value {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 18px;
-  color: var(--fg);
+  color: #5A5A50;
   line-height: 1.2;
 }
 
 .tech-stat-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--muted-fg);
+  color: #9A9A8E;
   margin-top: 2px;
 }
 
@@ -907,7 +889,12 @@ onMounted(() => {
 .summary-label { font-size: 14px; color: var(--fg); }
 .summary-value { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--primary); }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .technician-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
   .stats-grid { grid-template-columns: 1fr; }
   .technician-grid { grid-template-columns: 1fr; }
 }

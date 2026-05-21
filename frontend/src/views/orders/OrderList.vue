@@ -184,7 +184,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/utils/api'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatTime } from '@/utils/format'
@@ -195,6 +196,7 @@ const settingsStore = useSettingsStore()
 
 const router = useRouter()
 const loading = ref(false)
+let fetchOrdersCancel = null
 const orders = ref([])
 const searchQuery = ref('')
 const activeTab = ref('')
@@ -345,6 +347,11 @@ function resetFilters() {
 }
 
 async function fetchOrders() {
+  // 取消上一个未完成的请求
+  if (fetchOrdersCancel) fetchOrdersCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchOrdersCancel = cancel
+
   loading.value = true
   try {
     const params = {
@@ -361,7 +368,7 @@ async function fetchOrders() {
     if (categoryFilter.value) params.problemCategory = categoryFilter.value
     if (technicianFilter.value) params.technicianId = technicianFilter.value
 
-    const response = await api.get('/orders', { params })
+    const response = await api.get('/orders', { params, signal })
     orders.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || orders.value.length
 
@@ -379,6 +386,7 @@ async function fetchOrders() {
     const sc = response.data.statusCounts || {}
     stats.value.total = Object.values(sc).reduce((a, b) => a + b, 0)
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取工单列表失败')
     console.error(error)
   } finally {
@@ -406,7 +414,10 @@ onMounted(() => {
   fetchOrders()
   fetchTechnicians()
 })
-onUnmounted(() => { debouncedSearch.cancel() })
+onUnmounted(() => { 
+  debouncedSearch.cancel()
+  if (fetchOrdersCancel) fetchOrdersCancel()
+})
 
 async function exportOrders() {
   try {
@@ -425,19 +436,24 @@ async function exportOrders() {
     const response = await api.get('/orders', { params })
     const allOrders = response.data.items || response.data || []
 
-    // 表头
-    const headers = ['订单号', '客户', '区域', '问题分类', '维修师傅', '状态', '维修金额', '创建时间']
+    // 表头（对齐需求文档）
+    const headers = ['订单号', '客户姓名', '联系方式', '区域', '住址', '问题分类', '问题描述', '接线员', '维修师傅', '状态', '维修金额', '满意度评分', '费用是否一致']
 
     // 数据行
     const data = allOrders.map(o => [
       o.orderNo || '',
       o.customerName || '',
+      o.customerPhone || '',
       o.area || '',
+      o.address || '',
       o.problemCategory || '',
+      o.problemDescription || '',
+      o.receiverName || '',
       o.technicianName || '',
       getStatusText(o.status),
-      (o.totalFee || o.construction?.totalFee) ? `¥${o.totalFee || o.construction?.totalFee}` : '-',
-      formatDateForExport(o.createdAt)
+      o.totalFee ? `¥${o.totalFee}` : '-',
+      o.callbackRecord?.satisfaction_score ?? '-',
+      o.callbackRecord?.fee_consistent === 1 ? '是' : o.callbackRecord?.fee_consistent === 0 ? '否' : '-'
     ])
 
     exportToExcel('工单列表', headers, data)

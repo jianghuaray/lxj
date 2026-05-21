@@ -55,6 +55,21 @@ const Customer = sequelize.define('Customer', {
   last_order_at: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  current_points: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  total_earned_points: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
+  total_spent_points: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
   }
 }, {
   tableName: 'customers',

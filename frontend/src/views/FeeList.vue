@@ -283,9 +283,8 @@ async function fetchData() {
     }
   } catch (error) {
     console.error('获取费用数据失败', error)
-    // 使用模拟数据
-    feeList.value = getMockData()
-    calculateMockSummary()
+    feeList.value = []
+    summary.value = {}
   } finally {
     loading.value = false
   }
@@ -368,32 +367,7 @@ async function exportExcel() {
   }
 }
 
-// Mock data for demo
-function getMockData() {
-  return [
-    { id: 1, orderId: 1, orderNo: '202604300004', customerName: '赵六', technicianName: '郭富杰', problemCategory: '家具门窗', totalFee: 280, serviceFee: 56, receivedFee: 56, materialCost: 30, buildingManagerIncentive: 10, completedAt: '2026-04-29' },
-    { id: 2, orderId: 2, orderNo: '202604300005', customerName: '钱七', technicianName: '张华', problemCategory: '测漏防水', totalFee: 580, serviceFee: 116, receivedFee: 116, materialCost: 80, buildingManagerIncentive: 20, completedAt: '2026-04-30' },
-    { id: 3, orderId: 3, orderNo: '202604300006', customerName: '孙八', technicianName: '韩胜涛', problemCategory: '水电维修', totalFee: 150, serviceFee: 30, receivedFee: 30, materialCost: 20, buildingManagerIncentive: 10, completedAt: '2026-04-27' },
-    { id: 4, orderId: 4, orderNo: '202604250018', customerName: '周八', technicianName: '李朝', problemCategory: '家电维修', totalFee: 420, serviceFee: 84, receivedFee: 80, materialCost: 60, buildingManagerIncentive: 15, completedAt: '2026-04-25' },
-    { id: 5, orderId: 5, orderNo: '202604250012', customerName: '吴九', technicianName: '巴焱', problemCategory: '下水疏通', totalFee: 200, serviceFee: 40, receivedFee: 40, materialCost: 15, buildingManagerIncentive: 10, completedAt: '2026-04-25' },
-    { id: 6, orderId: 6, orderNo: '202604240008', customerName: '郑十', technicianName: '韩胜涛', problemCategory: '水电维修', totalFee: 350, serviceFee: 70, receivedFee: 70, materialCost: 50, buildingManagerIncentive: 15, completedAt: '2026-04-24' },
-    { id: 7, orderId: 7, orderNo: '202604230015', customerName: '陈明', technicianName: '郭富杰', problemCategory: '测漏防水', totalFee: 860, serviceFee: 172, receivedFee: 168, materialCost: 120, buildingManagerIncentive: 25, completedAt: '2026-04-23' },
-    { id: 8, orderId: 8, orderNo: '202604220011', customerName: '黄丽', technicianName: '张华', problemCategory: '家具门窗', totalFee: 680, serviceFee: 136, receivedFee: 130, materialCost: 90, buildingManagerIncentive: 20, completedAt: '2026-04-22' }
-  ]
-}
 
-function calculateMockSummary() {
-  const data = feeList.value
-  summary.value = {
-    totalFee: data.reduce((sum, item) => sum + (item.totalFee || 0), 0),
-    serviceFee: data.reduce((sum, item) => sum + (item.serviceFee || 0), 0),
-    receivedFee: data.reduce((sum, item) => sum + (item.receivedFee || 0), 0),
-    feeDifference: data.reduce((sum, item) => sum + ((item.serviceFee || 0) - (item.receivedFee || 0)), 0),
-    materialCost: data.reduce((sum, item) => sum + (item.materialCost || 0), 0),
-    incentive: data.reduce((sum, item) => sum + (item.buildingManagerIncentive || 0), 0),
-    profit: data.reduce((sum, item) => sum + ((item.receivedFee || 0) - (item.buildingManagerIncentive || 0)), 0)
-  }
-}
 
 onMounted(() => {
   if (!settingsStore.loaded) settingsStore.fetchAll()

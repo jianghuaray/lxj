@@ -156,7 +156,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '@/utils/api'
+import api, { createCancelToken } from '@/utils/api'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatDate } from '@/utils/format'
@@ -164,6 +165,7 @@ import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 
 const router = useRouter()
 const loading = ref(false)
+let fetchCustomersCancel = null
 const customers = ref([])
 const searchQuery = ref('')
 const levelFilter = ref('')
@@ -273,14 +275,14 @@ async function fetchStats() {
   }
 }
 
-async function fetchNewCustomers() {
+async function fetchNewCustomers(signal) {
   loading.value = true
   try {
     const params = { page: 1, pageSize: 9999 }
     if (searchQuery.value) params.keyword = searchQuery.value
     if (areaFilter.value) params.area = areaFilter.value
     
-    const response = await api.get('/customers', { params })
+    const response = await api.get('/customers', { params, signal })
     const allCustomers = response.data.items || response.data || []
     
     const now = new Date()
@@ -299,6 +301,7 @@ async function fetchNewCustomers() {
     customers.value = newCustomers.slice(start, end)
     pagination.value.total = newCustomers.length
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取客户列表失败')
   } finally {
     loading.value = false
@@ -306,11 +309,16 @@ async function fetchNewCustomers() {
 }
 
 async function fetchCustomers() {
+  // 取消上一个未完成的请求
+  if (fetchCustomersCancel) fetchCustomersCancel()
+  const { signal, cancel } = createCancelToken()
+  fetchCustomersCancel = cancel
+
   loading.value = true
   try {
     // 如果是"本月新增"卡片，使用特殊处理
     if (activeCard.value === 'new') {
-      await fetchNewCustomers()
+      await fetchNewCustomers(signal)
       return
     }
     
@@ -318,10 +326,11 @@ async function fetchCustomers() {
     if (searchQuery.value) params.keyword = searchQuery.value
     if (levelFilter.value) params.level = levelFilter.value
     if (areaFilter.value) params.area = areaFilter.value
-    const response = await api.get('/customers', { params })
+    const response = await api.get('/customers', { params, signal })
     customers.value = response.data.items || response.data || []
     pagination.value.total = response.data.total || customers.value.length
   } catch (error) {
+    if (axios.isCancel?.(error)) return
     ElMessage.error('获取客户列表失败')
   } finally {
     loading.value = false
@@ -388,7 +397,10 @@ async function exportCustomers() {
   }
 }
 
-onUnmounted(() => { debouncedSearch.cancel() })
+onUnmounted(() => { 
+  debouncedSearch.cancel()
+  if (fetchCustomersCancel) fetchCustomersCancel()
+})
 </script>
 
 <style scoped lang="scss">

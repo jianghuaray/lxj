@@ -297,6 +297,15 @@ router.delete('/:id', auth, authAdmin, async (req, res) => {
       return res.status(404).json({ error: '客户不存在' });
     }
 
+    // Check if customer has associated work orders — keep orders, clear customer_id
+    const orderCount = await WorkOrder.count({ where: { customer_id: req.params.id } });
+    if (orderCount > 0) {
+      await WorkOrder.update(
+        { customer_id: null },
+        { where: { customer_id: req.params.id } }
+      );
+    }
+
     await customer.destroy();
     res.json({ message: '删除成功' });
   } catch (error) {

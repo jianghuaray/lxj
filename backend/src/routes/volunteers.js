@@ -2,6 +2,7 @@ const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const { Volunteer, VolunteerService } = require('../models');
 const { auth } = require('../middleware/auth');
+const { escapeLike } = require('../utils/sanitize');
 
 const router = express.Router();
 
@@ -43,9 +44,10 @@ router.get('/', auth, async (req, res) => {
 
     const where = {};
     if (keyword) {
+      const kw = `%${escapeLike(keyword)}%`;
       where[Op.or] = [
-        { name: { [Op.like]: `%${keyword}%` } },
-        { phone: { [Op.like]: `%${keyword}%` } }
+        { name: { [Op.like]: kw } },
+        { phone: { [Op.like]: kw } }
       ];
     }
     if (community) {
@@ -69,25 +71,29 @@ router.get('/', auth, async (req, res) => {
 
     // 为每个志愿者添加服务次数和时长统计
     const volunteerIds = rows.map(v => v.id);
-    const serviceStats = await VolunteerService.findAll({
-      attributes: [
-        'volunteerId',
-        [VolunteerService.sequelize.fn('COUNT', VolunteerService.sequelize.col('id')), 'serviceCount']
-      ],
+    const serviceRecords = await VolunteerService.findAll({
       where: { volunteerId: { [Op.in]: volunteerIds } },
-      group: ['volunteerId']
+      attributes: ['volunteerId', 'serviceDuration']
     });
 
     const statsMap = {};
-    serviceStats.forEach(s => {
-      statsMap[s.dataValues.volunteerId] = parseInt(s.dataValues.serviceCount);
+    serviceRecords.forEach(s => {
+      const durationStr = s.serviceDuration || '0';
+      const hours = parseFloat(durationStr.replace(/[^\d.]/g, '')) || 0;
+      if (!statsMap[s.volunteerId]) {
+        statsMap[s.volunteerId] = { serviceCount: 0, serviceHours: 0 };
+      }
+      statsMap[s.volunteerId].serviceCount++;
+      statsMap[s.volunteerId].serviceHours += hours;
     });
 
     const items = rows.map(v => {
       const data = v.toJSON();
+      const stats = statsMap[data.id] || { serviceCount: 0, serviceHours: 0 };
       return {
         ...data,
-        serviceCount: statsMap[data.id] || 0
+        serviceCount: stats.serviceCount,
+        serviceHours: parseFloat(stats.serviceHours.toFixed(1))
       };
     });
 

@@ -10,6 +10,7 @@ const Volunteer = require('./Volunteer');
 const VolunteerService = require('./VolunteerService');
 const Settings = require('./Settings');
 const OperationLog = require('./OperationLog');
+const PointRecord = require('./PointRecord');
 
 // 定义模型关联
 
@@ -22,8 +23,8 @@ User.hasMany(CallbackRecord, { foreignKey: 'callback_by', as: 'callbacks', onDel
 CallbackRecord.belongsTo(User, { foreignKey: 'callback_by', as: 'callbackUser', onDelete: 'SET NULL' });
 
 // 客户与工单的关系
-Customer.hasMany(WorkOrder, { foreignKey: 'customer_id', as: 'orders', onDelete: 'RESTRICT' });
-WorkOrder.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'RESTRICT' });
+Customer.hasMany(WorkOrder, { foreignKey: 'customer_id', as: 'orders', onDelete: 'SET NULL' });
+WorkOrder.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'SET NULL' });
 
 // 师傅与施工记录的关系
 Technician.hasMany(Construction, { foreignKey: 'technician_id', as: 'constructions', onDelete: 'RESTRICT' });
@@ -45,6 +46,10 @@ OperationLog.belongsTo(User, { foreignKey: 'operator_id', as: 'operator', onDele
 Volunteer.hasMany(VolunteerService, { foreignKey: 'volunteer_id', as: 'services', onDelete: 'CASCADE' });
 VolunteerService.belongsTo(Volunteer, { foreignKey: 'volunteer_id', as: 'volunteer', onDelete: 'CASCADE' });
 
+// 客户与积分记录的关系
+Customer.hasMany(PointRecord, { foreignKey: 'customer_id', as: 'pointRecords', onDelete: 'CASCADE' });
+PointRecord.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', onDelete: 'CASCADE' });
+
 module.exports = {
   sequelize,
   User,
@@ -56,5 +61,6 @@ module.exports = {
   Volunteer,
   VolunteerService,
   Settings,
-  OperationLog
+  OperationLog,
+  PointRecord
 };

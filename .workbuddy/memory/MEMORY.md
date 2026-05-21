@@ -68,3 +68,34 @@
 - `/frontend/src/views/TechnicianList.vue` ✅
 - `/frontend/src/views/SystemSettings.vue` ✅
 - `/frontend/src/views/orders/OrderList.vue` ✅ (工单管理页面)
+
+## 代码审查修复记录（2026-05-05）
+
+### 批次一已修复（11项）
+| 问题 | 文件 | 修复内容 |
+|------|------|----------|
+| showError 递归 | api.js:21 | `showError(msg)` → `ElMessage.error(msg)` |
+| 搜索注入 | volunteers.js:46 | 添加 `escapeLike(keyword)` |
+| 重复路由 | callbacks.js:215-254 | 删除 `POST /:orderId` |
+| 代码重复 | workOrders.js:470-515 | 提取 `handleAssign`，dispatch 转发 |
+| 删除无保护 | customers.js:300 | 添加关联工单检查 |
+| 删除无保护 | technicians.js:522 | 添加关联派工记录检查 |
+| 模拟数据 | FeeList.vue:287 | 删除 getMockData/calculateMockSummary |
+| 硬编码选项 | CustomerAdd.vue:133 | 改用 settingsStore.areas/channels |
+| 缺失索引 | Volunteer.js | community 字段添加 index:true |
+| 缺失索引 | VolunteerService.js | volunteerId 字段添加 index:true |
+| 缺失索引 | CallbackRecord.js | 添加 satisfaction_score 索引 |
+| CORS 硬编码 | app.js:41 | 生产环境不默认允许 localhost |
+| 无用依赖 | package.json | 删除 cos-nodejs-sdk-v5 |
+
+### 批次二待修复
+- [P1] 师傅列表查询性能优化（JOIN 替代串行查询）
+- [P2] 客户统计字段自动维护
+- [P2] 前端列表页请求取消机制
+- [P2] Dashboard 图表配置提取公共函数
+- [P2] global.scss 减少 !important
+- [P2] 配置 ESLint + Prettier
+
+### 关键发现
+- 前端未使用 `/api/callbacks/` 路径，回访通过 workOrders.js `POST /:id/callback` 处理
+- `settingsStore` 已提供 areas/channels/cancelReasons/serviceTypes，CustomerAdd 现在复用
