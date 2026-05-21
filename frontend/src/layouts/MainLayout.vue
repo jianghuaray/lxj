@@ -89,7 +89,7 @@ const menuItems = [
   { path: '/customers', title: '客户管理', icon: User },
   { path: '/technicians', title: '师傅管理', icon: Tools },
   { path: '/volunteers', title: '志愿者管理', icon: Service },
-  { path: '/fees', title: '维修费用', icon: Money },
+  { path: '/fees', title: '财务对账', icon: Money },
   { path: '/system', title: '系统设置', icon: Setting }
 ]
 

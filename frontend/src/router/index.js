@@ -111,7 +111,7 @@ const router = createRouter({
           path: 'fees',
           name: 'fees',
           component: () => import('@/views/FeeList.vue'),
-          meta: { title: '维修费用' }
+          meta: { title: '财务对账' }
         },
         {
           path: 'system',

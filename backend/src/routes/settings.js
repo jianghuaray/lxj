@@ -1,7 +1,7 @@
 const express = require('express');
 const { Op } = require('sequelize');
 const { auth, authAdmin } = require('../middleware/auth');
-const { Settings, OperationLog } = require('../models');
+const { Settings, OperationLog, Property, BuildingManager } = require('../models');
 const { escapeLike } = require('../utils/sanitize');
 
 const router = express.Router();
@@ -149,17 +149,35 @@ function registerCRUD(router, urlSlug, dbKey) {
 // ---- Batch GET: return all base data in one request ----
 router.get('/all', auth, async (req, res) => {
   try {
-    const [serviceTypes, serviceAreas, sourceChannels, cancelReasons] = await Promise.all([
+    const [serviceTypes, serviceAreas, sourceChannels, cancelReasons, properties, buildingManagers] = await Promise.all([
       ensureCategory('serviceTypes'),
       ensureCategory('serviceAreas'),
       ensureCategory('sourceChannels'),
       ensureCategory('cancelReasons'),
+      Property.findAll({ order: [['status', 'DESC'], ['name', 'ASC']] }),
+      BuildingManager.findAll({ order: [['status', 'DESC'], ['name', 'ASC']] }),
     ]);
     res.json({
       serviceTypes: serviceTypes.values || [],
       areas: serviceAreas.values || [],
       channels: sourceChannels.values || [],
       cancelReasons: cancelReasons.values || [],
+      properties: properties.map(item => ({
+        id: item.id,
+        name: item.name,
+        defaultRate: Number(item.default_rate) || 0,
+        defaultCollectionParty: item.default_collection_party || 'technician',
+        settlementCycle: item.settlement_cycle || 'monthly',
+        status: item.status,
+        remark: item.remark || ''
+      })),
+      buildingManagers: buildingManagers.map(item => ({
+        id: item.id,
+        name: item.name,
+        defaultRate: Number(item.default_rate) || 0,
+        status: item.status,
+        remark: item.remark || ''
+      })),
     });
   } catch (error) {
     console.error('获取基础数据失败:', error);
@@ -172,6 +190,158 @@ registerCRUD(router, 'service-types', 'serviceTypes');
 registerCRUD(router, 'areas', 'serviceAreas');
 registerCRUD(router, 'channels', 'sourceChannels');
 registerCRUD(router, 'cancel-reasons', 'cancelReasons');
+
+function formatProperty(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    defaultRate: Number(item.default_rate) || 0,
+    defaultCollectionParty: item.default_collection_party || 'technician',
+    settlementCycle: item.settlement_cycle || 'monthly',
+    status: item.status,
+    remark: item.remark || ''
+  };
+}
+
+function formatBuildingManager(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    defaultRate: Number(item.default_rate) || 0,
+    status: item.status,
+    remark: item.remark || ''
+  };
+}
+
+router.get('/properties', auth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status === 'active') where.status = 1;
+    const items = await Property.findAll({ where, order: [['status', 'DESC'], ['name', 'ASC']] });
+    res.json({ items: items.map(formatProperty) });
+  } catch (error) {
+    console.error('获取物业列表失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+router.post('/properties', auth, authAdmin, async (req, res) => {
+  try {
+    const { name, defaultRate, defaultCollectionParty = 'technician', settlementCycle = 'monthly', status = 1, remark } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: '请提供物业名称' });
+    const item = await Property.create({
+      name: name.trim(),
+      default_rate: defaultRate || 0,
+      default_collection_party: defaultCollectionParty,
+      settlement_cycle: settlementCycle,
+      status,
+      remark
+    });
+    await logOperation('添加物业', `添加: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.status(201).json(formatProperty(item));
+  } catch (error) {
+    console.error('添加物业失败:', error);
+    res.status(500).json({ error: error.name === 'SequelizeUniqueConstraintError' ? '物业名称已存在' : '服务器错误' });
+  }
+});
+
+router.put('/properties/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const item = await Property.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: '物业不存在' });
+    const { name, defaultRate, defaultCollectionParty, settlementCycle, status, remark } = req.body;
+    await item.update({
+      ...(name !== undefined && { name: name.trim() }),
+      ...(defaultRate !== undefined && { default_rate: defaultRate }),
+      ...(defaultCollectionParty !== undefined && { default_collection_party: defaultCollectionParty }),
+      ...(settlementCycle !== undefined && { settlement_cycle: settlementCycle }),
+      ...(status !== undefined && { status }),
+      ...(remark !== undefined && { remark })
+    });
+    await logOperation('修改物业', `修改: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.json(formatProperty(item));
+  } catch (error) {
+    console.error('修改物业失败:', error);
+    res.status(500).json({ error: error.name === 'SequelizeUniqueConstraintError' ? '物业名称已存在' : '服务器错误' });
+  }
+});
+
+router.delete('/properties/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const item = await Property.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: '物业不存在' });
+    await item.destroy();
+    await logOperation('删除物业', `删除: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.json({ message: '删除成功' });
+  } catch (error) {
+    console.error('删除物业失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+router.get('/building-managers', auth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    const where = {};
+    if (status === 'active') where.status = 1;
+    const items = await BuildingManager.findAll({ where, order: [['status', 'DESC'], ['name', 'ASC']] });
+    res.json({ items: items.map(formatBuildingManager) });
+  } catch (error) {
+    console.error('获取楼管列表失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+router.post('/building-managers', auth, authAdmin, async (req, res) => {
+  try {
+    const { name, defaultRate, status = 1, remark } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: '请提供楼管名称' });
+    const item = await BuildingManager.create({
+      name: name.trim(),
+      default_rate: defaultRate || 0,
+      status,
+      remark
+    });
+    await logOperation('添加楼管', `添加: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.status(201).json(formatBuildingManager(item));
+  } catch (error) {
+    console.error('添加楼管失败:', error);
+    res.status(500).json({ error: error.name === 'SequelizeUniqueConstraintError' ? '楼管名称已存在' : '服务器错误' });
+  }
+});
+
+router.put('/building-managers/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const item = await BuildingManager.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: '楼管不存在' });
+    const { name, defaultRate, status, remark } = req.body;
+    await item.update({
+      ...(name !== undefined && { name: name.trim() }),
+      ...(defaultRate !== undefined && { default_rate: defaultRate }),
+      ...(status !== undefined && { status }),
+      ...(remark !== undefined && { remark })
+    });
+    await logOperation('修改楼管', `修改: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.json(formatBuildingManager(item));
+  } catch (error) {
+    console.error('修改楼管失败:', error);
+    res.status(500).json({ error: error.name === 'SequelizeUniqueConstraintError' ? '楼管名称已存在' : '服务器错误' });
+  }
+});
+
+router.delete('/building-managers/:id', auth, authAdmin, async (req, res) => {
+  try {
+    const item = await BuildingManager.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: '楼管不存在' });
+    await item.destroy();
+    await logOperation('删除楼管', `删除: ${item.name}`, req.user?.id, req.user?.real_name);
+    res.json({ message: '删除成功' });
+  } catch (error) {
+    console.error('删除楼管失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
 
 // ---- Operation Logs ----
 router.get('/logs', auth, async (req, res) => {

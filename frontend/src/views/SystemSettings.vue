@@ -154,6 +154,76 @@
           </div>
         </div>
       </div>
+
+      <div class="table-container" style="margin-top: 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0 24px;">
+          <span class="data-card-title">物业档案</span>
+          <button class="btn-pill" @click="openPropertyDialog()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+            添加物业
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>默认比例</th>
+              <th>默认收款方</th>
+              <th>结算周期</th>
+              <th>状态</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in properties" :key="item.id">
+              <td>{{ item.name }}</td>
+              <td>{{ formatRate(item.defaultRate) }}</td>
+              <td>{{ getCollectionPartyText(item.defaultCollectionParty) }}</td>
+              <td>{{ getSettlementCycleText(item.settlementCycle) }}</td>
+              <td>{{ item.status === 1 ? '启用' : '停用' }}</td>
+              <td>{{ item.remark || '-' }}</td>
+              <td>
+                <button class="action-btn" @click="openPropertyDialog(item)">编辑</button>
+                <button class="action-btn danger" @click="removeProperty(item)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-container">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0 24px;">
+          <span class="data-card-title">楼管档案</span>
+          <button class="btn-pill" @click="openBuildingManagerDialog()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+            添加楼管
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>默认比例</th>
+              <th>状态</th>
+              <th>备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in buildingManagers" :key="item.id">
+              <td>{{ item.name }}</td>
+              <td>{{ formatRate(item.defaultRate) }}</td>
+              <td>{{ item.status === 1 ? '启用' : '停用' }}</td>
+              <td>{{ item.remark || '-' }}</td>
+              <td>
+                <button class="action-btn" @click="openBuildingManagerDialog(item)">编辑</button>
+                <button class="action-btn danger" @click="removeBuildingManager(item)">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- User Dialog -->
@@ -199,6 +269,69 @@
         <el-button type="primary" @click="saveBaseDataItem" :loading="baseDataSaving">确定</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="propertyDialogVisible" :title="editingProperty ? '编辑物业' : '新增物业'" width="480px">
+      <el-form :model="propertyForm" label-position="top">
+        <el-form-item label="物业名称">
+          <el-input v-model="propertyForm.name" />
+        </el-form-item>
+        <el-form-item label="默认比例（%）">
+          <el-input-number v-model="propertyForm.defaultRate" :min="0" :max="100" :precision="2" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="默认收款方">
+          <el-select v-model="propertyForm.defaultCollectionParty" class="form-select-el">
+            <el-option label="师傅收款" value="technician" />
+            <el-option label="物业收款" value="property" />
+            <el-option label="公司收款" value="company" />
+            <el-option label="其他" value="other" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="结算周期">
+          <el-select v-model="propertyForm.settlementCycle" class="form-select-el">
+            <el-option label="现结" value="current" />
+            <el-option label="半月结" value="half_month" />
+            <el-option label="月结" value="monthly" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="propertyForm.status" class="form-select-el">
+            <el-option label="启用" :value="1" />
+            <el-option label="停用" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="propertyForm.remark" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="propertyDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProperty" :loading="propertySaving">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="buildingManagerDialogVisible" :title="editingBuildingManager ? '编辑楼管' : '新增楼管'" width="480px">
+      <el-form :model="buildingManagerForm" label-position="top">
+        <el-form-item label="楼管名称">
+          <el-input v-model="buildingManagerForm.name" />
+        </el-form-item>
+        <el-form-item label="默认比例（%）">
+          <el-input-number v-model="buildingManagerForm.defaultRate" :min="0" :max="100" :precision="2" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="buildingManagerForm.status" class="form-select-el">
+            <el-option label="启用" :value="1" />
+            <el-option label="停用" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="buildingManagerForm.remark" type="textarea" :rows="3" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="buildingManagerDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveBuildingManager" :loading="buildingManagerSaving">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -215,6 +348,8 @@ const serviceTypes = ref([])
 const areaList = ref([])
 const sourceChannels = ref([])
 const cancelReasons = ref([])
+const properties = ref([])
+const buildingManagers = ref([])
 
 // Base data dialog state
 const baseDataDialogVisible = ref(false)
@@ -224,6 +359,14 @@ const baseDataOldName = ref('')    // old name (for edit mode, empty = add mode)
 const baseDataForm = ref({ name: '' })
 const baseDialogTitle = ref('')
 const baseDataLabel = ref('')
+const propertyDialogVisible = ref(false)
+const propertySaving = ref(false)
+const editingProperty = ref(null)
+const propertyForm = ref({ name: '', defaultRate: 0, defaultCollectionParty: 'technician', settlementCycle: 'monthly', status: 1, remark: '' })
+const buildingManagerDialogVisible = ref(false)
+const buildingManagerSaving = ref(false)
+const editingBuildingManager = ref(null)
+const buildingManagerForm = ref({ name: '', defaultRate: 0, status: 1, remark: '' })
 
 // Category display config
 const categoryConfig = {
@@ -286,6 +429,20 @@ const apiMap = {
 
 const listRefMap = { serviceTypes, areaList, sourceChannels, cancelReasons }
 
+function formatRate(rate) {
+  return `${(Number(rate || 0) * 100).toFixed(2)}%`
+}
+
+function getCollectionPartyText(value) {
+  const map = { technician: '师傅收款', property: '物业收款', company: '公司收款', other: '其他' }
+  return map[value] || '-'
+}
+
+function getSettlementCycleText(value) {
+  const map = { current: '现结', half_month: '半月结', monthly: '月结' }
+  return map[value] || '-'
+}
+
 async function removeItem(listName, item) {
   try {
     await api.delete(`${apiMap[listName].remove}/${encodeURIComponent(item)}`)
@@ -310,8 +467,20 @@ async function fetchAllBaseData() {
     fetchBaseData('serviceTypes'),
     fetchBaseData('areaList'),
     fetchBaseData('sourceChannels'),
-    fetchBaseData('cancelReasons')
+    fetchBaseData('cancelReasons'),
+    fetchProperties(),
+    fetchBuildingManagers()
   ])
+}
+
+async function fetchProperties() {
+  const response = await api.get('/settings/properties')
+  properties.value = response.data.items || []
+}
+
+async function fetchBuildingManagers() {
+  const response = await api.get('/settings/building-managers')
+  buildingManagers.value = response.data.items || []
 }
 
 async function fetchUsers() {
@@ -382,6 +551,86 @@ function addItemDialog(listName) {
 
 function editItem(listName, item) {
   openEditDialog(listName, item)
+}
+
+function openPropertyDialog(item = null) {
+  editingProperty.value = item
+  propertyForm.value = item
+    ? { name: item.name, defaultRate: Number(item.defaultRate || 0) * 100, defaultCollectionParty: item.defaultCollectionParty || 'technician', settlementCycle: item.settlementCycle || 'monthly', status: item.status, remark: item.remark || '' }
+    : { name: '', defaultRate: 0, defaultCollectionParty: 'technician', settlementCycle: 'monthly', status: 1, remark: '' }
+  propertyDialogVisible.value = true
+}
+
+async function saveProperty() {
+  propertySaving.value = true
+  try {
+    const payload = {
+      ...propertyForm.value,
+      defaultRate: Number(propertyForm.value.defaultRate || 0) / 100
+    }
+    if (editingProperty.value) {
+      await api.put(`/settings/properties/${editingProperty.value.id}`, payload)
+    } else {
+      await api.post('/settings/properties', payload)
+    }
+    propertyDialogVisible.value = false
+    await fetchProperties()
+    ElMessage.success('保存成功')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.error || '保存失败')
+  } finally {
+    propertySaving.value = false
+  }
+}
+
+async function removeProperty(item) {
+  try {
+    await api.delete(`/settings/properties/${item.id}`)
+    await fetchProperties()
+    ElMessage.success('删除成功')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.error || '删除失败')
+  }
+}
+
+function openBuildingManagerDialog(item = null) {
+  editingBuildingManager.value = item
+  buildingManagerForm.value = item
+    ? { name: item.name, defaultRate: Number(item.defaultRate || 0) * 100, status: item.status, remark: item.remark || '' }
+    : { name: '', defaultRate: 0, status: 1, remark: '' }
+  buildingManagerDialogVisible.value = true
+}
+
+async function saveBuildingManager() {
+  buildingManagerSaving.value = true
+  try {
+    const payload = {
+      ...buildingManagerForm.value,
+      defaultRate: Number(buildingManagerForm.value.defaultRate || 0) / 100
+    }
+    if (editingBuildingManager.value) {
+      await api.put(`/settings/building-managers/${editingBuildingManager.value.id}`, payload)
+    } else {
+      await api.post('/settings/building-managers', payload)
+    }
+    buildingManagerDialogVisible.value = false
+    await fetchBuildingManagers()
+    ElMessage.success('保存成功')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.error || '保存失败')
+  } finally {
+    buildingManagerSaving.value = false
+  }
+}
+
+async function removeBuildingManager(item) {
+  try {
+    await api.delete(`/settings/building-managers/${item.id}`)
+    await fetchBuildingManagers()
+    ElMessage.success('删除成功')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.error || '删除失败')
+  }
 }
 
 onMounted(() => {

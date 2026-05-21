@@ -3,8 +3,8 @@
     <!-- Page Header -->
     <div class="page-header">
       <div class="page-header-left">
-        <h1 class="page-title">维修费用</h1>
-        <p class="page-subtitle">费用汇总查看，数据根据筛选条件实时计算</p>
+        <h1 class="page-title">财务对账</h1>
+        <p class="page-subtitle">按渠道与参与方汇总订单分成和收款情况，便于财务核对</p>
       </div>
       <button class="btn-export" @click="exportExcel">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -35,8 +35,14 @@
       <el-select v-model="areaFilter" placeholder="全部区域" clearable class="filter-select-el" @change="fetchData">
         <el-option v-for="area in settingsStore.areas" :key="area" :label="area" :value="area" />
       </el-select>
-      <el-select v-model="categoryFilter" placeholder="全部分类" clearable class="filter-select-el" @change="fetchData">
-        <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
+      <el-select v-model="channelFilter" placeholder="全部渠道" clearable class="filter-select-el" @change="fetchData">
+        <el-option v-for="channel in sourceChannelOptions" :key="channel.value" :label="channel.label" :value="channel.value" />
+      </el-select>
+      <el-select v-model="propertyFilter" placeholder="全部物业" clearable class="filter-select-el" @change="fetchData">
+        <el-option v-for="item in settingsStore.properties" :key="item.id" :label="item.name" :value="item.id" />
+      </el-select>
+      <el-select v-model="buildingManagerFilter" placeholder="全部楼管" clearable class="filter-select-el" @change="fetchData">
+        <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
       <button class="btn-query" @click="fetchData">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
@@ -45,28 +51,32 @@
     <!-- Summary Cards (6 small) -->
     <div class="summary-grid">
       <div class="summary-card">
-        <div class="card-value">¥{{ formatNumber(summary.totalFee) }}</div>
-        <div class="card-label">总维修费</div>
+        <div class="card-value">¥{{ formatNumber(summary.orderAmount) }}</div>
+        <div class="card-label">总订单额</div>
       </div>
       <div class="summary-card">
-        <div class="card-value blue">¥{{ formatNumber(summary.serviceFee) }}</div>
-        <div class="card-label">应收服务费</div>
+        <div class="card-value">¥{{ formatNumber(summary.shareBaseAmount) }}</div>
+        <div class="card-label">可分成金额</div>
       </div>
       <div class="summary-card">
-        <div class="card-value blue">¥{{ formatNumber(summary.receivedFee) }}</div>
-        <div class="card-label">实收服务费</div>
+        <div class="card-value blue">¥{{ formatNumber(summary.technicianAmount) }}</div>
+        <div class="card-label">师傅分成</div>
       </div>
       <div class="summary-card">
-        <div class="card-value red">¥{{ formatNumber(summary.feeDifference) }}</div>
-        <div class="card-label">收款差异</div>
+        <div class="card-value blue">¥{{ formatNumber(summary.propertyAmount) }}</div>
+        <div class="card-label">物业分成</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-value red">¥{{ formatNumber(summary.buildingManagerAmount) }}</div>
+        <div class="card-label">楼管分成</div>
       </div>
       <div class="summary-card">
         <div class="card-value">¥{{ formatNumber(summary.materialCost) }}</div>
         <div class="card-label">材料成本</div>
       </div>
       <div class="summary-card">
-        <div class="card-value">¥{{ formatNumber(summary.incentive) }}</div>
-        <div class="card-label">楼管激励</div>
+        <div class="card-value">¥{{ formatNumber(summary.receivedAmount) }}</div>
+        <div class="card-label">实收金额</div>
       </div>
     </div>
 
@@ -78,8 +88,8 @@
         </svg>
       </div>
       <div class="profit-info">
-        <div class="profit-value">¥{{ formatNumber(summary.profit) }}</div>
-        <div class="profit-label">公司利润</div>
+        <div class="profit-value">¥{{ formatNumber(summary.companyAmount) }}</div>
+        <div class="profit-label">公司实得</div>
       </div>
     </div>
 
@@ -91,12 +101,15 @@
             <th style="width:12%">订单号</th>
             <th style="width:8%">客户姓名</th>
             <th style="width:8%">维修师傅</th>
-            <th style="width:9%">问题分类</th>
-            <th style="width:8%">总费用</th>
-            <th style="width:9%">应收服务费</th>
-            <th style="width:9%">实收服务费</th>
+            <th style="width:8%">渠道</th>
+            <th style="width:8%">订单总额</th>
+            <th style="width:8%">可分成</th>
+            <th style="width:8%">师傅分成</th>
+            <th style="width:8%">物业分成</th>
+            <th style="width:8%">楼管分成</th>
             <th style="width:8%">材料成本</th>
-            <th style="width:8%">楼管激励</th>
+            <th style="width:8%">公司实得</th>
+            <th style="width:8%">实收金额</th>
             <th style="width:10%">完成时间</th>
           </tr>
         </thead>
@@ -105,16 +118,19 @@
             <td><span class="order-id" @click="viewOrderDetail(item.orderId)">{{ item.orderNo }}</span></td>
             <td>{{ item.customerName }}</td>
             <td>{{ item.technicianName }}</td>
-            <td>{{ item.problemCategory }}</td>
-            <td><span class="amount">¥{{ formatNumber(item.totalFee) }}</span></td>
-            <td><span class="amount">¥{{ formatNumber(item.serviceFee) }}</span></td>
-            <td><span class="amount">¥{{ formatNumber(item.receivedFee) }}</span></td>
+            <td>{{ item.sourceChannel || '-' }}</td>
+            <td><span class="amount">¥{{ formatNumber(item.orderAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.shareBaseAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.technicianAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.propertyAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.buildingManagerAmount) }}</span></td>
             <td><span class="amount">¥{{ formatNumber(item.materialCost) }}</span></td>
-            <td><span class="amount">¥{{ formatNumber(item.buildingManagerIncentive) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.companyAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.receivedAmount) }}</span></td>
             <td>{{ formatDate(item.completedAt) }}</td>
           </tr>
           <tr v-if="!loading && feeList.length === 0">
-            <td colspan="10" class="empty-cell">
+            <td colspan="13" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -122,7 +138,7 @@
                   <line x1="12" y1="18" x2="12" y2="12"/>
                   <line x1="9" y1="15" x2="15" y2="15"/>
                 </svg>
-                <p>暂无费用数据</p>
+                <p>暂无对账数据</p>
               </div>
             </td>
           </tr>
@@ -133,11 +149,14 @@
             <td></td>
             <td></td>
             <td></td>
-            <td><span class="total-amount">¥{{ formatNumber(summary.totalFee) }}</span></td>
-            <td><span class="total-amount">¥{{ formatNumber(summary.serviceFee) }}</span></td>
-            <td><span class="total-amount">¥{{ formatNumber(summary.receivedFee) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.orderAmount) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.shareBaseAmount) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.technicianAmount) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.propertyAmount) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.buildingManagerAmount) }}</span></td>
             <td><span class="total-amount">¥{{ formatNumber(summary.materialCost) }}</span></td>
-            <td><span class="total-amount">¥{{ formatNumber(summary.incentive) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.companyAmount) }}</span></td>
+            <td><span class="total-amount">¥{{ formatNumber(summary.receivedAmount) }}</span></td>
             <td></td>
           </tr>
         </tfoot>
@@ -173,7 +192,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
@@ -189,19 +208,41 @@ const feeList = ref([])
 const dateRange = ref([])
 const technicianFilter = ref('')
 const areaFilter = ref('')
-const categoryFilter = ref('')
+const channelFilter = ref('')
+const propertyFilter = ref('')
+const buildingManagerFilter = ref('')
 const technicians = ref([])
 
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 
 const summary = ref({
-  totalFee: 0,
-  serviceFee: 0,
-  receivedFee: 0,
-  feeDifference: 0,
+  orderAmount: 0,
+  shareBaseAmount: 0,
+  technicianAmount: 0,
+  propertyAmount: 0,
+  buildingManagerAmount: 0,
+  companyAmount: 0,
+  receivedAmount: 0,
+  collectionDifference: 0,
   materialCost: 0,
-  incentive: 0,
-  profit: 0
+  totalFee: 0,
+  receivedFee: 0
+})
+
+const filteredBuildingManagers = computed(() => {
+  return settingsStore.buildingManagers
+})
+
+const sourceChannelOptions = computed(() => {
+  const base = (settingsStore.channels || []).map(item => ({ label: item, value: `channel:${item}` }))
+  const properties = (settingsStore.properties || []).map(item => ({ label: `物业：${item.name}`, value: `property:${item.id}` }))
+  const buildingManagers = (settingsStore.buildingManagers || []).map(item => ({ label: `楼管：${item.name}`, value: `buildingManager:${item.id}` }))
+  return [
+    { label: '客户来电', value: 'customer' },
+    ...base,
+    ...properties,
+    ...buildingManagers
+  ]
 })
 
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.pageSize) || 1)
@@ -242,7 +283,9 @@ function resetFilters() {
   dateRange.value = []
   technicianFilter.value = ''
   areaFilter.value = ''
-  categoryFilter.value = ''
+  channelFilter.value = ''
+  propertyFilter.value = ''
+  buildingManagerFilter.value = ''
   pagination.value.page = 1
   // Set default to current month
   const now = new Date()
@@ -253,6 +296,39 @@ function resetFilters() {
     endDate.toISOString().split('T')[0]
   ]
   fetchData()
+}
+
+function syncBuildingManagerFilter() {
+  if (!buildingManagerFilter.value) return
+  const matched = filteredBuildingManagers.value.find(item => item.id === buildingManagerFilter.value)
+  if (!matched) {
+    buildingManagerFilter.value = ''
+  }
+}
+
+function applySourceFilterParams(params) {
+  if (!channelFilter.value) return
+
+  if (channelFilter.value.startsWith('channel:')) {
+    params.sourceChannel = channelFilter.value.slice('channel:'.length)
+    return
+  }
+
+  if (channelFilter.value === 'customer') {
+    params.sourceChannel = '客户来电'
+    return
+  }
+
+  if (channelFilter.value.startsWith('property:')) {
+    params.sourceType = 'property'
+    params.sourcePropertyId = channelFilter.value.slice('property:'.length)
+    return
+  }
+
+  if (channelFilter.value.startsWith('buildingManager:')) {
+    params.sourceType = 'building_manager'
+    params.sourceBuildingManagerId = channelFilter.value.slice('buildingManager:'.length)
+  }
 }
 
 async function fetchData() {
@@ -271,7 +347,9 @@ async function fetchData() {
     }
     if (technicianFilter.value) params.technicianId = technicianFilter.value
     if (areaFilter.value) params.area = areaFilter.value
-    if (categoryFilter.value) params.problemCategory = categoryFilter.value
+    applySourceFilterParams(params)
+    if (propertyFilter.value) params.propertyId = propertyFilter.value
+    if (buildingManagerFilter.value) params.buildingManagerId = buildingManagerFilter.value
 
     const response = await api.get('/construction/fees', { params })
     feeList.value = response.data.items || response.data || []
@@ -315,7 +393,9 @@ async function exportExcel() {
     }
     if (technicianFilter.value) params.technicianId = technicianFilter.value
     if (areaFilter.value) params.area = areaFilter.value
-    if (categoryFilter.value) params.problemCategory = categoryFilter.value
+    applySourceFilterParams(params)
+    if (propertyFilter.value) params.propertyId = propertyFilter.value
+    if (buildingManagerFilter.value) params.buildingManagerId = buildingManagerFilter.value
 
     const response = await api.get('/construction/fees', { params })
     const data = response.data.items || []
@@ -326,40 +406,47 @@ async function exportExcel() {
     }
 
     // 构造 Excel 数据
-    const headers = ['订单号', '客户姓名', '维修师傅', '问题分类', '总费用', '应收服务费', '实收服务费', '材料成本', '楼管激励', '完成时间']
+    const headers = ['订单号', '客户姓名', '维修师傅', '来源渠道', '订单总额', '可分成金额', '师傅分成', '物业分成', '楼管分成', '材料成本', '公司实得', '实收金额', '完成时间']
     const rows = data.map(item => [
       item.orderNo,
       item.customerName,
       item.technicianName,
-      item.problemCategory,
-      item.totalFee,
-      item.serviceFee,
-      item.receivedFee,
+      item.sourceChannel || '',
+      item.orderAmount,
+      item.shareBaseAmount,
+      item.technicianAmount,
+      item.propertyAmount,
+      item.buildingManagerAmount,
       item.materialCost,
-      item.buildingManagerIncentive,
+      item.companyAmount,
+      item.receivedAmount,
       formatDate(item.completedAt)
     ])
 
     // 合计行
     const summary = response.data.summary || {}
     rows.push([
-      '合计', '', '', '',
-      summary.totalFee,
-      summary.serviceFee,
-      summary.receivedFee,
+      '合计', '', '',
+      '',
+      summary.orderAmount,
+      summary.shareBaseAmount,
+      summary.technicianAmount,
+      summary.propertyAmount,
+      summary.buildingManagerAmount,
       summary.materialCost,
-      summary.incentive,
+      summary.companyAmount,
+      summary.receivedAmount,
       ''
     ])
 
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows])
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, '维修费用')
+    XLSX.utils.book_append_sheet(wb, ws, '财务对账')
 
-    // 文件名：维修费用_YYYYMMDD
+    // 文件名：财务对账_YYYYMMDD
     const now = new Date()
     const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
-    XLSX.writeFile(wb, `维修费用_${dateStr}.xlsx`)
+    XLSX.writeFile(wb, `财务对账_${dateStr}.xlsx`)
     ElMessage.success('导出成功')
   } catch (error) {
     console.error('导出失败', error)
@@ -381,6 +468,10 @@ onMounted(() => {
   ]
   fetchTechnicians()
   fetchData()
+})
+
+watch(propertyFilter, () => {
+  syncBuildingManagerFilter()
 })
 </script>
 
@@ -549,7 +640,7 @@ onMounted(() => {
 /* Summary Cards */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -569,7 +660,6 @@ onMounted(() => {
 .summary-card:nth-child(4) { border-radius: 16px 16px 24px 24px; }
 .summary-card:nth-child(5) { border-radius: 24px 16px 16px 24px; }
 .summary-card:nth-child(6) { border-radius: 16px 24px 24px 16px; }
-
 .summary-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
@@ -841,5 +931,23 @@ onMounted(() => {
   width: 16px;
   height: 16px;
   stroke-width: 2;
+}
+
+@media (max-width: 1200px) {
+  .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

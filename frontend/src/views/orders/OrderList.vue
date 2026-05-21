@@ -88,6 +88,9 @@
       <el-select v-model="areaFilter" class="filter-select-el" placeholder="所属区域" clearable @change="fetchOrders">
         <el-option v-for="area in settingsStore.areas" :key="area" :label="area" :value="area" />
       </el-select>
+      <el-select v-model="channelFilter" class="filter-select-el" placeholder="来源渠道" clearable @change="fetchOrders">
+        <el-option v-for="channel in sourceChannelOptions" :key="channel.value" :label="channel.label" :value="channel.value" />
+      </el-select>
       <button class="btn-query" @click="fetchOrders">查询</button>
       <button class="btn-reset" @click="resetFilters">重置</button>
       <button class="btn-export" style="margin-left:auto;" @click="exportOrders">
@@ -101,9 +104,10 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width:14%">订单号</th>
+            <th style="width:13%">订单号</th>
             <th style="width:8%">客户</th>
             <th style="width:8%">区域</th>
+            <th style="width:9%">来源渠道</th>
             <th style="width:10%">问题分类</th>
             <th style="width:10%">维修师傅</th>
             <th style="width:9%">状态</th>
@@ -120,6 +124,7 @@
             <td><span class="order-id" @click="viewDetail(order.id)">{{ order.orderNo }}</span></td>
             <td>{{ order.customerName }}</td>
             <td>{{ order.area }}</td>
+            <td>{{ order.sourceChannel || '-' }}</td>
             <td>{{ order.problemCategory }}</td>
             <td>{{ order.technicianName || '-' }}</td>
             <td>
@@ -134,7 +139,7 @@
             <td>{{ formatTime(order.createdAt) }}</td>
           </tr>
           <tr v-if="!loading && orders.length === 0">
-            <td colspan="8" class="empty-cell">
+            <td colspan="9" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -201,6 +206,7 @@ const orders = ref([])
 const searchQuery = ref('')
 const activeTab = ref('')
 const areaFilter = ref('')
+const channelFilter = ref('')
 const categoryFilter = ref('')
 const technicianFilter = ref('')
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
@@ -227,6 +233,18 @@ const statusTabs = computed(() => {
     { label: '已回访', value: 'callback', count: sc.callback || 0 },
     { label: '已取消', value: 'cancelled', count: sc.cancelled || 0 },
     { label: '咨询单', value: 'consultation', count: sc.consultation || 0 }
+  ]
+})
+
+const sourceChannelOptions = computed(() => {
+  const base = (settingsStore.channels || []).map(item => ({ label: item, value: `channel:${item}` }))
+  const properties = (settingsStore.properties || []).map(item => ({ label: `物业：${item.name}`, value: `property:${item.id}` }))
+  const buildingManagers = (settingsStore.buildingManagers || []).map(item => ({ label: `楼管：${item.name}`, value: `buildingManager:${item.id}` }))
+  return [
+    { label: '客户来电', value: 'customer' },
+    ...base,
+    ...properties,
+    ...buildingManagers
   ]
 })
 
@@ -340,10 +358,36 @@ function resetFilters() {
   activeTab.value = ''
   specialFilter.value = ''
   areaFilter.value = ''
+  channelFilter.value = ''
   categoryFilter.value = ''
   technicianFilter.value = ''
   pagination.value.page = 1
   fetchOrders()
+}
+
+function applySourceFilterParams(params) {
+  if (!channelFilter.value) return
+
+  if (channelFilter.value.startsWith('channel:')) {
+    params.sourceChannel = channelFilter.value.slice('channel:'.length)
+    return
+  }
+
+  if (channelFilter.value === 'customer') {
+    params.sourceChannel = '客户来电'
+    return
+  }
+
+  if (channelFilter.value.startsWith('property:')) {
+    params.sourceType = 'property'
+    params.sourcePropertyId = channelFilter.value.slice('property:'.length)
+    return
+  }
+
+  if (channelFilter.value.startsWith('buildingManager:')) {
+    params.sourceType = 'building_manager'
+    params.sourceBuildingManagerId = channelFilter.value.slice('buildingManager:'.length)
+  }
 }
 
 async function fetchOrders() {
@@ -365,6 +409,7 @@ async function fetchOrders() {
     if (specialFilter.value === 'pendingDispatch') params.pendingDispatch = 'true'
     if (searchQuery.value) params.keyword = searchQuery.value
     if (areaFilter.value) params.area = areaFilter.value
+    applySourceFilterParams(params)
     if (categoryFilter.value) params.problemCategory = categoryFilter.value
     if (technicianFilter.value) params.technicianId = technicianFilter.value
 
@@ -430,6 +475,7 @@ async function exportOrders() {
     if (specialFilter.value === 'pendingDispatch') params.pendingDispatch = 'true'
     if (searchQuery.value) params.keyword = searchQuery.value
     if (areaFilter.value) params.area = areaFilter.value
+    applySourceFilterParams(params)
     if (categoryFilter.value) params.problemCategory = categoryFilter.value
     if (technicianFilter.value) params.technicianId = technicianFilter.value
 
@@ -437,7 +483,7 @@ async function exportOrders() {
     const allOrders = response.data.items || response.data || []
 
     // 表头（对齐需求文档）
-    const headers = ['订单号', '客户姓名', '联系方式', '区域', '住址', '问题分类', '问题描述', '接线员', '维修师傅', '状态', '维修金额', '满意度评分', '费用是否一致']
+    const headers = ['订单号', '客户姓名', '联系方式', '区域', '来源渠道', '住址', '问题分类', '问题描述', '接线员', '维修师傅', '状态', '维修金额', '满意度评分', '费用是否一致']
 
     // 数据行
     const data = allOrders.map(o => [
@@ -445,6 +491,7 @@ async function exportOrders() {
       o.customerName || '',
       o.customerPhone || '',
       o.area || '',
+      o.sourceChannel || '',
       o.address || '',
       o.problemCategory || '',
       o.problemDescription || '',

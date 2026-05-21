@@ -7,6 +7,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const areas = ref([])
   const channels = ref([])
   const cancelReasons = ref([])
+  const properties = ref([])
+  const buildingManagers = ref([])
   const loaded = ref(false)
   const loading = ref(false)
 
@@ -19,6 +21,8 @@ export const useSettingsStore = defineStore('settings', () => {
       areas.value = res.data.areas || []
       channels.value = res.data.channels || []
       cancelReasons.value = res.data.cancelReasons || []
+      properties.value = res.data.properties || []
+      buildingManagers.value = res.data.buildingManagers || []
       loaded.value = true
     } catch (error) {
       console.error('获取基础数据失败:', error)
@@ -35,12 +39,14 @@ export const useSettingsStore = defineStore('settings', () => {
         areas: '/settings/areas',
         channels: '/settings/channels',
         cancelReasons: '/settings/cancel-reasons',
+        properties: '/settings/properties',
+        buildingManagers: '/settings/building-managers',
       }
       const url = urlMap[category]
       if (!url) return
       const res = await api.get(url)
       const targetMap = {
-        serviceTypes, areas, channels, cancelReasons,
+        serviceTypes, areas, channels, cancelReasons, properties, buildingManagers,
       }
       if (targetMap[category]) {
         targetMap[category].value = res.data.items || []
@@ -55,6 +61,8 @@ export const useSettingsStore = defineStore('settings', () => {
     areas,
     channels,
     cancelReasons,
+    properties,
+    buildingManagers,
     loaded,
     loading,
     fetchAll,

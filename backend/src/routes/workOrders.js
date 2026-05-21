@@ -1,8 +1,9 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
+const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings, Property, BuildingManager } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
 const { escapeLike, validateLength } = require('../utils/sanitize');
+const { calculateShareSnapshot } = require('../utils/shareCalculator');
 
 const router = express.Router();
 
@@ -16,6 +17,58 @@ async function getCallbackFeeThreshold() {
   }
 }
 
+function hasOwn(source, key) {
+  return Object.prototype.hasOwnProperty.call(source, key);
+}
+
+function applySourceFilters(where, query) {
+  const {
+    sourceChannel,
+    sourceType,
+    sourcePropertyId,
+    sourceBuildingManagerId
+  } = query;
+
+  if (sourceType) where.source_type = sourceType;
+  if (sourcePropertyId) where.source_property_id = sourcePropertyId;
+  if (sourceBuildingManagerId) where.source_building_manager_id = sourceBuildingManagerId;
+  if (sourceChannel) where.source_channel = sourceChannel;
+}
+
+async function resolveOrderSourcePayload({
+  sourceChannel,
+  sourceType,
+  sourcePropertyId,
+  sourceBuildingManagerId,
+  fallbackSourceChannel = null
+}, transaction) {
+  const resolvedSourceType = sourceType || null;
+  const normalizedPropertyId = resolvedSourceType === 'property' ? (sourcePropertyId || null) : null;
+  const normalizedBuildingManagerId = resolvedSourceType === 'building_manager' ? (sourceBuildingManagerId || null) : null;
+
+  const sourceProperty = normalizedPropertyId
+    ? await Property.findByPk(normalizedPropertyId, { transaction })
+    : null;
+  const sourceBuildingManager = normalizedBuildingManagerId
+    ? await BuildingManager.findByPk(normalizedBuildingManagerId, { transaction })
+    : null;
+
+  const resolvedSourceChannel = resolvedSourceType === 'property'
+    ? (sourceProperty ? `物业：${sourceProperty.name}` : fallbackSourceChannel)
+    : resolvedSourceType === 'building_manager'
+      ? (sourceBuildingManager ? `楼管：${sourceBuildingManager.name}` : fallbackSourceChannel)
+      : (sourceChannel || fallbackSourceChannel || null);
+
+  return {
+    sourceChannel: resolvedSourceChannel,
+    sourceType: resolvedSourceType,
+    sourcePropertyId: sourceProperty?.id || null,
+    sourcePropertyName: sourceProperty?.name || null,
+    sourceBuildingManagerId: sourceBuildingManager?.id || null,
+    sourceBuildingManagerName: sourceBuildingManager?.name || null
+  };
+}
+
 // 获取工单列表
 router.get('/', auth, async (req, res) => {
   try {
@@ -24,6 +77,7 @@ router.get('/', auth, async (req, res) => {
     const where = {};
     if (status) where.status = status;
     if (area) where.area = area;
+    applySourceFilters(where, req.query);
     if (problemCategory || category) where.problem_category = problemCategory || category;
 
     // 按技师筛选：使用 include where 替代 N+1 查询
@@ -70,7 +124,7 @@ router.get('/', auth, async (req, res) => {
       const feeThreshold = await getCallbackFeeThreshold();
       // Add construction filter via include
       const constructionWhere = include[1].where || {};
-      constructionWhere.total_fee = { [Op.gt]: feeThreshold };
+      constructionWhere.order_amount = { [Op.gt]: feeThreshold };
       include[1].where = constructionWhere;
       include[1].required = true;
       where.status = 'completed';
@@ -113,7 +167,7 @@ router.get('/', auth, async (req, res) => {
         include: [{
           model: Construction,
           as: 'construction',
-          where: { total_fee: { [Op.gt]: feeThreshold } },
+          where: { order_amount: { [Op.gt]: feeThreshold } },
           attributes: []
         }]
       })
@@ -139,6 +193,11 @@ router.get('/', auth, async (req, res) => {
         area: o.area,
         address: o.address,
         sourceChannel: o.source_channel,
+        sourceType: o.source_type,
+        sourcePropertyId: o.source_property_id,
+        sourcePropertyName: o.source_property_name,
+        sourceBuildingManagerId: o.source_building_manager_id,
+        sourceBuildingManagerName: o.source_building_manager_name,
         problemCategory: o.problem_category,
         problemDescription: o.problem_description,
         receiverId: o.receiver_id,
@@ -154,12 +213,25 @@ router.get('/', auth, async (req, res) => {
         technicianId: o.construction?.technician_id || null,
         dispatchedAt: o.construction?.dispatched_at || null,
         startedAt: o.construction?.started_at || null,
-        totalFee: o.construction?.total_fee || null,
-        serviceFee: o.construction?.service_fee || null,
-        receivedFee: o.construction?.received_fee || null,
+        totalFee: o.construction?.order_amount ?? o.construction?.total_fee ?? null,
+        orderAmount: o.construction?.order_amount ?? o.construction?.total_fee ?? null,
+        serviceFee: o.construction?.technician_amount ?? o.construction?.service_fee ?? null,
+        technicianAmount: o.construction?.technician_amount ?? o.construction?.service_fee ?? null,
+        receivedFee: o.construction?.received_amount ?? o.construction?.received_fee ?? null,
+        receivedAmount: o.construction?.received_amount ?? o.construction?.received_fee ?? null,
         materialCost: o.construction?.material_cost || null,
-        buildingManagerIncentive: o.construction?.building_manager_incentive || null,
-        commissionRate: o.construction?.commission_rate || null,
+        buildingManagerIncentive: o.construction?.building_manager_amount ?? o.construction?.building_manager_incentive ?? null,
+        buildingManagerAmount: o.construction?.building_manager_amount ?? o.construction?.building_manager_incentive ?? null,
+        commissionRate: o.construction?.technician_rate ?? o.construction?.commission_rate ?? null,
+        technicianRate: o.construction?.technician_rate ?? o.construction?.commission_rate ?? null,
+        propertyId: o.construction?.property_id || null,
+        propertyName: o.construction?.property_name || null,
+        propertyRate: o.construction?.property_rate || 0,
+        propertyAmount: o.construction?.property_amount || 0,
+        buildingManagerId: o.construction?.building_manager_id || null,
+        buildingManagerName: o.construction?.building_manager_name || null,
+        buildingManagerRate: o.construction?.building_manager_rate || 0,
+        companyAmount: o.construction?.company_amount || 0,
         actualWork: o.construction?.actual_work || null,
         callbackRecord: o.callback || null
       };
@@ -277,6 +349,11 @@ router.get('/:id', auth, async (req, res) => {
       area: o.area,
       address: o.address,
       sourceChannel: o.source_channel,
+      sourceType: o.source_type,
+      sourcePropertyId: o.source_property_id,
+      sourcePropertyName: o.source_property_name,
+      sourceBuildingManagerId: o.source_building_manager_id,
+      sourceBuildingManagerName: o.source_building_manager_name,
       problemCategory: o.problem_category,
       problemDescription: o.problem_description,
       receiverId: o.receiver_id,
@@ -292,12 +369,30 @@ router.get('/:id', auth, async (req, res) => {
       technicianPhone: o.construction?.technician?.phone || null,
       dispatchedAt: o.construction?.dispatched_at || null,
       startedAt: o.construction?.started_at || null,
-      totalFee: o.construction?.total_fee || null,
-      serviceFee: o.construction?.service_fee || null,
-      receivedFee: o.construction?.received_fee || null,
+      totalFee: o.construction?.order_amount ?? o.construction?.total_fee ?? null,
+      orderAmount: o.construction?.order_amount ?? o.construction?.total_fee ?? null,
+      serviceFee: o.construction?.technician_amount ?? o.construction?.service_fee ?? null,
+      technicianAmount: o.construction?.technician_amount ?? o.construction?.service_fee ?? null,
+      receivedFee: o.construction?.received_amount ?? o.construction?.received_fee ?? null,
+      receivedAmount: o.construction?.received_amount ?? o.construction?.received_fee ?? null,
       materialCost: o.construction?.material_cost || null,
-      buildingManagerIncentive: o.construction?.building_manager_incentive || null,
-      commissionRate: o.construction?.commission_rate || null,
+      buildingManagerIncentive: o.construction?.building_manager_amount ?? o.construction?.building_manager_incentive ?? null,
+      commissionRate: o.construction?.technician_rate ?? o.construction?.commission_rate ?? null,
+      technicianRate: o.construction?.technician_rate ?? o.construction?.commission_rate ?? null,
+      propertyId: o.construction?.property_id || null,
+      propertyName: o.construction?.property_name || null,
+      propertyRate: Number(o.construction?.property_rate) || 0,
+      propertyAmount: Number(o.construction?.property_amount) || 0,
+      buildingManagerId: o.construction?.building_manager_id || null,
+      buildingManagerName: o.construction?.building_manager_name || null,
+      buildingManagerRate: Number(o.construction?.building_manager_rate) || 0,
+      buildingManagerAmount: Number(o.construction?.building_manager_amount ?? o.construction?.building_manager_incentive) || 0,
+      shareBaseAmount: Number(o.construction?.share_base_amount) || 0,
+      companyAmount: Number(o.construction?.company_amount) || 0,
+      collectionParty: o.construction?.collection_party || 'technician',
+      technicianSettlementStatus: o.construction?.technician_settlement_status || 'unsettled',
+      propertySettlementStatus: o.construction?.property_settlement_status || 'unsettled',
+      buildingManagerSettlementStatus: o.construction?.building_manager_settlement_status || 'unsettled',
       actualWork: o.construction?.actual_work || null,
       callbackRecord,
       customerTags: o.customer?.tags || [],
@@ -320,6 +415,9 @@ router.post('/', auth, async (req, res) => {
       area,
       address,
       sourceChannel,
+      sourceType,
+      sourcePropertyId,
+      sourceBuildingManagerId,
       problemCategory,
       problemDescription,
       receiverRemark
@@ -334,6 +432,13 @@ router.post('/', auth, async (req, res) => {
       // phone 格式验证已移除，仅校验必填
     }
 
+    const resolvedSource = await resolveOrderSourcePayload({
+      sourceChannel,
+      sourceType,
+      sourcePropertyId,
+      sourceBuildingManagerId
+    }, transaction);
+
     // Check if customer exists
     let customer = await Customer.findByPk(customerId, { transaction });
     if (!customer && customerPhone) {
@@ -346,7 +451,7 @@ router.post('/', auth, async (req, res) => {
         phone: customerPhone,
         area,
         address,
-        source_channel: sourceChannel
+        source_channel: resolvedSource.sourceChannel
       }, { transaction });
     }
 
@@ -367,7 +472,12 @@ router.post('/', auth, async (req, res) => {
       customer_phone: customerPhone || customer.phone,
       area: area || customer.area,
       address: address || customer.address,
-      source_channel: sourceChannel,
+      source_channel: resolvedSource.sourceChannel,
+      source_type: resolvedSource.sourceType,
+      source_property_id: resolvedSource.sourcePropertyId,
+      source_property_name: resolvedSource.sourcePropertyName,
+      source_building_manager_id: resolvedSource.sourceBuildingManagerId,
+      source_building_manager_name: resolvedSource.sourceBuildingManagerName,
       problem_category: problemCategory,
       problem_description: problemDescription,
       receiver_id: req.user.id,
@@ -396,22 +506,41 @@ router.patch('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: '工单不存在' });
     }
 
-    const allowedFields = ['customerName', 'customerPhone', 'area', 'address', 'sourceChannel', 'problemCategory', 'problemDescription', 'receiverRemark'];
+    const allowedFields = ['customerName', 'customerPhone', 'area', 'address', 'sourceChannel', 'sourceType', 'sourcePropertyId', 'sourceBuildingManagerId', 'problemCategory', 'problemDescription', 'receiverRemark'];
     const fieldMap = {
       customerName: 'customer_name',
       customerPhone: 'customer_phone',
-      sourceChannel: 'source_channel',
       problemCategory: 'problem_category',
       problemDescription: 'problem_description',
       receiverRemark: 'receiver_remark'
     };
 
     allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
+      if (!['sourceChannel', 'sourceType', 'sourcePropertyId', 'sourceBuildingManagerId'].includes(field) && req.body[field] !== undefined) {
         const dbField = fieldMap[field] || field;
         order[dbField] = req.body[field];
       }
     });
+
+    const shouldResolveSource = ['sourceChannel', 'sourceType', 'sourcePropertyId', 'sourceBuildingManagerId']
+      .some(field => hasOwn(req.body, field));
+
+    if (shouldResolveSource) {
+      const resolvedSource = await resolveOrderSourcePayload({
+        sourceChannel: hasOwn(req.body, 'sourceChannel') ? req.body.sourceChannel : order.source_channel,
+        sourceType: hasOwn(req.body, 'sourceType') ? req.body.sourceType : order.source_type,
+        sourcePropertyId: hasOwn(req.body, 'sourcePropertyId') ? req.body.sourcePropertyId : order.source_property_id,
+        sourceBuildingManagerId: hasOwn(req.body, 'sourceBuildingManagerId') ? req.body.sourceBuildingManagerId : order.source_building_manager_id,
+        fallbackSourceChannel: order.source_channel
+      });
+
+      order.source_channel = resolvedSource.sourceChannel;
+      order.source_type = resolvedSource.sourceType;
+      order.source_property_id = resolvedSource.sourcePropertyId;
+      order.source_property_name = resolvedSource.sourcePropertyName;
+      order.source_building_manager_id = resolvedSource.sourceBuildingManagerId;
+      order.source_building_manager_name = resolvedSource.sourceBuildingManagerName;
+    }
 
     await order.save();
     res.json({ message: '工单信息更新成功' });
@@ -447,6 +576,9 @@ async function handleAssign(req, res) {
       await transaction.rollback();
       return res.status(404).json({ error: '师傅不存在' });
     }
+    const sourceProperty = order.source_property_id
+      ? await Property.findByPk(order.source_property_id, { transaction })
+      : null;
 
     order.status = 'dispatched';
     await order.save({ transaction });
@@ -454,9 +586,15 @@ async function handleAssign(req, res) {
     await Construction.create({
       order_id: order.id,
       technician_id: technicianId,
+      property_id: order.source_property_id || null,
+      property_name: order.source_property_name || null,
+      building_manager_id: order.source_building_manager_id || null,
+      building_manager_name: order.source_building_manager_name || null,
       dispatch_remark: remark || dispatchRemark,
       dispatched_at: new Date(),
-      commission_rate: technician.commission_rate
+      commission_rate: technician.commission_rate,
+      technician_rate: technician.commission_rate,
+      collection_party: sourceProperty?.default_collection_party || 'technician'
     }, { transaction });
 
     await transaction.commit();
@@ -480,7 +618,7 @@ router.post('/:id/dispatch', auth, (req, res) => {
 async function handleStatusUpdate(req, res) {
   const transaction = await sequelize.transaction();
   try {
-    const { status, cancelReason } = req.body;
+    const { status, cancelReason, completedAt } = req.body;
     const order = await WorkOrder.findByPk(req.params.id, { transaction });
 
     if (!order) {
@@ -509,7 +647,7 @@ async function handleStatusUpdate(req, res) {
     if (status === 'cancelled') {
       order.cancel_reason = cancelReason;
     } else if (status === 'completed') {
-      order.completed_at = new Date();
+      order.completed_at = completedAt ? new Date(completedAt) : new Date();
     }
 
     await order.save({ transaction });
@@ -579,16 +717,28 @@ async function handleFeeInput(req, res) {
   const transaction = await sequelize.transaction();
   try {
     const {
+      orderAmount,
       totalFee,
-      serviceFee,
+      technicianId,
+      technicianRate,
+      commissionRate,
+      receivedAmount,
       receivedFee,
       materialCost,
-      buildingManagerIncentive,
-      commissionRate,
-      actualWork
+      propertyId,
+      propertyRate,
+      buildingManagerId,
+      buildingManagerRate,
+      actualWork,
+      completedAt,
+      collectionParty,
+      technicianSettlementStatus,
+      propertySettlementStatus,
+      buildingManagerSettlementStatus
     } = req.body;
 
-    if (totalFee === undefined || totalFee === null) {
+    const effectiveOrderAmount = orderAmount ?? totalFee;
+    if (effectiveOrderAmount === undefined || effectiveOrderAmount === null) {
       await transaction.rollback();
       return res.status(400).json({ error: '请提供总费用' });
     }
@@ -605,19 +755,61 @@ async function handleFeeInput(req, res) {
       return res.status(404).json({ error: '施工记录不存在' });
     }
 
-    const oldTotalFee = construction.total_fee || 0;
-    const newTotalFee = parseFloat(totalFee) || 0;
+    const oldTotalFee = Number(construction.order_amount ?? construction.total_fee) || 0;
+    const newTotalFee = parseFloat(effectiveOrderAmount) || 0;
     const feeDiff = newTotalFee - oldTotalFee;
 
-    construction.total_fee = newTotalFee;
-    construction.service_fee = serviceFee || (newTotalFee * (commissionRate || 0.3));
-    construction.received_fee = receivedFee;
-    construction.material_cost = materialCost;
-    construction.building_manager_incentive = buildingManagerIncentive;
-    construction.commission_rate = commissionRate;
+    const effectivePropertyId = hasOwn(req.body, 'propertyId')
+      ? (propertyId || null)
+      : (construction.property_id ?? order.source_property_id ?? null);
+    const effectiveBuildingManagerId = hasOwn(req.body, 'buildingManagerId')
+      ? (buildingManagerId || null)
+      : (construction.building_manager_id ?? order.source_building_manager_id ?? null);
+    const technician = await Technician.findByPk(technicianId || construction.technician_id, { transaction });
+    const property = effectivePropertyId ? await Property.findByPk(effectivePropertyId, { transaction }) : null;
+    const buildingManager = effectiveBuildingManagerId ? await BuildingManager.findByPk(effectiveBuildingManagerId, { transaction }) : null;
+    const shareSnapshot = calculateShareSnapshot({
+      orderAmount: newTotalFee,
+      technicianRate: technicianRate ?? commissionRate ?? technician?.commission_rate ?? construction.technician_rate ?? construction.commission_rate ?? 0,
+      propertyRate: propertyRate ?? property?.default_rate ?? construction.property_rate ?? 0,
+      buildingManagerRate: buildingManagerRate ?? buildingManager?.default_rate ?? construction.building_manager_rate ?? 0,
+      materialCost,
+      receivedAmount: receivedAmount ?? receivedFee ?? newTotalFee
+    });
+
+    construction.technician_id = technicianId || construction.technician_id;
+    construction.total_fee = shareSnapshot.orderAmount;
+    construction.order_amount = shareSnapshot.orderAmount;
+    construction.service_fee = shareSnapshot.technicianAmount;
+    construction.technician_amount = shareSnapshot.technicianAmount;
+    construction.share_base_amount = shareSnapshot.shareBaseAmount;
+    construction.received_fee = shareSnapshot.receivedAmount;
+    construction.received_amount = shareSnapshot.receivedAmount;
+    construction.material_cost = shareSnapshot.materialCost;
+    construction.commission_rate = shareSnapshot.technicianRate;
+    construction.technician_rate = shareSnapshot.technicianRate;
+    construction.property_id = property?.id || null;
+    construction.property_name = property?.name || null;
+    construction.property_rate = shareSnapshot.propertyRate;
+    construction.property_amount = shareSnapshot.propertyAmount;
+    construction.building_manager_id = buildingManager?.id || null;
+    construction.building_manager_name = buildingManager?.name || null;
+    construction.building_manager_rate = shareSnapshot.buildingManagerRate;
+    construction.building_manager_amount = shareSnapshot.buildingManagerAmount;
+    construction.building_manager_incentive = shareSnapshot.buildingManagerAmount;
+    construction.company_amount = shareSnapshot.companyAmount;
+    construction.collection_party = collectionParty ?? property?.default_collection_party ?? construction.collection_party ?? 'technician';
+    construction.technician_settlement_status = technicianSettlementStatus ?? construction.technician_settlement_status ?? 'unsettled';
+    construction.property_settlement_status = propertySettlementStatus ?? construction.property_settlement_status ?? 'unsettled';
+    construction.building_manager_settlement_status = buildingManagerSettlementStatus ?? construction.building_manager_settlement_status ?? 'unsettled';
     construction.actual_work = actualWork;
 
     await construction.save({ transaction });
+
+    if (completedAt) {
+      order.completed_at = new Date(completedAt);
+      await order.save({ transaction });
+    }
 
     // 维护客户统计字段：按费用差额更新 total_amount
     if (feeDiff !== 0) {

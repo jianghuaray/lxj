@@ -11,6 +11,8 @@ const VolunteerService = require('./VolunteerService');
 const Settings = require('./Settings');
 const OperationLog = require('./OperationLog');
 const PointRecord = require('./PointRecord');
+const Property = require('./Property');
+const BuildingManager = require('./BuildingManager');
 
 // 定义模型关联
 
@@ -62,5 +64,7 @@ module.exports = {
   VolunteerService,
   Settings,
   OperationLog,
-  PointRecord
+  PointRecord,
+  Property,
+  BuildingManager
 };

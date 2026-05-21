@@ -172,7 +172,7 @@
           <div class="field-row">
             <span class="field-label">来源渠道</span>
             <el-select v-model="customerEditForm.sourceChannel" class="pill-select-el" placeholder="请选择" clearable>
-              <el-option v-for="ch in settingsStore.channels" :key="ch" :label="ch" :value="ch" />
+              <el-option v-for="item in sourceChannelOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="field-row">
@@ -229,7 +229,7 @@
           <div class="complete-order-form">
             <div class="complete-order-title">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              完成工单 - 录入费用信息
+              完成工单 - 分成结算
             </div>
             <div class="form-group">
               <label class="form-label">施工完成时间</label>
@@ -250,28 +250,90 @@
             </div>
             <div class="form-grid-2col">
               <div class="form-group">
-                <label class="form-label">总费用（元）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.totalFee" placeholder="请输入总费用" min="0" step="0.01" />
+                <label class="form-label">订单总额（元）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.orderAmount" placeholder="请输入订单总额" min="0" step="0.01" />
               </div>
               <div class="form-group">
-                <label class="form-label">抽成比例</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.commissionRate * 100).toFixed(0)" disabled style="opacity:0.6;cursor:not-allowed;" />
+                <label class="form-label">师傅分成比例（%）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" />
               </div>
               <div class="form-group">
-                <label class="form-label">应收服务费（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.serviceFee || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+                <label class="form-label">师傅分成金额（元）</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
               </div>
               <div class="form-group">
-                <label class="form-label">已收服务费（元）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.receivedFee" placeholder="默认等于应收" min="0" />
+                <label class="form-label">可分成金额（元）</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.shareBaseAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">物业</label>
+                <el-select v-model="constructionEditForm.propertyId" class="pill-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
+                  <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">物业分成比例（%）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">物业分成金额（元）</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">楼管</label>
+                <el-select v-model="constructionEditForm.buildingManagerId" class="pill-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
+                  <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">楼管分成比例（%）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">楼管分成金额（元）</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
               </div>
               <div class="form-group">
                 <label class="form-label">材料成本（元）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.materialCost" placeholder="请输入材料成本" min="0" />
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.materialCost" placeholder="请输入材料成本" min="0" step="0.01" />
               </div>
               <div class="form-group">
-                <label class="form-label">楼管激励（元）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.buildingManagerIncentive" placeholder="请输入楼管激励" min="0" />
+                <label class="form-label">公司实得（元）</label>
+                <input type="number" class="pill-input" :value="(constructionEditForm.companyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">实收金额（元）</label>
+                <input type="number" class="pill-input" v-model.number="constructionEditForm.receivedAmount" placeholder="默认等于订单总额" min="0" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">收款方</label>
+                <el-select v-model="constructionEditForm.collectionParty" class="pill-select-el" placeholder="请选择收款方">
+                  <el-option label="师傅收款" value="technician" />
+                  <el-option label="物业收款" value="property" />
+                  <el-option label="公司收款" value="company" />
+                  <el-option label="其他" value="other" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">师傅结算</label>
+                <el-select v-model="constructionEditForm.technicianSettlementStatus" class="pill-select-el">
+                  <el-option label="未结算" value="unsettled" />
+                  <el-option label="已结算" value="settled" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">物业结算</label>
+                <el-select v-model="constructionEditForm.propertySettlementStatus" class="pill-select-el">
+                  <el-option label="未结算" value="unsettled" />
+                  <el-option label="已结算" value="settled" />
+                </el-select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">楼管结算</label>
+                <el-select v-model="constructionEditForm.buildingManagerSettlementStatus" class="pill-select-el">
+                  <el-option label="未结算" value="unsettled" />
+                  <el-option label="已结算" value="settled" />
+                </el-select>
               </div>
             </div>
             <div class="form-group">
@@ -298,28 +360,60 @@
           <table class="cost-table" v-if="hasFee()">
             <tbody>
               <tr>
-                <td class="cost-label">总费用</td>
-                <td class="cost-value cost-total-value">¥{{ order.totalFee || 0 }}</td>
+                <td class="cost-label">订单总额</td>
+                <td class="cost-value cost-total-value">¥{{ order.orderAmount || 0 }}</td>
               </tr>
               <tr>
-                <td class="cost-label">抽成比例</td>
-                <td class="cost-value">{{ formatCommissionRate(order) }}</td>
+                <td class="cost-label">师傅分成比例</td>
+                <td class="cost-value">{{ formatShareRate(order.technicianRate) }}</td>
               </tr>
               <tr>
-                <td class="cost-label">应收服务费</td>
-                <td class="cost-value">¥{{ order.serviceFee || 0 }}</td>
+                <td class="cost-label">师傅分成金额</td>
+                <td class="cost-value">¥{{ order.technicianAmount || 0 }}</td>
               </tr>
               <tr>
-                <td class="cost-label">已收服务费</td>
-                <td class="cost-value cost-green">¥{{ order.receivedFee || 0 }}</td>
+                <td class="cost-label">可分成金额</td>
+                <td class="cost-value">¥{{ order.shareBaseAmount || 0 }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">物业</td>
+                <td class="cost-value">{{ order.propertyName || '无' }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">物业分成</td>
+                <td class="cost-value">{{ formatShareRate(order.propertyRate) }} / ¥{{ order.propertyAmount || 0 }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">楼管</td>
+                <td class="cost-value">{{ order.buildingManagerName || '无' }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">楼管分成</td>
+                <td class="cost-value">{{ formatShareRate(order.buildingManagerRate) }} / ¥{{ order.buildingManagerAmount || 0 }}</td>
               </tr>
               <tr>
                 <td class="cost-label">材料成本</td>
                 <td class="cost-value">¥{{ order.materialCost || 0 }}</td>
               </tr>
               <tr>
-                <td class="cost-label">楼管激励</td>
-                <td class="cost-value">¥{{ order.buildingManagerIncentive || 0 }}</td>
+                <td class="cost-label">公司实得</td>
+                <td class="cost-value">¥{{ order.companyAmount || 0 }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">实收金额</td>
+                <td class="cost-value">¥{{ order.receivedAmount || 0 }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">收款方</td>
+                <td class="cost-value">{{ getCollectionPartyText(order.collectionParty) }}</td>
+              </tr>
+              <tr>
+                <td class="cost-label">结算状态</td>
+                <td class="cost-value">
+                  师傅{{ getSettlementStatusText(order.technicianSettlementStatus) }} /
+                  物业{{ getSettlementStatusText(order.propertySettlementStatus) }} /
+                  楼管{{ getSettlementStatusText(order.buildingManagerSettlementStatus) }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -353,28 +447,90 @@
             </el-select>
           </div>
           <div class="form-group">
-            <label class="form-label">总费用（师傅报价）</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.totalFee" placeholder="0" min="0" />
+            <label class="form-label">订单总额</label>
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.orderAmount" placeholder="0" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label class="form-label">抽成比例</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.commissionRate * 100).toFixed(0)" disabled style="opacity:0.6;cursor:not-allowed;" />
+            <label class="form-label">师傅分成比例（%）</label>
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label class="form-label">应收服务费（自动计算）</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.serviceFee || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+            <label class="form-label">师傅分成金额（自动计算）</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
           </div>
           <div class="form-group">
-            <label class="form-label">已收服务费</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.receivedFee" placeholder="0" min="0" />
+            <label class="form-label">可分成金额（自动计算）</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.shareBaseAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">物业</label>
+            <el-select v-model="constructionEditForm.propertyId" class="pill-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
+              <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">物业分成比例（%）</label>
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">物业分成金额（自动计算）</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">楼管</label>
+            <el-select v-model="constructionEditForm.buildingManagerId" class="pill-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
+              <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
+            </el-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">楼管分成比例（%）</label>
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">楼管分成金额（自动计算）</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
           </div>
           <div class="form-group">
             <label class="form-label">材料成本</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.materialCost" placeholder="0" min="0" />
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.materialCost" placeholder="0" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label class="form-label">楼管激励</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.buildingManagerIncentive" placeholder="0" min="0" />
+            <label class="form-label">公司实得</label>
+            <input class="pill-input" type="number" :value="(constructionEditForm.companyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">实收金额</label>
+            <input class="pill-input" type="number" v-model.number="constructionEditForm.receivedAmount" placeholder="0" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">收款方</label>
+            <el-select v-model="constructionEditForm.collectionParty" class="pill-select-el" placeholder="请选择收款方">
+              <el-option label="师傅收款" value="technician" />
+              <el-option label="物业收款" value="property" />
+              <el-option label="公司收款" value="company" />
+              <el-option label="其他" value="other" />
+            </el-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">师傅结算</label>
+            <el-select v-model="constructionEditForm.technicianSettlementStatus" class="pill-select-el">
+              <el-option label="未结算" value="unsettled" />
+              <el-option label="已结算" value="settled" />
+            </el-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">物业结算</label>
+            <el-select v-model="constructionEditForm.propertySettlementStatus" class="pill-select-el">
+              <el-option label="未结算" value="unsettled" />
+              <el-option label="已结算" value="settled" />
+            </el-select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">楼管结算</label>
+            <el-select v-model="constructionEditForm.buildingManagerSettlementStatus" class="pill-select-el">
+              <el-option label="未结算" value="unsettled" />
+              <el-option label="已结算" value="settled" />
+            </el-select>
           </div>
           <div class="form-group">
             <label class="form-label">实际维修项目</label>
@@ -568,7 +724,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -613,12 +769,23 @@ const customerEditForm = ref({
 
 const constructionEditForm = ref({
   technicianId: '',
-  totalFee: 0,
-  serviceFee: 0,
-  receivedFee: 0,
+  orderAmount: 0,
+  technicianRatePercent: 30,
+  technicianAmount: 0,
+  shareBaseAmount: 0,
+  propertyId: null,
+  propertyRatePercent: 0,
+  propertyAmount: 0,
+  buildingManagerId: null,
+  buildingManagerRatePercent: 0,
+  buildingManagerAmount: 0,
+  companyAmount: 0,
+  collectionParty: 'technician',
+  technicianSettlementStatus: 'unsettled',
+  propertySettlementStatus: 'unsettled',
+  buildingManagerSettlementStatus: 'unsettled',
+  receivedAmount: 0,
   materialCost: 0,
-  buildingManagerIncentive: 0,
-  commissionRate: 0.30,
   actualWork: '',
   completedAt: ''
 })
@@ -632,6 +799,16 @@ const callbackEditForm = ref({
 })
 
 const statusOrder = ['pending', 'dispatched', 'completed', 'callback']
+const activeProperties = computed(() => (settingsStore.properties || []).filter(item => item.status === 1))
+const filteredBuildingManagers = computed(() => {
+  return (settingsStore.buildingManagers || []).filter(item => item.status === 1)
+})
+const sourceChannelOptions = computed(() => {
+  const base = (settingsStore.channels || []).map(item => ({ label: item, value: `channel:${item}` }))
+  const properties = activeProperties.value.map(item => ({ label: `物业：${item.name}`, value: `property:${item.id}` }))
+  const buildingManagers = filteredBuildingManagers.value.map(item => ({ label: `楼管：${item.name}`, value: `buildingManager:${item.id}` }))
+  return [{ label: '客户来电', value: 'customer' }, ...base, ...properties, ...buildingManagers]
+})
 
 const getReceiverRemark = () => order.value.receiverRemark || '暂无备注'
 const getTechnicianName = () => order.value.technicianName || '-'
@@ -643,7 +820,7 @@ const getSourceChannel = () => order.value.sourceChannel || '-'
 const getProblemCategory = () => order.value.problemCategory || '-'
 const getProblemDescription = () => order.value.problemDescription || '-'
 const getActualWork = () => order.value.actualWork || ''
-const hasFee = () => order.value.totalFee !== undefined && order.value.totalFee !== null
+const hasFee = () => order.value.orderAmount !== undefined && order.value.orderAmount !== null
 const isCompletedOrCallback = () => ['completed', 'callback'].includes(order.value.status)
 const canEditConstruction = () => ['dispatched', 'completed', 'callback'].includes(order.value.status)
 const canEditCallback = () => ['completed', 'callback'].includes(order.value.status)
@@ -705,20 +882,152 @@ function getCallbackMethod(method) {
   return map[method] || method
 }
 
-function formatCommissionRate(order) {
-  const rate = order.commissionRate || order.commission_rate
-  return rate ? (rate * 100) + '%' : '-'
+function toNumber(value) {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+function roundMoney(value) {
+  return Math.round(toNumber(value) * 100) / 100
+}
+
+function formatShareRate(rate) {
+  return `${(toNumber(rate) * 100).toFixed(2)}%`
+}
+
+function getCollectionPartyText(value) {
+  const map = { technician: '师傅收款', property: '物业收款', company: '公司收款', other: '其他' }
+  return map[value] || '-'
+}
+
+function getSettlementStatusText(value) {
+  return value === 'settled' ? '已结' : '未结'
+}
+
+function getSourceSelectionValue(source) {
+  if (source.sourceType === 'property' && source.sourcePropertyId) {
+    return `property:${source.sourcePropertyId}`
+  }
+  if (source.sourceType === 'building_manager' && source.sourceBuildingManagerId) {
+    return `buildingManager:${source.sourceBuildingManagerId}`
+  }
+  if (source.sourceChannel === '客户来电') {
+    return 'customer'
+  }
+  return source.sourceChannel ? `channel:${source.sourceChannel}` : ''
+}
+
+function buildSourcePayload(sourceChannel) {
+  if (sourceChannel === 'customer') {
+    return {
+      sourceType: 'customer',
+      sourceChannel: '客户来电',
+      sourcePropertyId: null,
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('channel:')) {
+    return {
+      sourceType: null,
+      sourceChannel: sourceChannel.slice('channel:'.length),
+      sourcePropertyId: null,
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('property:')) {
+    return {
+      sourceType: 'property',
+      sourceChannel: '',
+      sourcePropertyId: sourceChannel.slice('property:'.length),
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('buildingManager:')) {
+    return {
+      sourceType: 'building_manager',
+      sourceChannel: '',
+      sourcePropertyId: null,
+      sourceBuildingManagerId: sourceChannel.slice('buildingManager:'.length)
+    }
+  }
+
+  return {
+    sourceType: null,
+    sourceChannel: '',
+    sourcePropertyId: null,
+    sourceBuildingManagerId: null
+  }
+}
+
+function getDefaultCompletedAt() {
+  const now = new Date()
+  const pad = n => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+function recalculateConstructionForm() {
+  const orderAmount = toNumber(constructionEditForm.value.orderAmount)
+  const materialCost = toNumber(constructionEditForm.value.materialCost)
+  const shareBaseAmount = roundMoney(Math.max(orderAmount - materialCost, 0))
+  const technicianRate = toNumber(constructionEditForm.value.technicianRatePercent) / 100
+  const propertyRate = toNumber(constructionEditForm.value.propertyRatePercent) / 100
+  const buildingManagerRate = toNumber(constructionEditForm.value.buildingManagerRatePercent) / 100
+  const technicianAmount = roundMoney(shareBaseAmount * technicianRate)
+  const propertyAmount = roundMoney(shareBaseAmount * propertyRate)
+  const buildingManagerAmount = roundMoney(shareBaseAmount * buildingManagerRate)
+  constructionEditForm.value.shareBaseAmount = shareBaseAmount
+  constructionEditForm.value.technicianAmount = technicianAmount
+  constructionEditForm.value.propertyAmount = propertyAmount
+  constructionEditForm.value.buildingManagerAmount = buildingManagerAmount
+  constructionEditForm.value.companyAmount = roundMoney(shareBaseAmount - technicianAmount - propertyAmount - buildingManagerAmount)
+}
+
+function createConstructionForm(source = {}) {
+  return {
+    technicianId: source.technicianId || '',
+    orderAmount: toNumber(source.orderAmount),
+    shareBaseAmount: toNumber(source.shareBaseAmount),
+    technicianRatePercent: roundMoney(toNumber(source.technicianRate) * 100),
+    technicianAmount: toNumber(source.technicianAmount),
+    propertyId: source.propertyId || null,
+    propertyRatePercent: roundMoney(toNumber(source.propertyRate) * 100),
+    propertyAmount: toNumber(source.propertyAmount),
+    buildingManagerId: source.buildingManagerId || null,
+    buildingManagerRatePercent: roundMoney(toNumber(source.buildingManagerRate) * 100),
+    buildingManagerAmount: toNumber(source.buildingManagerAmount),
+    companyAmount: toNumber(source.companyAmount),
+    collectionParty: source.collectionParty || 'technician',
+    technicianSettlementStatus: source.technicianSettlementStatus || 'unsettled',
+    propertySettlementStatus: source.propertySettlementStatus || 'unsettled',
+    buildingManagerSettlementStatus: source.buildingManagerSettlementStatus || 'unsettled',
+    receivedAmount: source.receivedAmount === null || source.receivedAmount === undefined ? toNumber(source.orderAmount) : toNumber(source.receivedAmount),
+    materialCost: toNumber(source.materialCost),
+    actualWork: source.actualWork || '',
+    completedAt: source.completedAt ? source.completedAt.slice(0, 16) : getDefaultCompletedAt()
+  }
 }
 
 function onTechnicianChange(techId) {
   const tech = availableTechnicians.value.find(t => t.id === techId)
   if (tech) {
-    const rate = tech.commission_rate ? tech.commission_rate : 0.30
-    constructionEditForm.value.commissionRate = rate
-    if (constructionEditForm.value.totalFee) {
-      constructionEditForm.value.serviceFee = Math.round(constructionEditForm.value.totalFee * rate * 100) / 100
-    }
+    constructionEditForm.value.technicianRatePercent = roundMoney(toNumber(tech.commission_rate || 0.3) * 100)
   }
+}
+
+function onPropertyChange(propertyId) {
+  const property = activeProperties.value.find(item => item.id === propertyId)
+  constructionEditForm.value.propertyRatePercent = property ? roundMoney(toNumber(property.defaultRate) * 100) : 0
+  if (property?.defaultCollectionParty) {
+    constructionEditForm.value.collectionParty = property.defaultCollectionParty
+  }
+}
+
+function onBuildingManagerChange(buildingManagerId) {
+  const buildingManager = filteredBuildingManagers.value.find(item => item.id === buildingManagerId)
+  constructionEditForm.value.buildingManagerRatePercent = buildingManager ? roundMoney(toNumber(buildingManager.defaultRate) * 100) : 0
 }
 
 function startEditCustomer() {
@@ -727,7 +1036,7 @@ function startEditCustomer() {
     customerPhone: order.value.customerPhone || '',
     area: order.value.area || '',
     address: order.value.address || '',
-    sourceChannel: order.value.sourceChannel || '',
+    sourceChannel: getSourceSelectionValue(order.value),
     problemCategory: order.value.problemCategory || '',
     problemDescription: order.value.problemDescription || '',
     receiverRemark: order.value.receiverRemark || ''
@@ -742,7 +1051,11 @@ function cancelEditCustomer() {
 async function saveCustomer() {
   customerSaving.value = true
   try {
-    await api.patch(`/orders/${orderId}`, customerEditForm.value)
+    const sourcePayload = buildSourcePayload(customerEditForm.value.sourceChannel)
+    await api.patch(`/orders/${orderId}`, {
+      ...customerEditForm.value,
+      ...sourcePayload
+    })
     if (syncCustomerChecked.value && order.value.customerId) {
       try {
         await api.patch(`/customers/${order.value.customerId}`, {
@@ -766,37 +1079,42 @@ async function saveCustomer() {
 }
 
 function startEditConstruction() {
-  const now = new Date()
-  const pad = n => String(n).padStart(2, '0')
-  const defaultCompletedAt = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
-  const techId = order.value.technicianId || order.value.technician_id || ''
-  const tech = availableTechnicians.value.find(t => t.id === techId)
-  const rate = tech ? (tech.commission_rate || 0.30) : (order.value.commissionRate || order.value.commission_rate || 0.30)
-  constructionEditForm.value = {
-    technicianId: techId,
-    totalFee: order.value.totalFee || 0,
-    serviceFee: order.value.serviceFee || 0,
-    receivedFee: order.value.receivedFee || 0,
-    materialCost: order.value.materialCost || 0,
-    buildingManagerIncentive: order.value.buildingManagerIncentive || 0,
-    commissionRate: rate,
-    actualWork: order.value.actualWork || '',
-    completedAt: order.value.completedAt ? order.value.completedAt.slice(0, 16) : defaultCompletedAt
+  constructionEditForm.value = createConstructionForm({
+    technicianId: order.value.technicianId || order.value.technician_id || '',
+    orderAmount: order.value.orderAmount,
+    shareBaseAmount: order.value.shareBaseAmount,
+    technicianRate: order.value.technicianRate ?? order.value.commissionRate,
+    technicianAmount: order.value.technicianAmount ?? order.value.serviceFee,
+    propertyId: order.value.propertyId,
+    propertyRate: order.value.propertyRate,
+    propertyAmount: order.value.propertyAmount,
+    buildingManagerId: order.value.buildingManagerId,
+    buildingManagerRate: order.value.buildingManagerRate,
+    buildingManagerAmount: order.value.buildingManagerAmount,
+    companyAmount: order.value.companyAmount,
+    collectionParty: order.value.collectionParty,
+    technicianSettlementStatus: order.value.technicianSettlementStatus,
+    propertySettlementStatus: order.value.propertySettlementStatus,
+    buildingManagerSettlementStatus: order.value.buildingManagerSettlementStatus,
+    receivedAmount: order.value.receivedAmount ?? order.value.receivedFee,
+    materialCost: order.value.materialCost,
+    actualWork: order.value.actualWork,
+    completedAt: order.value.completedAt
+  })
+  if (constructionEditForm.value.propertyId && !toNumber(order.value.propertyRate)) {
+    onPropertyChange(constructionEditForm.value.propertyId)
   }
+  if (constructionEditForm.value.buildingManagerId && !toNumber(order.value.buildingManagerRate)) {
+    onBuildingManagerChange(constructionEditForm.value.buildingManagerId)
+  }
+  recalculateConstructionForm()
   editingConstruction.value = true
 }
 
 async function completeOrderDirectly() {
   if (order.value.status === 'dispatched') {
-    // 已派单：先初始化表单，再直接保存并推进状态
-    if (!editingConstruction.value) {
-      startEditConstruction()
-    }
-    // 等表单数据填入后再保存
-    await nextTick()
-    await saveConstruction()
+    startEditConstruction()
   } else {
-    // 已完成/已回访：打开编辑表单
     startEditConstruction()
   }
 }
@@ -808,13 +1126,29 @@ function cancelEditConstruction() {
 async function saveConstruction() {
   constructionSaving.value = true
   try {
-    const payload = { ...constructionEditForm.value }
+    const payload = {
+      technicianId: constructionEditForm.value.technicianId || null,
+      orderAmount: roundMoney(constructionEditForm.value.orderAmount),
+      technicianRate: toNumber(constructionEditForm.value.technicianRatePercent) / 100,
+      propertyId: constructionEditForm.value.propertyId || null,
+      propertyRate: toNumber(constructionEditForm.value.propertyRatePercent) / 100,
+      buildingManagerId: constructionEditForm.value.buildingManagerId || null,
+      buildingManagerRate: toNumber(constructionEditForm.value.buildingManagerRatePercent) / 100,
+      receivedAmount: roundMoney(constructionEditForm.value.receivedAmount),
+      materialCost: roundMoney(constructionEditForm.value.materialCost),
+      collectionParty: constructionEditForm.value.collectionParty,
+      technicianSettlementStatus: constructionEditForm.value.technicianSettlementStatus,
+      propertySettlementStatus: constructionEditForm.value.propertySettlementStatus,
+      buildingManagerSettlementStatus: constructionEditForm.value.buildingManagerSettlementStatus,
+      actualWork: constructionEditForm.value.actualWork,
+      completedAt: constructionEditForm.value.completedAt
+    }
     if (payload.completedAt) {
       payload.completedAt = new Date(payload.completedAt).toISOString()
     }
     await api.post(`/orders/${orderId}/fee`, payload)
     if (order.value.status === 'dispatched') {
-      await api.patch(`/orders/${orderId}/status`, { status: 'completed' })
+      await api.patch(`/orders/${orderId}/status`, { status: 'completed', completedAt: payload.completedAt })
     }
     ElMessage.success('施工信息已保存')
     editingConstruction.value = false
@@ -873,21 +1207,29 @@ async function fetchOrderDetail() {
   try {
     const response = await api.get(`/orders/${orderId}`)
     order.value = response.data
-    const techId = order.value.technicianId || order.value.technician_id || ''
-    const tech = availableTechnicians.value.find(t => t.id === techId)
-    const rate = tech ? (tech.commission_rate || 0.30) : (order.value.commissionRate || order.value.commission_rate || 0.30)
-    constructionEditForm.value = {
-      ...constructionEditForm.value,
-      technicianId: techId,
-      totalFee: order.value.totalFee || 0,
-      serviceFee: order.value.serviceFee || 0,
-      receivedFee: order.value.receivedFee || 0,
-      materialCost: order.value.materialCost || 0,
-      buildingManagerIncentive: order.value.buildingManagerIncentive || 0,
-      commissionRate: rate,
-      actualWork: order.value.actualWork || '',
-      completedAt: order.value.completedAt ? order.value.completedAt.slice(0, 16) : constructionEditForm.value.completedAt
-    }
+    constructionEditForm.value = createConstructionForm({
+      technicianId: order.value.technicianId || order.value.technician_id || '',
+      orderAmount: order.value.orderAmount,
+      shareBaseAmount: order.value.shareBaseAmount,
+      technicianRate: order.value.technicianRate ?? order.value.commissionRate,
+      technicianAmount: order.value.technicianAmount ?? order.value.serviceFee,
+      propertyId: order.value.propertyId,
+      propertyRate: order.value.propertyRate,
+      propertyAmount: order.value.propertyAmount,
+      buildingManagerId: order.value.buildingManagerId,
+      buildingManagerRate: order.value.buildingManagerRate,
+      buildingManagerAmount: order.value.buildingManagerAmount,
+      companyAmount: order.value.companyAmount,
+      collectionParty: order.value.collectionParty,
+      technicianSettlementStatus: order.value.technicianSettlementStatus,
+      propertySettlementStatus: order.value.propertySettlementStatus,
+      buildingManagerSettlementStatus: order.value.buildingManagerSettlementStatus,
+      receivedAmount: order.value.receivedAmount ?? order.value.receivedFee,
+      materialCost: order.value.materialCost,
+      actualWork: order.value.actualWork,
+      completedAt: order.value.completedAt
+    })
+    recalculateConstructionForm()
     if (order.value.customerId || order.value.customerPhone) {
       fetchCustomerOrders()
     }
@@ -985,16 +1327,22 @@ async function confirmDeleteOrder() {
   }
 }
 
-watch(() => constructionEditForm.value.totalFee, (val) => {
-  if (val && constructionEditForm.value.commissionRate) {
-    constructionEditForm.value.serviceFee = Math.round(val * constructionEditForm.value.commissionRate * 100) / 100
+watch(
+  () => [
+    constructionEditForm.value.orderAmount,
+    constructionEditForm.value.technicianRatePercent,
+    constructionEditForm.value.propertyRatePercent,
+    constructionEditForm.value.buildingManagerRatePercent,
+    constructionEditForm.value.materialCost
+  ],
+  () => {
+    recalculateConstructionForm()
   }
-})
+)
 
 onMounted(() => {
   if (!settingsStore.loaded) settingsStore.fetchAll()
-  fetchOrderDetail()
-  fetchTechnicians()
+  fetchTechnicians().then(fetchOrderDetail)
 })
 </script>
 
@@ -1483,8 +1831,6 @@ onMounted(() => {
   color: var(--primary);
   font-weight: 700;
 }
-.cost-green { color: #5BA882 !important; }
-
 .worker-link {
   color: var(--primary);
   font-weight: 600;

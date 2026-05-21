@@ -41,6 +41,26 @@ const WorkOrder = sequelize.define('WorkOrder', {
     type: DataTypes.STRING(50),
     allowNull: true
   },
+  source_type: {
+    type: DataTypes.ENUM('customer', 'property', 'building_manager', 'other'),
+    allowNull: true
+  },
+  source_property_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  source_property_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  source_building_manager_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  source_building_manager_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
   problem_category: {
     type: DataTypes.STRING(50),
     allowNull: false

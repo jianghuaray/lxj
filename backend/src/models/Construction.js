@@ -19,11 +19,23 @@ const Construction = sequelize.define('Construction', {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
   },
+  order_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  share_base_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
   service_fee: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
   },
   received_fee: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  received_amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
   },
@@ -35,9 +47,72 @@ const Construction = sequelize.define('Construction', {
     type: DataTypes.DECIMAL(3, 2),
     allowNull: true
   },
+  technician_rate: {
+    type: DataTypes.DECIMAL(5, 4),
+    allowNull: true
+  },
+  technician_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  property_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  property_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  property_rate: {
+    type: DataTypes.DECIMAL(5, 4),
+    allowNull: true
+  },
+  property_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  building_manager_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  building_manager_name: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  building_manager_rate: {
+    type: DataTypes.DECIMAL(5, 4),
+    allowNull: true
+  },
+  building_manager_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
   building_manager_incentive: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true
+  },
+  company_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  collection_party: {
+    type: DataTypes.ENUM('technician', 'property', 'company', 'other'),
+    allowNull: true
+  },
+  technician_settlement_status: {
+    type: DataTypes.ENUM('unsettled', 'settled'),
+    allowNull: false,
+    defaultValue: 'unsettled'
+  },
+  property_settlement_status: {
+    type: DataTypes.ENUM('unsettled', 'settled'),
+    allowNull: false,
+    defaultValue: 'unsettled'
+  },
+  building_manager_settlement_status: {
+    type: DataTypes.ENUM('unsettled', 'settled'),
+    allowNull: false,
+    defaultValue: 'unsettled'
   },
   actual_work: {
     type: DataTypes.TEXT,

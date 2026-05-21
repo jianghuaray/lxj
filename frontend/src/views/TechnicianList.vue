@@ -170,20 +170,24 @@
           <span class="summary-value">{{ settlementData.orderCount || 0 }} 单</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">合计总费用</span>
-          <span class="summary-value">¥{{ settlementData.totalFee || 0 }}</span>
+          <span class="summary-label">合计订单额</span>
+          <span class="summary-value">¥{{ settlementData.orderAmount || 0 }}</span>
         </div>
         <div class="summary-item">
-          <span class="summary-label">合计服务费</span>
-          <span class="summary-value">¥{{ settlementData.serviceFee || 0 }}</span>
+          <span class="summary-label">师傅分成</span>
+          <span class="summary-value">¥{{ settlementData.technicianAmount || settlementData.technicianFee || 0 }}</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">合计材料成本</span>
           <span class="summary-value">¥{{ settlementData.materialCost || 0 }}</span>
         </div>
+        <div class="summary-item">
+          <span class="summary-label">实收金额</span>
+          <span class="summary-value">¥{{ settlementData.receivedAmount || 0 }}</span>
+        </div>
         <div class="summary-item highlight">
           <span class="summary-label">应付师傅</span>
-          <span class="summary-value">¥{{ settlementData.technicianFee || 0 }}</span>
+          <span class="summary-value">¥{{ settlementData.technicianAmount || settlementData.technicianFee || 0 }}</span>
         </div>
       </div>
       <template #footer>

@@ -54,7 +54,7 @@
         <div class="form-field">
           <label class="form-label">来源渠道</label>
           <el-select v-model="form.sourceChannel" class="form-select-el" placeholder="请选择来源渠道">
-            <el-option v-for="ch in settingsStore.channels" :key="ch" :label="ch" :value="ch" />
+            <el-option v-for="item in sourceChannelOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </div>
         <div class="form-field full-width">
@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { ElMessage } from 'element-plus'
@@ -115,6 +115,14 @@ const settingsStore = useSettingsStore()
 const loading = ref(false)
 const matchedCustomer = ref(null)
 const phoneSearched = ref(false)
+const activeProperties = computed(() => (settingsStore.properties || []).filter(item => item.status === 1))
+const activeBuildingManagers = computed(() => (settingsStore.buildingManagers || []).filter(item => item.status === 1))
+const sourceChannelOptions = computed(() => {
+  const base = (settingsStore.channels || []).map(item => ({ label: item, value: `channel:${item}` }))
+  const properties = activeProperties.value.map(item => ({ label: `物业：${item.name}`, value: `property:${item.id}` }))
+  const buildingManagers = activeBuildingManagers.value.map(item => ({ label: `楼管：${item.name}`, value: `buildingManager:${item.id}` }))
+  return [{ label: '客户来电', value: 'customer' }, ...base, ...properties, ...buildingManagers]
+})
 
 onMounted(() => {
   if (!settingsStore.loaded) settingsStore.fetchAll()
@@ -127,7 +135,7 @@ const form = ref({
   address: '',
   problemCategory: '',
   problemDescription: '',
-  sourceChannel: '',
+  sourceChannel: 'customer',
   receiverRemark: ''
 })
 
@@ -137,9 +145,55 @@ function validate() {
   if (!f.customerPhone.trim()) { ElMessage.warning('请输入联系方式'); return false }
   if (!f.area) { ElMessage.warning('请选择区域'); return false }
   if (!f.address.trim()) { ElMessage.warning('请输入详细住址'); return false }
+  if (!f.sourceChannel) { ElMessage.warning('请选择来源渠道'); return false }
   if (!f.problemCategory) { ElMessage.warning('请选择问题分类'); return false }
   if (!f.problemDescription.trim()) { ElMessage.warning('请描述问题'); return false }
   return true
+}
+
+function buildSourcePayload(sourceChannel) {
+  if (sourceChannel === 'customer') {
+    return {
+      sourceType: 'customer',
+      sourceChannel: '客户来电',
+      sourcePropertyId: null,
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('channel:')) {
+    return {
+      sourceType: null,
+      sourceChannel: sourceChannel.slice('channel:'.length),
+      sourcePropertyId: null,
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('property:')) {
+    return {
+      sourceType: 'property',
+      sourceChannel: '',
+      sourcePropertyId: sourceChannel.slice('property:'.length),
+      sourceBuildingManagerId: null
+    }
+  }
+
+  if (sourceChannel?.startsWith('buildingManager:')) {
+    return {
+      sourceType: 'building_manager',
+      sourceChannel: '',
+      sourcePropertyId: null,
+      sourceBuildingManagerId: sourceChannel.slice('buildingManager:'.length)
+    }
+  }
+
+  return {
+    sourceType: null,
+    sourceChannel: '',
+    sourcePropertyId: null,
+    sourceBuildingManagerId: null
+  }
 }
 
 async function searchCustomer() {
@@ -170,7 +224,8 @@ async function doSubmit(status) {
   if (!validate()) return
   loading.value = true
   try {
-    const payload = { ...form.value, status }
+    const sourcePayload = buildSourcePayload(form.value.sourceChannel)
+    const payload = { ...form.value, ...sourcePayload, status }
     const response = await api.post('/orders', payload)
     return response.data
   } catch (error) {

@@ -14,22 +14,27 @@ async function computeTechStats(techIds, monthStart, monthEnd) {
 
   if (techIds.length === 0) return { orderCountMap, avgSatisfactionMap, totalRevenueMap };
 
-  // 1. orderCount + totalRevenue（当月）
-  const orderCounts = await Construction.findAll({
-    attributes: [
-      'technician_id',
-      [fn('COUNT', literal('*')), 'orderCount'],
-      [fn('COALESCE', fn('SUM', col('total_fee')), 0), 'totalRevenue']
-    ],
-    where: {
-      technician_id: { [Op.in]: techIds },
-      created_at: { [Op.gte]: monthStart, [Op.lt]: monthEnd }
-    },
-    group: ['technician_id']
+  // 1. orderCount + totalRevenue（按工单完成时间统计，和结算口径一致）
+  const monthlySql = `
+    SELECT
+      c.technician_id,
+      COUNT(*) AS orderCount,
+      COALESCE(SUM(COALESCE(c.order_amount, c.total_fee)), 0) AS totalRevenue
+    FROM constructions c
+    INNER JOIN work_orders wo ON c.order_id = wo.id
+    WHERE c.technician_id IN (${techIds.map(() => '?').join(',')})
+      AND wo.completed_at >= ?
+      AND wo.completed_at < ?
+      AND wo.status IN ('completed', 'callback')
+    GROUP BY c.technician_id
+  `;
+  const monthlyRows = await sequelize.query(monthlySql, {
+    replacements: [...techIds, monthStart, monthEnd],
+    type: sequelize.QueryTypes.SELECT
   });
-  orderCounts.forEach(oc => {
-    orderCountMap[oc.dataValues.technician_id] = parseInt(oc.dataValues.orderCount);
-    totalRevenueMap[oc.dataValues.technician_id] = parseFloat(oc.dataValues.totalRevenue) || 0;
+  monthlyRows.forEach(row => {
+    orderCountMap[row.technician_id] = parseInt(row.orderCount, 10);
+    totalRevenueMap[row.technician_id] = parseFloat(row.totalRevenue) || 0;
   });
 
   // 2. avgSatisfaction：一条 SQL JOIN 直接算出每个 technician 的平均分
@@ -247,32 +252,37 @@ router.get('/:id/settlement', auth, async (req, res) => {
     const startDate = new Date(year, mon - 1, 1);
     const endDate = new Date(year, mon, 1);
 
-    // Get all constructions for this technician in the given month
     const constructions = await Construction.findAll({
       where: {
-        technician_id: req.params.id,
-        created_at: {
-          [Op.gte]: startDate,
-          [Op.lt]: endDate
-        }
+        technician_id: req.params.id
       },
-      include: [{ model: WorkOrder, as: 'order' }]
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        where: {
+          completed_at: {
+            [Op.gte]: startDate,
+            [Op.lt]: endDate
+          }
+        }
+      }]
     });
 
     const orderCount = constructions.length;
-    const totalFee = constructions.reduce((sum, c) => sum + (c.total_fee || 0), 0);
-    const serviceFee = constructions.reduce((sum, c) => sum + (c.service_fee || 0), 0);
+    const orderAmount = constructions.reduce((sum, c) => sum + Number(c.order_amount || c.total_fee || 0), 0);
+    const technicianAmount = constructions.reduce((sum, c) => sum + Number(c.technician_amount || c.service_fee || 0), 0);
     const materialCost = constructions.reduce((sum, c) => sum + (c.material_cost || 0), 0);
+    const receivedAmount = constructions.reduce((sum, c) => sum + Number(c.received_amount || c.received_fee || 0), 0);
     const commissionRate = technician.commission_rate || 0.3;
-    const technicianFee = totalFee - serviceFee - materialCost;
 
     res.json({
       orderCount,
-      totalFee: Math.round(totalFee * 100) / 100,
-      serviceFee: Math.round(serviceFee * 100) / 100,
+      orderAmount: Math.round(orderAmount * 100) / 100,
+      technicianAmount: Math.round(technicianAmount * 100) / 100,
       materialCost: Math.round(materialCost * 100) / 100,
+      receivedAmount: Math.round(receivedAmount * 100) / 100,
       commissionRate,
-      technicianFee: Math.round(technicianFee * 100) / 100,
+      technicianFee: Math.round(technicianAmount * 100) / 100,
       month
     });
   } catch (error) {
@@ -301,20 +311,25 @@ router.get('/:id/settlement/export', auth, async (req, res) => {
 
     const constructions = await Construction.findAll({
       where: {
-        technician_id: req.params.id,
-        created_at: {
-          [Op.gte]: startDate,
-          [Op.lt]: endDate
-        }
+        technician_id: req.params.id
       },
-      include: [{ model: WorkOrder, as: 'order' }]
+      include: [{
+        model: WorkOrder,
+        as: 'order',
+        where: {
+          completed_at: {
+            [Op.gte]: startDate,
+            [Op.lt]: endDate
+          }
+        }
+      }]
     });
 
     const orderCount = constructions.length;
-    const totalFee = constructions.reduce((sum, c) => sum + (c.total_fee || 0), 0);
-    const serviceFee = constructions.reduce((sum, c) => sum + (c.service_fee || 0), 0);
+    const orderAmount = constructions.reduce((sum, c) => sum + Number(c.order_amount || c.total_fee || 0), 0);
+    const technicianAmount = constructions.reduce((sum, c) => sum + Number(c.technician_amount || c.service_fee || 0), 0);
     const materialCost = constructions.reduce((sum, c) => sum + (c.material_cost || 0), 0);
-    const technicianFee = totalFee - serviceFee - materialCost;
+    const receivedAmount = constructions.reduce((sum, c) => sum + Number(c.received_amount || c.received_fee || 0), 0);
 
     const exportData = {
       technician: technician.name,
@@ -323,16 +338,19 @@ router.get('/:id/settlement/export', auth, async (req, res) => {
       generatedAt: new Date().toISOString(),
       summary: {
         orderCount,
-        totalFee,
-        serviceFee,
+        orderAmount,
+        technicianAmount,
         materialCost,
-        technicianFee
+        receivedAmount,
+        technicianFee: technicianAmount
       },
       details: constructions.map(c => ({
         orderNo: c.order?.order_no || '-',
-        totalFee: c.total_fee,
-        serviceFee: c.service_fee,
+        sourceChannel: c.order?.source_channel || '',
+        orderAmount: Number(c.order_amount || c.total_fee || 0),
+        technicianAmount: Number(c.technician_amount || c.service_fee || 0),
         materialCost: c.material_cost,
+        receivedAmount: Number(c.received_amount || c.received_fee || 0),
         completedAt: c.order?.completed_at
       }))
     };

@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { DataTypes } = require('sequelize');
 
 // 启动时校验必要环境变量
 if (!process.env.JWT_SECRET) {
@@ -146,9 +147,89 @@ const startServer = async () => {
       console.log('work_orders migration skipped:', e.message);
     }
 
-    // 同步数据库：创建缺失的表
     await sequelize.sync();
     console.log('数据库同步完成');
+
+    const queryInterface = sequelize.getQueryInterface();
+    const workOrderTable = await queryInterface.describeTable('work_orders');
+    const addWorkOrderColumnIfMissing = async (name, definition) => {
+      if (!workOrderTable[name]) {
+        await queryInterface.addColumn('work_orders', name, definition);
+      }
+    };
+    await addWorkOrderColumnIfMissing('source_type', { type: DataTypes.STRING(30), allowNull: true });
+    await addWorkOrderColumnIfMissing('source_property_id', { type: DataTypes.BIGINT, allowNull: true });
+    await addWorkOrderColumnIfMissing('source_property_name', { type: DataTypes.STRING(100), allowNull: true });
+    await addWorkOrderColumnIfMissing('source_building_manager_id', { type: DataTypes.BIGINT, allowNull: true });
+    await addWorkOrderColumnIfMissing('source_building_manager_name', { type: DataTypes.STRING(100), allowNull: true });
+
+    const propertyTable = await queryInterface.describeTable('properties');
+    const addPropertyColumnIfMissing = async (name, definition) => {
+      if (!propertyTable[name]) {
+        await queryInterface.addColumn('properties', name, definition);
+      }
+    };
+    await addPropertyColumnIfMissing('default_collection_party', { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'technician' });
+    await addPropertyColumnIfMissing('settlement_cycle', { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'monthly' });
+
+    const constructionTable = await queryInterface.describeTable('constructions');
+    const addColumnIfMissing = async (name, definition) => {
+      if (!constructionTable[name]) {
+        await queryInterface.addColumn('constructions', name, definition);
+      }
+    };
+
+    await addColumnIfMissing('order_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('share_base_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('received_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('technician_rate', { type: DataTypes.DECIMAL(5, 4), allowNull: true });
+    await addColumnIfMissing('technician_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('property_id', { type: DataTypes.BIGINT, allowNull: true });
+    await addColumnIfMissing('property_name', { type: DataTypes.STRING(100), allowNull: true });
+    await addColumnIfMissing('property_rate', { type: DataTypes.DECIMAL(5, 4), allowNull: true });
+    await addColumnIfMissing('property_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('building_manager_id', { type: DataTypes.BIGINT, allowNull: true });
+    await addColumnIfMissing('building_manager_name', { type: DataTypes.STRING(100), allowNull: true });
+    await addColumnIfMissing('building_manager_rate', { type: DataTypes.DECIMAL(5, 4), allowNull: true });
+    await addColumnIfMissing('building_manager_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('company_amount', { type: DataTypes.DECIMAL(10, 2), allowNull: true });
+    await addColumnIfMissing('collection_party', { type: DataTypes.STRING(30), allowNull: true });
+    await addColumnIfMissing('technician_settlement_status', { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'unsettled' });
+    await addColumnIfMissing('property_settlement_status', { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'unsettled' });
+    await addColumnIfMissing('building_manager_settlement_status', { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'unsettled' });
+
+    await sequelize.query(`
+      UPDATE constructions
+      SET
+        order_amount = COALESCE(order_amount, total_fee),
+        share_base_amount = COALESCE(share_base_amount, ROUND(COALESCE(total_fee, 0) - COALESCE(material_cost, 0), 2)),
+        received_amount = COALESCE(received_amount, received_fee),
+        technician_rate = COALESCE(technician_rate, commission_rate, 0),
+        technician_amount = COALESCE(technician_amount, service_fee, CASE
+          WHEN total_fee IS NOT NULL AND commission_rate IS NOT NULL THEN ROUND((COALESCE(total_fee, 0) - COALESCE(material_cost, 0)) * commission_rate, 2)
+          ELSE NULL
+        END),
+        building_manager_amount = COALESCE(building_manager_amount, building_manager_incentive, 0),
+        building_manager_rate = COALESCE(building_manager_rate, 0),
+        property_rate = COALESCE(property_rate, 0),
+        property_amount = COALESCE(property_amount, 0),
+        company_amount = COALESCE(
+          company_amount,
+          ROUND(
+            COALESCE(total_fee, 0)
+            - COALESCE(material_cost, 0)
+            - COALESCE(service_fee, 0)
+            - COALESCE(property_amount, 0)
+            - COALESCE(building_manager_incentive, 0)
+            ,
+            2
+          )
+        ),
+        collection_party = COALESCE(collection_party, 'technician'),
+        technician_settlement_status = COALESCE(technician_settlement_status, 'unsettled'),
+        property_settlement_status = COALESCE(property_settlement_status, 'unsettled'),
+        building_manager_settlement_status = COALESCE(building_manager_settlement_status, 'unsettled')
+    `);
 
     app.listen(PORT, () => {
       console.log(`服务器运行在 http://localhost:${PORT}`);
