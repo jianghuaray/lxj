@@ -302,6 +302,30 @@ router.get('/revenue-trend', auth, async (req, res) => {
   }
 });
 
+// 获取区县工单数据（用于地图展示）
+router.get('/district-data', auth, async (req, res) => {
+  try {
+    const districts = await WorkOrder.findAll({
+      attributes: [
+        'area',
+        [fn('COUNT', literal('*')), 'count']
+      ],
+      where: { area: { [Op.not]: null, [Op.ne]: '' } },
+      group: ['area']
+    });
+
+    const districtData = districts.map(d => ({
+      area: d.dataValues.area,
+      count: parseInt(d.dataValues.count)
+    }));
+
+    res.json(districtData);
+  } catch (error) {
+    console.error('获取区县数据失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
 // 获取师傅排行
 router.get('/technician-ranking', auth, async (req, res) => {
   try {

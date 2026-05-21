@@ -19,15 +19,6 @@
           <div class="stat-label">客户总数</div>
         </div>
       </div>
-      <div class="stat-card" :class="{ active: activeCard === 'vip' }" @click="filterByCard('vip')">
-        <div class="stat-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-value">{{ stats.vip }}</div>
-          <div class="stat-label">VIP客户</div>
-        </div>
-      </div>
       <div class="stat-card" :class="{ active: activeCard === 'new' }" @click="filterByCard('new')">
         <div class="stat-icon">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -35,15 +26,6 @@
         <div class="stat-info">
           <div class="stat-value">{{ stats.newThisMonth }}</div>
           <div class="stat-label">本月新增</div>
-        </div>
-      </div>
-      <div class="stat-card" :class="{ active: activeCard === 'blacklist' }" @click="filterByCard('blacklist')">
-        <div class="stat-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-        </div>
-        <div class="stat-info">
-          <div class="stat-value">{{ stats.blacklist }}</div>
-          <div class="stat-label">黑名单客户</div>
         </div>
       </div>
     </div>
@@ -55,11 +37,6 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--muted-fg)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </template>
       </el-input>
-      <el-select v-model="levelFilter" class="filter-select-el" placeholder="全部等级" clearable @change="fetchCustomers">
-        <el-option label="普通客户" value="normal" />
-        <el-option label="VIP客户" value="vip" />
-        <el-option label="黑名单" value="blacklist" />
-      </el-select>
       <el-select v-model="areaFilter" class="filter-select-el" placeholder="全部区域" clearable @change="fetchCustomers">
         <el-option v-for="area in areas" :key="area" :label="area" :value="area" />
       </el-select>
@@ -80,7 +57,6 @@
             <th style="width:10%">手机号</th>
             <th style="width:7%">区域</th>
             <th style="width:16%">地址</th>
-            <th style="width:8%">客户等级</th>
             <th style="width:14%">标签</th>
             <th style="width:7%">累计工单</th>
             <th style="width:8%">累计消费</th>
@@ -94,9 +70,6 @@
             <td>{{ customer.phone }}</td>
             <td>{{ customer.area }}</td>
             <td :title="customer.address">{{ customer.address || '-' }}</td>
-            <td>
-              <span class="level-badge" :class="getLevelClass(customer.level)">{{ getLevelText(customer.level) }}</span>
-            </td>
             <td>
               <div class="tags-cell">
                 <span v-for="(tag, i) in (customer.tags || []).slice(0, 3)" :key="tag" :class="['tag-badge', getTagClass(i)]">{{ tag }}</span>
@@ -112,7 +85,7 @@
             </td>
           </tr>
           <tr v-if="!loading && customers.length === 0">
-            <td colspan="10" class="empty-cell">
+            <td colspan="9" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <p>暂无客户数据</p>
@@ -168,12 +141,11 @@ const loading = ref(false)
 let fetchCustomersCancel = null
 const customers = ref([])
 const searchQuery = ref('')
-const levelFilter = ref('')
 const areaFilter = ref('')
 const activeCard = ref('all')
 const pagination = ref({ page: 1, pageSize: 12, total: 0 })
 
-const stats = ref({ total: 0, vip: 0, newThisMonth: 0, blacklist: 0 })
+const stats = ref({ total: 0, newThisMonth: 0 })
 const areas = ['新城区', '未央区', '高新区', '灞桥区']
 
 const totalPages = computed(() => Math.max(1, Math.ceil(pagination.value.total / pagination.value.pageSize)))
@@ -196,33 +168,13 @@ const displayPages = computed(() => {
   return pages
 })
 
-function getLevelText(level) {
-  const map = { normal: '普通', vip: 'VIP', blacklist: '黑名单' }
-  return map[level] || '普通'
-}
-
-function getLevelClass(level) {
-  const map = { '普通客户': 'normal', 'VIP客户': 'vip', '黑名单': 'blacklist' }
-  return map[level] || level
-}
-
 function filterByCard(type) {
   activeCard.value = type
   pagination.value.page = 1
   
-  // 根据卡片类型设置筛选条件
   if (type === 'all') {
-    levelFilter.value = ''
-    fetchCustomers()
-  } else if (type === 'vip') {
-    levelFilter.value = 'vip'
-    fetchCustomers()
-  } else if (type === 'blacklist') {
-    levelFilter.value = 'blacklist'
     fetchCustomers()
   } else if (type === 'new') {
-    levelFilter.value = ''
-    // 本月新增需要特殊处理，获取所有数据后筛选
     fetchNewCustomers()
   }
 }
@@ -246,7 +198,6 @@ function goToPage(p) {
 
 function resetFilters() {
   searchQuery.value = ''
-  levelFilter.value = ''
   areaFilter.value = ''
   activeCard.value = 'all'
   pagination.value.page = 1
@@ -263,8 +214,6 @@ async function fetchStats() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     
     stats.value.total = allCustomers.length
-    stats.value.vip = allCustomers.filter(c => c.level === 'vip').length
-    stats.value.blacklist = allCustomers.filter(c => c.level === 'blacklist').length
     stats.value.newThisMonth = allCustomers.filter(c => {
       if (!c.createdAt) return false
       const createdAt = new Date(c.createdAt)
@@ -324,7 +273,6 @@ async function fetchCustomers() {
     
     const params = { page: pagination.value.page, pageSize: pagination.value.pageSize }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (levelFilter.value) params.level = levelFilter.value
     if (areaFilter.value) params.area = areaFilter.value
     const response = await api.get('/customers', { params, signal })
     customers.value = response.data.items || response.data || []
@@ -357,7 +305,6 @@ async function exportCustomers() {
     // 获取所有筛选条件下的数据（不分页）
     const params = { page: 1, pageSize: 9999 }
     if (searchQuery.value) params.keyword = searchQuery.value
-    if (levelFilter.value) params.level = levelFilter.value
     if (areaFilter.value) params.area = areaFilter.value
     
     const response = await api.get('/customers', { params })
@@ -374,7 +321,7 @@ async function exportCustomers() {
     }
     
     // 表头
-    const headers = ['姓名', '手机号', '区域', '地址', '客户等级', '标签', '累计工单', '累计消费', '最近报修']
+    const headers = ['姓名', '手机号', '区域', '地址', '标签', '累计工单', '累计消费', '最近报修']
     
     // 数据行
     const data = allCustomers.map(c => [
@@ -382,7 +329,6 @@ async function exportCustomers() {
       c.phone || '',
       c.area || '',
       c.address || '',
-      getLevelText(c.level),
       (c.tags || []).join('、'),
       c.totalOrders || 0,
       c.totalAmount || 0,
@@ -412,7 +358,7 @@ onUnmounted(() => {
 .btn-new-order svg { width: 18px; height: 18px; stroke-width: 2; }
 
 /* Stats Cards */
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
 .stat-card { background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5); padding: 20px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow-soft); cursor: pointer; transition: all 0.3s ease; }
 .stat-card:nth-child(1) { border-radius: 24px 16px 24px 16px; }
 .stat-card:nth-child(2) { border-radius: 16px 24px 16px 24px; }
@@ -425,8 +371,6 @@ onUnmounted(() => {
 .stat-card:hover .stat-icon { background: var(--primary); color: white; }
 .stat-card:nth-child(2) .stat-icon { background: rgba(232,184,75,0.15); color: var(--secondary); }
 .stat-card:nth-child(2):hover .stat-icon { background: var(--secondary); color: white; }
-.stat-card:nth-child(4) .stat-icon { background: rgba(212,114,106,0.1); color: var(--destructive); }
-.stat-card:nth-child(4):hover .stat-icon { background: var(--destructive); color: white; }
 .stat-icon svg { width: 22px; height: 22px; stroke-width: 2; }
 .stat-info { flex: 1; }
 .stat-value { font-family: var(--font-display); font-weight: 700; font-size: 28px; color: var(--fg); line-height: 1.1; }
@@ -519,12 +463,6 @@ onUnmounted(() => {
 .data-table tbody td { padding: 0 16px; font-size: 13px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .data-table tbody td:first-child { padding-left: 24px; }
 .data-table tbody td:last-child { padding-right: 24px; text-align: center; }
-
-/* Customer level badges */
-.level-badge { display: inline-flex; align-items: center; height: 26px; padding: 0 14px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.level-badge.normal { background: rgba(120,120,108,0.1); color: #78786C; }
-.level-badge.vip { background: rgba(232,184,75,0.15); color: #B8922E; }
-.level-badge.blacklist { background: rgba(212,114,106,0.1); color: #D4726A; }
 
 /* Tag badges */
 .tags-cell { display: flex; gap: 4px; flex-wrap: wrap; }

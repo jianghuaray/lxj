@@ -114,12 +114,6 @@ const router = createRouter({
           meta: { title: '维修费用' }
         },
         {
-          path: 'carbon-points',
-          name: 'carbonPoints',
-          component: () => import('@/views/CarbonPoints.vue'),
-          meta: { title: '碳积分管理' }
-        },
-        {
           path: 'system',
           name: 'system',
           component: () => import('@/views/SystemSettings.vue'),

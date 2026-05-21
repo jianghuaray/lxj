@@ -27,8 +27,6 @@
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 已匹配到客户档案
               </span>
-              <span v-if="matchedCustomer.level === 'vip'" class="vip-badge">VIP客户</span>
-              <span v-else-if="matchedCustomer.level === 'blacklist'" class="blacklist-badge">黑名单</span>
             </div>
             <div class="match-info">
               <span>姓名：<strong>{{ matchedCustomer.name }}</strong></span>

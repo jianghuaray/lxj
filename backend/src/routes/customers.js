@@ -14,7 +14,6 @@ function formatCustomer(c) {
     phone: c.phone,
     area: c.area || '',
     address: c.address || '',
-    level: c.level,
     tags: c.tags || [],
     remark: c.remark || '',
     sourceChannel: c.source_channel || '',
@@ -29,10 +28,9 @@ function formatCustomer(c) {
 // 获取客户列表
 router.get('/', auth, async (req, res) => {
   try {
-    const { page = 1, pageSize = 20, level, area, keyword } = req.query;
+    const { page = 1, pageSize = 20, area, keyword } = req.query;
 
     const where = {};
-    if (level) where.level = level;
     if (area) where.area = area;
     if (keyword) {
       const safeKeyword = escapeLike(keyword);
@@ -150,7 +148,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const {
-      name, phone, area, address, level, tags, remark, sourceChannel } = req.body;
+      name, phone, area, address, tags, remark, sourceChannel } = req.body;
 
     // Input validation
     if (!name || !name.trim()) return res.status(400).json({ error: '客户姓名不能为空' });
@@ -166,7 +164,6 @@ router.post('/', auth, async (req, res) => {
       phone,
       area,
       address,
-      level: level || 'normal',
       tags: tags || [],
       remark,
       source_channel: sourceChannel
@@ -183,7 +180,7 @@ router.post('/', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const {
-      name, phone, area, address, level, tags, remark
+      name, phone, area, address, tags, remark
     } = req.body;
 
     const customer = await Customer.findByPk(req.params.id);
@@ -203,7 +200,6 @@ router.put('/:id', auth, async (req, res) => {
       phone,
       area,
       address,
-      level,
       tags,
       remark
     });
@@ -211,28 +207,6 @@ router.put('/:id', auth, async (req, res) => {
     res.json({ message: '更新成功' });
   } catch (error) {
     console.error('更新客户失败:', error);
-    res.status(500).json({ error: '服务器错误' });
-  }
-});
-
-// 更新客户等级 (PATCH /customers/:id/level) - specific route before general PATCH /:id
-router.patch('/:id/level', auth, async (req, res) => {
-  try {
-    const { level } = req.body;
-    const customer = await Customer.findByPk(req.params.id);
-
-    if (!customer) {
-      return res.status(404).json({ error: '客户不存在' });
-    }
-
-    if (!['normal', 'vip', 'blacklist'].includes(level)) {
-      return res.status(400).json({ error: '无效的客户等级' });
-    }
-
-    await customer.update({ level });
-    res.json({ message: '等级更新成功', level });
-  } catch (error) {
-    console.error('更新客户等级失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });
@@ -255,7 +229,7 @@ router.patch('/:id/tags', auth, async (req, res) => {
   }
 });
 
-// General PATCH for partial updates - must come after specific /:id/level and /:id/tags
+// General PATCH for partial updates - must come after specific /:id/tags
 router.patch('/:id', auth, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
@@ -263,7 +237,7 @@ router.patch('/:id', auth, async (req, res) => {
       return res.status(404).json({ error: '客户不存在' });
     }
 
-    const { name, phone, area, address, level, tags, remark } = req.body;
+    const { name, phone, area, address, tags, remark } = req.body;
 
     if (phone && phone !== customer.phone) {
       const existingCustomer = await Customer.findOne({ where: { phone } });
@@ -277,7 +251,6 @@ router.patch('/:id', auth, async (req, res) => {
       ...(phone !== undefined && { phone }),
       ...(area !== undefined && { area }),
       ...(address !== undefined && { address }),
-      ...(level !== undefined && { level }),
       ...(tags !== undefined && { tags }),
       ...(remark !== undefined && { remark })
     });

@@ -14,10 +14,6 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           编辑信息
         </button>
-        <button class="btn-pill secondary-outline" @click="showLevelDialog = true">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
-          调整等级
-        </button>
         <button class="btn-pill danger-outline" @click="confirmDeleteCustomer">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           <span>删除客户</span>
@@ -33,10 +29,6 @@
           <div class="customer-name">{{ customer.name || '-' }}</div>
           <div class="customer-phone">{{ customer.phone || '-' }}</div>
           <div class="customer-badges">
-            <span class="vip-badge" v-if="customer.level === 'vip'">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              VIP客户
-            </span>
             <span v-for="tag in (customer.tags || [])" :key="tag" class="tag-pill">{{ tag }}</span>
           </div>
         </div>
@@ -131,30 +123,6 @@
 
       <!-- Right Column (1/3) -->
       <div class="right-col">
-        <!-- Customer Level Card -->
-        <div class="level-card">
-          <div class="card-title">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 6 9 6 9Z"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 18 9 18 9Z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-            客户等级
-          </div>
-          <div class="level-current">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#B8922E" stroke-width="2" v-if="customer.level === 'vip'"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            {{ getLevelText(customer.level) }}
-          </div>
-          <div class="level-desc">{{ getLevelDescription(customer.level) }}</div>
-          <div class="level-rule">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            {{ getLevelRule(customer.level) }}
-          </div>
-          <div class="timeline-title">等级历史</div>
-          <div class="level-timeline">
-            <div class="timeline-item" v-for="(item, index) in levelHistory" :key="index">
-              <div class="timeline-date">{{ formatDate(item.date) }}</div>
-              <div class="timeline-text">{{ item.description }}</div>
-            </div>
-          </div>
-        </div>
-
         <!-- Tag Management Card -->
         <div class="tag-card">
           <div class="card-title">
@@ -215,25 +183,6 @@
         <el-button type="primary" @click="addTag">添加</el-button>
       </template>
     </el-dialog>
-
-    <!-- Level Adjust Dialog -->
-    <el-dialog v-model="showLevelDialog" title="调整客户等级" width="400px">
-      <div class="level-options">
-        <div
-          v-for="opt in levelOptions"
-          :key="opt.value"
-          class="level-option"
-          :class="{ active: customer.level === opt.value }"
-          @click="changeLevel(opt.value)"
-        >
-          <span class="level-option-label">{{ opt.label }}</span>
-          <span class="level-option-desc">{{ opt.desc }}</span>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="showLevelDialog = false">取消</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -253,22 +202,10 @@ const customerId = route.params.id
 const customer = ref({})
 const orders = ref([])
 const showEditDialog = ref(false)
-const showLevelDialog = ref(false)
 const saveLoading = ref(false)
 const newTag = ref('')
 
 const availableTags = ['价格敏感', '周末预约', '老人独居', '高价值客户', '某小区业主', '新客户', '回头客']
-
-const levelOptions = [
-  { label: '普通客户', value: 'normal', desc: '默认等级，所有新注册客户' },
-  { label: 'VIP客户', value: 'vip', desc: '消费达标或人工指定' },
-  { label: '黑名单', value: 'blacklist', desc: '禁止预约和接单' }
-]
-
-const levelHistory = ref([
-  { date: '2025-08-15', description: '注册为普通客户' },
-  { date: '2025-12-20', description: '升级为VIP客户（累计消费达标）' }
-])
 
 const editForm = ref({
   name: '',
@@ -277,29 +214,6 @@ const editForm = ref({
   address: '',
   remark: ''
 })
-
-function getLevelText(level) {
-  const map = { normal: '普通客户', vip: 'VIP客户', blacklist: '黑名单' }
-  return map[level] || '普通客户'
-}
-
-function getLevelDescription(level) {
-  const map = {
-    normal: '普通客户，享受标准服务',
-    vip: '高价值客户，享受优先派单服务',
-    blacklist: '黑名单客户，服务受限'
-  }
-  return map[level] || '普通客户，享受标准服务'
-}
-
-function getLevelRule(level) {
-  const map = {
-    normal: '默认等级，所有新注册客户',
-    vip: '累计消费超过¥3,000自动升级',
-    blacklist: '恶意欠费客户'
-  }
-  return map[level] || '默认等级，所有新注册客户'
-}
 
 function getStatusClass(status) {
   const map = {
@@ -353,17 +267,6 @@ async function saveCustomer() {
     ElMessage.error('保存失败')
   } finally {
     saveLoading.value = false
-  }
-}
-
-async function changeLevel(level) {
-  try {
-    await api.patch(`/customers/${customerId}`, { level })
-    ElMessage.success('等级已更新')
-    showLevelDialog.value = false
-    await fetchCustomer()
-  } catch (error) {
-    ElMessage.error('更新失败')
   }
 }
 

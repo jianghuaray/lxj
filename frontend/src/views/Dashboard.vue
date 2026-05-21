@@ -13,47 +13,6 @@
       </div>
     </div>
 
-    <!-- Eco Dashboard -->
-    <div class="eco-dashboard">
-      <div class="eco-dashboard-title">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/>
-          <path d="M2 2l7.58 11.58"/>
-          <circle cx="11" cy="11" r="2"/>
-        </svg>
-        环保贡献总览
-      </div>
-      <div class="eco-metrics">
-        <div class="eco-metric-card" style="border-radius: 20px 14px 20px 14px;">
-          <div class="eco-metric-icon icon-points">🌱</div>
-          <div class="eco-metric-value">{{ ecoConfig.totalPoints }}</div>
-          <div class="eco-metric-unit">积分</div>
-          <div class="eco-metric-label">累计积分</div>
-        </div>
-        <div class="eco-metric-card" style="border-radius: 14px 20px 14px 20px;">
-          <div class="eco-metric-icon icon-power">💡</div>
-          <div class="eco-metric-value">{{ ecoConfig.savedPower }}</div>
-          <div class="eco-metric-unit">kWh</div>
-          <div class="eco-metric-label">节约电量</div>
-        </div>
-        <div class="eco-metric-card" style="border-radius: 20px 20px 14px 14px;">
-          <div class="eco-metric-icon icon-family">🏠</div>
-          <div class="eco-metric-value">{{ ecoConfig.servedFamilies }}</div>
-          <div class="eco-metric-unit">户</div>
-          <div class="eco-metric-label">服务家庭</div>
-        </div>
-        <div class="eco-metric-card" style="border-radius: 14px 14px 20px 20px;">
-          <div class="eco-metric-icon icon-carbon">♻️</div>
-          <div class="eco-metric-value">{{ ecoConfig.reducedCarbon }}</div>
-          <div class="eco-metric-unit">kg</div>
-          <div class="eco-metric-label">减少碳排放</div>
-        </div>
-      </div>
-      <div class="eco-slogan">
-        <p>每一次维修，都是对地球的一次温柔守护 <span class="eco-slogan-leaf">🍃</span></p>
-      </div>
-    </div>
-
     <!-- KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card" :style="{ borderRadius: kpiRadius[0] }">
@@ -197,6 +156,9 @@
       </div>
     </div>
 
+    <!-- Map Chart -->
+    <MapChart :data="districtData" />
+
     <!-- Ranking -->
     <h3 class="section-title">师傅满意度排行</h3>
     <div class="ranking-grid">
@@ -263,6 +225,7 @@ import api from '@/utils/api'
 import { formatNumber } from '@/utils/format'
 import { debounce } from '@/utils/debounce'
 import { baseTooltip, baseCategoryX, baseValueY, baseGrid, areaLineSeries, gradientBarSeries, COLORS, FONT_BODY, FONT_DISPLAY } from '@/utils/chartConfig'
+import MapChart from '@/components/MapChart.vue'
 // ECharts on-demand import to reduce bundle size
 import * as echarts from 'echarts/core'
 import { LineChart, BarChart, PieChart } from 'echarts/charts'
@@ -289,12 +252,7 @@ const timeRange = ref('month')
 const stats = ref({})
 const techRanking = ref([])
 const areaStats = ref([])
-const ecoConfig = ref({
-  totalPoints: 0,
-  savedPower: 0,
-  servedFamilies: 0,
-  reducedCarbon: 0
-})
+const districtData = ref([])
 const lineChartRef = ref(null)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
@@ -337,21 +295,10 @@ async function fetchAll() {
     fetchCategoryDist(),
     fetchAreaDist(),
     fetchAreaStats(),
+    fetchDistrictData(),
     fetchRevenueTrend(),
-    fetchTechRanking(),
-    fetchEcoConfig()
+    fetchTechRanking()
   ])
-}
-
-async function fetchEcoConfig() {
-  try {
-    const response = await api.get('/points/eco/config')
-    if (response.data.success) {
-      ecoConfig.value = response.data.data
-    }
-  } catch (error) {
-    console.error('获取环保配置失败', error)
-  }
 }
 
 async function fetchStats() {
@@ -397,6 +344,16 @@ async function fetchAreaStats() {
     areaStats.value = response.data || []
   } catch (error) {
     console.error('获取区域统计失败', error)
+  }
+}
+
+async function fetchDistrictData() {
+  try {
+    const response = await api.get('/dashboard/district-data')
+    console.log('区县数据:', response.data)
+    districtData.value = response.data || []
+  } catch (error) {
+    console.error('获取区县数据失败', error)
   }
 }
 

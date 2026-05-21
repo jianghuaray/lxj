@@ -14,10 +14,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
         基础数据管理
       </button>
-      <button class="system-tab" :class="{ active: activeTab === 'ecoConfig' }" @click="activeTab = 'ecoConfig'; fetchEcoConfig()">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L7 19"/><path d="M2 2l7.58 11.58"/><circle cx="11" cy="11" r="2"/></svg>
-        环保贡献配置
-      </button>
     </div>
 
     <!-- ===== Tab 1: User Management ===== -->
@@ -160,77 +156,6 @@
       </div>
     </div>
 
-    <!-- ===== Tab 3: Eco Contribution Config ===== -->
-    <div v-if="activeTab === 'ecoConfig'" class="tab-panel active" id="panel-eco-config">
-      <div class="eco-config-card">
-        <div class="eco-config-header">
-          <div class="eco-config-icon">🌱</div>
-          <div class="eco-config-title-section">
-            <h3 class="eco-config-title">环保贡献大屏配置</h3>
-            <p class="eco-config-desc">修改展示在数据看板和碳积分页面的环保贡献数据</p>
-          </div>
-        </div>
-        <div class="eco-config-form">
-          <div class="eco-config-row">
-            <div class="eco-config-item">
-              <label class="eco-config-label">累计积分</label>
-              <div class="eco-config-input-group">
-                <el-input 
-                  v-model="ecoConfigForm.totalPoints" 
-                  type="number" 
-                  class="eco-config-input"
-                  placeholder="请输入累计积分"
-                />
-                <span class="eco-config-unit">积分</span>
-              </div>
-            </div>
-            <div class="eco-config-item">
-              <label class="eco-config-label">节约电量</label>
-              <div class="eco-config-input-group">
-                <el-input 
-                  v-model="ecoConfigForm.savedPower" 
-                  type="number" 
-                  class="eco-config-input"
-                  placeholder="请输入节约电量"
-                />
-                <span class="eco-config-unit">kWh</span>
-              </div>
-            </div>
-          </div>
-          <div class="eco-config-row">
-            <div class="eco-config-item">
-              <label class="eco-config-label">服务家庭</label>
-              <div class="eco-config-input-group">
-                <el-input 
-                  v-model="ecoConfigForm.servedFamilies" 
-                  type="number" 
-                  class="eco-config-input"
-                  placeholder="请输入服务家庭数"
-                />
-                <span class="eco-config-unit">户</span>
-              </div>
-            </div>
-            <div class="eco-config-item">
-              <label class="eco-config-label">减少碳排放</label>
-              <div class="eco-config-input-group">
-                <el-input 
-                  v-model="ecoConfigForm.reducedCarbon" 
-                  type="number" 
-                  class="eco-config-input"
-                  placeholder="请输入减少碳排放量"
-                />
-                <span class="eco-config-unit">kg</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="eco-config-actions">
-          <button class="btn-pill btn-cancel" @click="resetEcoConfig">取消</button>
-          <button class="btn-pill" @click="saveEcoConfig" :loading="ecoConfigSaving">保存配置</button>
-        </div>
-      </div>
-    </div>
-
     <!-- User Dialog -->
     <el-dialog v-model="userDialogVisible" :title="editingUser ? '编辑用户' : '新增用户'" width="500px">
       <el-form :model="userForm" label-position="top">
@@ -299,16 +224,6 @@ const baseDataOldName = ref('')    // old name (for edit mode, empty = add mode)
 const baseDataForm = ref({ name: '' })
 const baseDialogTitle = ref('')
 const baseDataLabel = ref('')
-
-// Eco config state
-const ecoConfigForm = ref({
-  totalPoints: 0,
-  savedPower: 0,
-  servedFamilies: 0,
-  reducedCarbon: 0
-})
-const ecoConfigSaving = ref(false)
-const originalEcoConfig = ref({})
 
 // Category display config
 const categoryConfig = {
@@ -467,40 +382,6 @@ function addItemDialog(listName) {
 
 function editItem(listName, item) {
   openEditDialog(listName, item)
-}
-
-// Eco config methods
-async function fetchEcoConfig() {
-  try {
-    const response = await api.get('/points/eco/config')
-    if (response.data.success) {
-      ecoConfigForm.value = { ...response.data.data }
-      originalEcoConfig.value = { ...response.data.data }
-    }
-  } catch (error) {
-    console.error('获取环保配置失败', error)
-  }
-}
-
-function resetEcoConfig() {
-  ecoConfigForm.value = { ...originalEcoConfig.value }
-}
-
-async function saveEcoConfig() {
-  ecoConfigSaving.value = true
-  try {
-    const response = await api.post('/points/eco/config', ecoConfigForm.value)
-    if (response.data.success) {
-      ElMessage.success('配置保存成功')
-      originalEcoConfig.value = { ...ecoConfigForm.value }
-    } else {
-      ElMessage.error('保存失败')
-    }
-  } catch (error) {
-    ElMessage.error('保存失败')
-  } finally {
-    ecoConfigSaving.value = false
-  }
 }
 
 onMounted(() => {

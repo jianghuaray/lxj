@@ -31,7 +31,6 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                   已匹配到客户档案
                 </span>
-                <span class="match-badge">{{ matchedCustomer.level || '普通客户' }}</span>
               </div>
               <div class="match-info-grid">
                 <span>姓名：<strong>{{ matchedCustomer.name }}</strong></span>
@@ -64,14 +63,6 @@
           <label class="form-label">详细地址<span class="required">*</span></label>
           <input type="text" class="form-input" v-model="form.address" placeholder="请输入详细地址" />
           <span class="field-error" v-if="errors.address">{{ errors.address }}</span>
-        </div>
-        <div class="form-field">
-          <label class="form-label">客户等级<span class="required">*</span></label>
-          <select class="form-select" v-model="form.level">
-            <option value="normal" selected>普通客户</option>
-            <option value="vip">VIP客户</option>
-            <option value="blacklist">黑名单</option>
-          </select>
         </div>
         <div class="form-field">
           <label class="form-label">来源渠道</label>
@@ -140,7 +131,6 @@ const form = ref({
   phone: '',
   area: '',
   address: '',
-  level: '普通客户',
   sourceChannel: '',
   remark: ''
 })
@@ -165,7 +155,6 @@ function validate() {
   }
   if (!form.value.area) e.area = '请选择区域'
   if (!form.value.address.trim()) e.address = '请输入详细地址'
-  if (!form.value.level) e.level = '请选择客户等级'
   errors.value = e
   return Object.keys(e).length === 0
 }
@@ -244,7 +233,6 @@ async function fetchCustomer() {
         phone: data.phone || '',
         area: data.area || '',
         address: data.address || '',
-        level: data.level || '普通客户',
         sourceChannel: data.sourceChannel || '',
         remark: data.remark || ''
       }

@@ -1,6 +1,6 @@
 const express = require('express');
 const { Op, fn, col, literal } = require('sequelize');
-const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings, PointRecord } = require('../models');
+const { sequelize, WorkOrder, Customer, Technician, Construction, CallbackRecord, User, Settings } = require('../models');
 const { auth, authAdmin } = require('../middleware/auth');
 const { escapeLike, validateLength } = require('../utils/sanitize');
 
@@ -300,7 +300,6 @@ router.get('/:id', auth, async (req, res) => {
       commissionRate: o.construction?.commission_rate || null,
       actualWork: o.construction?.actual_work || null,
       callbackRecord,
-      customerLevel: o.customer?.level || null,
       customerTags: o.customer?.tags || [],
       historyOrders: historyFormatted
     });
@@ -505,14 +504,6 @@ async function handleStatusUpdate(req, res) {
       return res.status(400).json({ error: '无效的状态转换' });
     }
 
-    // 检查是否要发放积分（工单完成）
-    let shouldEarnPoints = false;
-    let pointRecordId = null;
-    
-    if (status === 'completed' && order.status !== 'completed') {
-      shouldEarnPoints = true;
-    }
-
     order.status = status;
 
     if (status === 'cancelled') {
@@ -522,38 +513,6 @@ async function handleStatusUpdate(req, res) {
     }
 
     await order.save({ transaction });
-
-    // 自动发放积分
-    if (shouldEarnPoints && order.customer_id) {
-      const construction = await Construction.findOne({ 
-        where: { order_id: order.id },
-        transaction 
-      });
-
-      if (construction && construction.total_fee > 0) {
-        const points = Math.floor(construction.total_fee);
-        
-        await PointRecord.create({
-          customerId: order.customer_id,
-          type: 'earn',
-          points: points,
-          orderId: order.id,
-          reason: '工单完成，发放积分'
-        }, { transaction });
-
-        await Customer.increment('current_points', { 
-          by: points, 
-          where: { id: order.customer_id },
-          transaction 
-        });
-        
-        await Customer.increment('total_earned_points', { 
-          by: points, 
-          where: { id: order.customer_id },
-          transaction 
-        });
-      }
-    }
 
     await transaction.commit();
     res.json({ message: '状态更新成功' });
@@ -663,41 +622,6 @@ async function handleFeeInput(req, res) {
     // 维护客户统计字段：按费用差额更新 total_amount
     if (feeDiff !== 0) {
       await Customer.increment('total_amount', { by: feeDiff, where: { id: order.customer_id }, transaction });
-    }
-
-    // 积分联动调整：工单已完成且有客户ID时自动调整积分
-    if (['completed', 'callback'].includes(order.status) && order.customer_id && feeDiff !== 0) {
-      const pointDiff = Math.round(feeDiff);
-      
-      if (pointDiff !== 0) {
-        await PointRecord.create({
-          customerId: order.customer_id,
-          type: pointDiff > 0 ? 'earn' : 'spend',
-          points: pointDiff,
-          orderId: order.id,
-          reason: '工单费用调整'
-        }, { transaction });
-
-        await Customer.increment('current_points', { 
-          by: pointDiff, 
-          where: { id: order.customer_id },
-          transaction 
-        });
-        
-        if (pointDiff > 0) {
-          await Customer.increment('total_earned_points', { 
-            by: pointDiff, 
-            where: { id: order.customer_id },
-            transaction 
-          });
-        } else {
-          await Customer.increment('total_spent_points', { 
-            by: Math.abs(pointDiff), 
-            where: { id: order.customer_id },
-            transaction 
-          });
-        }
-      }
     }
 
     await transaction.commit();
