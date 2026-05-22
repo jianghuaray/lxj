@@ -1,10 +1,80 @@
 const express = require('express');
 const { Op, fn, col } = require('sequelize');
-const { WorkOrder, Technician, Construction } = require('../models');
+const { sequelize, WorkOrder, Technician, Construction } = require('../models');
 const { auth } = require('../middleware/auth');
 const { roundMoney } = require('../utils/shareCalculator');
 
 const router = express.Router();
+
+function normalizeStatusArray(statuses) {
+  if (Array.isArray(statuses)) return statuses;
+  if (typeof statuses === 'string') return statuses.split(',').map(s => s.trim()).filter(Boolean);
+  return ['completed', 'callback'];
+}
+
+function buildFeeWhere(source = {}) {
+  const {
+    startDate,
+    endDate,
+    technicianId,
+    area,
+    problemCategory,
+    sourceChannel,
+    sourceType,
+    sourcePropertyId,
+    sourceBuildingManagerId,
+    propertyId,
+    buildingManagerId,
+    statuses
+  } = source;
+
+  const orderWhere = {
+    status: { [Op.in]: normalizeStatusArray(statuses) }
+  };
+
+  if (startDate) {
+    orderWhere.completed_at = { ...orderWhere.completed_at, [Op.gte]: new Date(startDate) };
+  }
+  if (endDate) {
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    orderWhere.completed_at = { ...orderWhere.completed_at, [Op.lte]: endOfDay };
+  }
+  if (area) orderWhere.area = area;
+  if (problemCategory) orderWhere.problem_category = problemCategory;
+  if (sourceChannel) orderWhere.source_channel = sourceChannel;
+  if (sourceType) orderWhere.source_type = sourceType;
+  if (sourcePropertyId) orderWhere.source_property_id = sourcePropertyId;
+  if (sourceBuildingManagerId) orderWhere.source_building_manager_id = sourceBuildingManagerId;
+
+  const constructionWhere = {};
+  if (technicianId) constructionWhere.technician_id = technicianId;
+  if (propertyId) constructionWhere.property_id = propertyId;
+  if (buildingManagerId) constructionWhere.building_manager_id = buildingManagerId;
+
+  return { orderWhere, constructionWhere };
+}
+
+function getSettlementFieldMap(type) {
+  const maps = {
+    technician: {
+      targetField: 'technician_id',
+      statusField: 'technician_settlement_status',
+      amountField: 'technician_amount'
+    },
+    property: {
+      targetField: 'property_id',
+      statusField: 'property_settlement_status',
+      amountField: 'property_amount'
+    },
+    building_manager: {
+      targetField: 'building_manager_id',
+      statusField: 'building_manager_settlement_status',
+      amountField: 'building_manager_amount'
+    }
+  };
+  return maps[type] || null;
+}
 
 // 获取费用汇总列表
 router.get('/fees', auth, async (req, res) => {
@@ -26,62 +96,20 @@ router.get('/fees', auth, async (req, res) => {
       statuses = ['completed', 'callback']
     } = req.query;
 
-    // Build where clause for work orders
-    const orderWhere = {};
-    
-    // Filter by status - default to completed and callback
-    let statusArray;
-    if (Array.isArray(statuses)) {
-      statusArray = statuses;
-    } else if (typeof statuses === 'string') {
-      statusArray = statuses.split(',').map(s => s.trim());
-    } else {
-      statusArray = ['completed', 'callback'];
-    }
-    orderWhere.status = { [Op.in]: statusArray };
-    
-    // Filter by date range (completed_at)
-    if (startDate) {
-      orderWhere.completed_at = { ...orderWhere.completed_at, [Op.gte]: new Date(startDate) };
-    }
-    if (endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      orderWhere.completed_at = { ...orderWhere.completed_at, [Op.lte]: endOfDay };
-    }
-    
-    // Filter by area
-    if (area) {
-      orderWhere.area = area;
-    }
-    
-    // Filter by problem category
-    if (problemCategory) {
-      orderWhere.problem_category = problemCategory;
-    }
-    if (sourceChannel) {
-      orderWhere.source_channel = sourceChannel;
-    }
-    if (sourceType) {
-      orderWhere.source_type = sourceType;
-    }
-    if (sourcePropertyId) {
-      orderWhere.source_property_id = sourcePropertyId;
-    }
-    if (sourceBuildingManagerId) {
-      orderWhere.source_building_manager_id = sourceBuildingManagerId;
-    }
-
-    const constructionWhere = {};
-    if (technicianId) {
-      constructionWhere.technician_id = technicianId;
-    }
-    if (propertyId) {
-      constructionWhere.property_id = propertyId;
-    }
-    if (buildingManagerId) {
-      constructionWhere.building_manager_id = buildingManagerId;
-    }
+    const { orderWhere, constructionWhere } = buildFeeWhere({
+      startDate,
+      endDate,
+      technicianId,
+      area,
+      problemCategory,
+      sourceChannel,
+      sourceType,
+      sourcePropertyId,
+      sourceBuildingManagerId,
+      propertyId,
+      buildingManagerId,
+      statuses
+    });
 
     const offset = (parseInt(page) - 1) * parseInt(pageSize);
 
@@ -105,7 +133,7 @@ router.get('/fees', auth, async (req, res) => {
     });
 
     // Format items for frontend
-    const items = rows.map(order => {
+    const formatItem = order => {
       const o = order.toJSON();
       return {
         id: o.construction.id,
@@ -113,6 +141,7 @@ router.get('/fees', auth, async (req, res) => {
         orderNo: o.order_no,
         customerName: o.customer_name,
         sourceChannel: o.source_channel,
+        technicianId: o.construction?.technician_id || null,
         technicianName: o.construction?.technician?.name || null,
         propertyId: o.construction?.property_id || null,
         propertyName: o.construction?.property_name || null,
@@ -138,7 +167,80 @@ router.get('/fees', auth, async (req, res) => {
         receivedFee: Number(o.construction?.received_amount ?? o.construction?.received_fee) || 0,
         completedAt: o.completed_at
       };
+    };
+    const items = rows.map(formatItem);
+
+    const allRows = await WorkOrder.findAll({
+      where: orderWhere,
+      include: [
+        {
+          model: Construction,
+          as: 'construction',
+          where: constructionWhere,
+          required: true,
+          include: [
+            { model: Technician, as: 'technician', attributes: ['id', 'name'] }
+          ]
+        }
+      ],
+      order: [['completed_at', 'DESC']]
     });
+    const allItems = allRows.map(formatItem);
+
+    function addSettlementGroup(map, key, payload) {
+      if (!key || payload.amount <= 0) return;
+      const current = map.get(key) || {
+        id: key,
+        name: payload.name || '未命名',
+        type: payload.type,
+        orderCount: 0,
+        payableAmount: 0,
+        settledAmount: 0,
+        unsettledAmount: 0
+      };
+      current.orderCount += 1;
+      current.payableAmount += payload.amount;
+      if (payload.status === 'settled') {
+        current.settledAmount += payload.amount;
+      } else {
+        current.unsettledAmount += payload.amount;
+      }
+      map.set(key, current);
+    }
+
+    const technicianGroups = new Map();
+    const propertyGroups = new Map();
+    const buildingManagerGroups = new Map();
+    allItems.forEach(item => {
+      addSettlementGroup(technicianGroups, item.technicianId, {
+        type: 'technician',
+        name: item.technicianName,
+        amount: item.technicianAmount,
+        status: item.technicianSettlementStatus
+      });
+      addSettlementGroup(propertyGroups, item.propertyId, {
+        type: 'property',
+        name: item.propertyName,
+        amount: item.propertyAmount,
+        status: item.propertySettlementStatus
+      });
+      addSettlementGroup(buildingManagerGroups, item.buildingManagerId, {
+        type: 'building_manager',
+        name: item.buildingManagerName,
+        amount: item.buildingManagerAmount,
+        status: item.buildingManagerSettlementStatus
+      });
+    });
+
+    const normalizeGroups = map => Array.from(map.values())
+      .map(item => ({
+        ...item,
+        payableAmount: roundMoney(item.payableAmount),
+        settledAmount: roundMoney(item.settledAmount),
+        unsettledAmount: roundMoney(item.unsettledAmount),
+        status: item.unsettledAmount <= 0 ? 'settled' : (item.settledAmount > 0 ? 'partial' : 'unsettled')
+      }))
+      .sort((a, b) => b.unsettledAmount - a.unsettledAmount || b.payableAmount - a.payableAmount);
 
     // Calculate summary for the current filters
     const summaryResult = await WorkOrder.findAll({
@@ -191,10 +293,87 @@ router.get('/fees', auth, async (req, res) => {
         collectionDifference: roundMoney(orderAmount - receivedAmount),
         totalFee: roundMoney(orderAmount),
         receivedFee: roundMoney(receivedAmount)
+      },
+      settlementGroups: {
+        technicians: normalizeGroups(technicianGroups),
+        properties: normalizeGroups(propertyGroups),
+        buildingManagers: normalizeGroups(buildingManagerGroups)
       }
     });
   } catch (error) {
     console.error('获取费用数据失败:', error);
+    res.status(500).json({ error: '服务器错误' });
+  }
+});
+
+// 按当前对账筛选条件批量更新某个结算对象的结算状态
+router.post('/fees/settle', auth, async (req, res) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const {
+      type,
+      targetId,
+      status = 'settled',
+      filters = {},
+      constructionIds = []
+    } = req.body;
+
+    const fieldMap = getSettlementFieldMap(type);
+    if (!fieldMap) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '结算对象类型不正确' });
+    }
+    if (!['unsettled', 'settled'].includes(status)) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '结算状态不正确' });
+    }
+    if (!targetId) {
+      await transaction.rollback();
+      return res.status(400).json({ error: '请选择结算对象' });
+    }
+
+    const { orderWhere, constructionWhere } = buildFeeWhere(filters);
+    constructionWhere[fieldMap.targetField] = targetId;
+    constructionWhere[fieldMap.statusField] = { [Op.ne]: status };
+
+    if (Array.isArray(constructionIds) && constructionIds.length > 0) {
+      constructionWhere.id = { [Op.in]: constructionIds };
+    }
+
+    const rows = await Construction.findAll({
+      where: constructionWhere,
+      include: [
+        {
+          model: WorkOrder,
+          as: 'order',
+          where: orderWhere,
+          required: true,
+          attributes: ['id']
+        }
+      ],
+      attributes: ['id', fieldMap.amountField],
+      transaction
+    });
+
+    const updateIds = rows
+      .filter(item => Number(item[fieldMap.amountField]) > 0)
+      .map(item => item.id);
+
+    if (updateIds.length > 0) {
+      await Construction.update(
+        { [fieldMap.statusField]: status },
+        { where: { id: { [Op.in]: updateIds } }, transaction }
+      );
+    }
+
+    await transaction.commit();
+    res.json({
+      message: '结算状态已更新',
+      updatedCount: updateIds.length
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('批量更新结算状态失败:', error);
     res.status(500).json({ error: '服务器错误' });
   }
 });

@@ -225,81 +225,53 @@
           </button>
         </div>
 
-        <template v-if="!editingConstruction && order.status === 'dispatched'">
-          <div class="complete-order-form">
-            <div class="complete-order-title">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              完成工单 - 分成结算
+        <div class="complete-order-form" v-if="showConstructionForm">
+          <div class="complete-order-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            {{ constructionFormTitle }}
+          </div>
+
+          <section class="construction-form-section">
+            <div class="construction-section-title">完工信息</div>
+            <div class="construction-form-grid">
+              <div class="form-group">
+                <label class="form-label">施工完成时间</label>
+                <el-date-picker
+                  v-model="constructionEditForm.completedAt"
+                  class="pill-select-el"
+                  type="datetime"
+                  value-format="YYYY-MM-DDTHH:mm"
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder="请选择施工完成时间"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">维修师傅</label>
+                <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable @change="onTechnicianChange">
+                  <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
+                </el-select>
+              </div>
+              <div class="form-group full-span">
+                <label class="form-label">实际维修项目</label>
+                <textarea class="pill-textarea" v-model="constructionEditForm.actualWork" placeholder="请描述实际维修内容" rows="3"></textarea>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">施工完成时间</label>
-              <el-date-picker
-                v-model="constructionEditForm.completedAt"
-                class="pill-select-el"
-                type="datetime"
-                value-format="YYYY-MM-DDTHH:mm"
-                format="YYYY-MM-DD HH:mm"
-                placeholder="请选择施工完成时间"
-              />
-            </div>
-            <div class="form-group">
-              <label class="form-label">维修师傅</label>
-              <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable @change="onTechnicianChange">
-                <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
-              </el-select>
-            </div>
-            <div class="form-grid-2col">
+          </section>
+
+          <section class="construction-form-section">
+            <div class="construction-section-title">费用基础</div>
+            <div class="construction-form-grid">
               <div class="form-group">
                 <label class="form-label">订单总额（元）</label>
                 <input type="number" class="pill-input" v-model.number="constructionEditForm.orderAmount" placeholder="请输入订单总额" min="0" step="0.01" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">师傅分成比例（%）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">师傅分成金额（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">可分成金额（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.shareBaseAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">物业</label>
-                <el-select v-model="constructionEditForm.propertyId" class="pill-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
-                  <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">物业分成比例（%）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">物业分成金额（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">楼管</label>
-                <el-select v-model="constructionEditForm.buildingManagerId" class="pill-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
-                  <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">楼管分成比例（%）</label>
-                <input type="number" class="pill-input" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">楼管分成金额（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
               </div>
               <div class="form-group">
                 <label class="form-label">材料成本（元）</label>
                 <input type="number" class="pill-input" v-model.number="constructionEditForm.materialCost" placeholder="请输入材料成本" min="0" step="0.01" />
               </div>
               <div class="form-group">
-                <label class="form-label">公司实得（元）</label>
-                <input type="number" class="pill-input" :value="(constructionEditForm.companyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
+                <label class="form-label">可分成金额（元）</label>
+                <input type="number" class="pill-input readonly-field" :value="(constructionEditForm.shareBaseAmount || 0).toFixed(2)" disabled />
               </div>
               <div class="form-group">
                 <label class="form-label">实收金额（元）</label>
@@ -314,6 +286,58 @@
                   <el-option label="其他" value="other" />
                 </el-select>
               </div>
+              <div class="form-group">
+                <label class="form-label">公司实得（元）</label>
+                <input type="number" class="pill-input readonly-field" :value="(constructionEditForm.companyAmount || 0).toFixed(2)" disabled />
+              </div>
+            </div>
+          </section>
+
+          <section class="construction-form-section">
+            <div class="construction-section-title">分成对象</div>
+            <table class="share-edit-table">
+              <thead>
+                <tr>
+                  <th>对象</th>
+                  <th>名称</th>
+                  <th>比例（%）</th>
+                  <th>金额（元）</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>师傅</td>
+                  <td>{{ selectedTechnicianName }}</td>
+                  <td><input type="number" class="table-input" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" /></td>
+                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled /></td>
+                </tr>
+                <tr>
+                  <td>物业</td>
+                  <td>
+                    <el-select v-model="constructionEditForm.propertyId" class="table-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
+                      <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
+                    </el-select>
+                  </td>
+                  <td><input type="number" class="table-input" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" /></td>
+                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled /></td>
+                </tr>
+                <tr>
+                  <td>楼管</td>
+                  <td>
+                    <el-select v-model="constructionEditForm.buildingManagerId" class="table-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
+                      <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
+                    </el-select>
+                  </td>
+                  <td><input type="number" class="table-input" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" /></td>
+                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled /></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="construction-form-section">
+            <div class="construction-section-title">结算状态</div>
+            <div class="settlement-status-grid">
               <div class="form-group">
                 <label class="form-label">师傅结算</label>
                 <el-select v-model="constructionEditForm.technicianSettlementStatus" class="pill-select-el">
@@ -336,19 +360,16 @@
                 </el-select>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">实际维修项目</label>
-              <textarea class="pill-textarea" v-model="constructionEditForm.actualWork" placeholder="请描述实际维修内容" rows="3"></textarea>
-            </div>
-            <div class="complete-order-actions">
-              <button class="btn-outline gray" style="padding:8px 20px;" @click="cancelEditConstruction">取消</button>
-              <button class="btn-followup" style="width:auto;margin-bottom:0;" @click="saveConstruction" :disabled="constructionSaving">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                {{ constructionSaving ? '提交中...' : '完成工单' }}
-              </button>
-            </div>
+          </section>
+
+          <div class="complete-order-actions">
+            <button class="btn-outline gray" style="padding:8px 20px;" @click="cancelEditConstruction">取消</button>
+            <button class="btn-followup" style="width:auto;margin-bottom:0;" @click="saveConstruction" :disabled="constructionSaving">
+              <svg v-if="order.status === 'dispatched'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              {{ constructionSaving ? constructionSavingText : constructionSubmitText }}
+            </button>
           </div>
-        </template>
+        </div>
 
         <template v-if="!editingConstruction && isCompletedOrCallback()">
           <div class="field-list">
@@ -357,63 +378,50 @@
               <span class="field-value"><span class="worker-link">{{ getTechnicianName() }}</span></span>
             </div>
           </div>
-          <table class="cost-table" v-if="hasFee()">
+          <div v-if="hasFee()" class="settlement-summary">
+            <div class="settlement-summary-item primary">
+              <span>订单总额</span>
+              <strong>¥{{ order.orderAmount || 0 }}</strong>
+            </div>
+            <div class="settlement-summary-item">
+              <span>材料成本</span>
+              <strong>¥{{ order.materialCost || 0 }}</strong>
+            </div>
+            <div class="settlement-summary-item">
+              <span>可分成金额</span>
+              <strong>¥{{ order.shareBaseAmount || 0 }}</strong>
+            </div>
+            <div class="settlement-summary-item">
+              <span>公司实得</span>
+              <strong>¥{{ order.companyAmount || 0 }}</strong>
+            </div>
+            <div class="settlement-summary-item">
+              <span>实收金额</span>
+              <strong>¥{{ order.receivedAmount || 0 }}</strong>
+            </div>
+            <div class="settlement-summary-item">
+              <span>收款方</span>
+              <strong>{{ getCollectionPartyText(order.collectionParty) }}</strong>
+            </div>
+          </div>
+          <table class="settlement-table" v-if="hasFee()">
+            <thead>
+              <tr>
+                <th>对象</th>
+                <th>比例</th>
+                <th>应结</th>
+                <th>状态</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr>
-                <td class="cost-label">订单总额</td>
-                <td class="cost-value cost-total-value">¥{{ order.orderAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">师傅分成比例</td>
-                <td class="cost-value">{{ formatShareRate(order.technicianRate) }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">师傅分成金额</td>
-                <td class="cost-value">¥{{ order.technicianAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">可分成金额</td>
-                <td class="cost-value">¥{{ order.shareBaseAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">物业</td>
-                <td class="cost-value">{{ order.propertyName || '无' }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">物业分成</td>
-                <td class="cost-value">{{ formatShareRate(order.propertyRate) }} / ¥{{ order.propertyAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">楼管</td>
-                <td class="cost-value">{{ order.buildingManagerName || '无' }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">楼管分成</td>
-                <td class="cost-value">{{ formatShareRate(order.buildingManagerRate) }} / ¥{{ order.buildingManagerAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">材料成本</td>
-                <td class="cost-value">¥{{ order.materialCost || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">公司实得</td>
-                <td class="cost-value">¥{{ order.companyAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">实收金额</td>
-                <td class="cost-value">¥{{ order.receivedAmount || 0 }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">收款方</td>
-                <td class="cost-value">{{ getCollectionPartyText(order.collectionParty) }}</td>
-              </tr>
-              <tr>
-                <td class="cost-label">结算状态</td>
-                <td class="cost-value">
-                  师傅{{ getSettlementStatusText(order.technicianSettlementStatus) }} /
-                  物业{{ getSettlementStatusText(order.propertySettlementStatus) }} /
-                  楼管{{ getSettlementStatusText(order.buildingManagerSettlementStatus) }}
+              <tr v-for="item in settlementRows" :key="item.type">
+                <td>
+                  <span class="settlement-name">{{ item.name }}</span>
+                  <span class="settlement-type">{{ item.label }}</span>
                 </td>
+                <td>{{ item.rate }}</td>
+                <td>¥{{ item.amount }}</td>
+                <td><span class="settlement-status" :class="item.status">{{ item.statusText }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -439,110 +447,6 @@
           </div>
         </template>
 
-        <div class="edit-form" v-if="editingConstruction">
-          <div class="form-group">
-            <label class="form-label">维修师傅</label>
-            <el-select v-model="constructionEditForm.technicianId" class="pill-select-el" placeholder="请选择师傅" clearable @change="onTechnicianChange">
-              <el-option v-for="tech in availableTechnicians" :key="tech.id" :label="tech.name" :value="tech.id" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">订单总额</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.orderAmount" placeholder="0" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">师傅分成比例（%）</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">师傅分成金额（自动计算）</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">可分成金额（自动计算）</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.shareBaseAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">物业</label>
-            <el-select v-model="constructionEditForm.propertyId" class="pill-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
-              <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">物业分成比例（%）</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">物业分成金额（自动计算）</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">楼管</label>
-            <el-select v-model="constructionEditForm.buildingManagerId" class="pill-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
-              <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">楼管分成比例（%）</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">楼管分成金额（自动计算）</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">材料成本</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.materialCost" placeholder="0" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">公司实得</label>
-            <input class="pill-input" type="number" :value="(constructionEditForm.companyAmount || 0).toFixed(2)" disabled style="opacity:0.6;cursor:not-allowed;" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">实收金额</label>
-            <input class="pill-input" type="number" v-model.number="constructionEditForm.receivedAmount" placeholder="0" min="0" step="0.01" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">收款方</label>
-            <el-select v-model="constructionEditForm.collectionParty" class="pill-select-el" placeholder="请选择收款方">
-              <el-option label="师傅收款" value="technician" />
-              <el-option label="物业收款" value="property" />
-              <el-option label="公司收款" value="company" />
-              <el-option label="其他" value="other" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">师傅结算</label>
-            <el-select v-model="constructionEditForm.technicianSettlementStatus" class="pill-select-el">
-              <el-option label="未结算" value="unsettled" />
-              <el-option label="已结算" value="settled" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">物业结算</label>
-            <el-select v-model="constructionEditForm.propertySettlementStatus" class="pill-select-el">
-              <el-option label="未结算" value="unsettled" />
-              <el-option label="已结算" value="settled" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">楼管结算</label>
-            <el-select v-model="constructionEditForm.buildingManagerSettlementStatus" class="pill-select-el">
-              <el-option label="未结算" value="unsettled" />
-              <el-option label="已结算" value="settled" />
-            </el-select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">实际维修项目</label>
-            <textarea class="pill-textarea" v-model="constructionEditForm.actualWork" placeholder="描述实际完成的维修内容" rows="3"></textarea>
-          </div>
-          <div class="edit-actions">
-            <button class="btn-outline gray" style="padding:8px 20px;" @click="cancelEditConstruction">取消</button>
-            <button class="btn-followup" style="width:auto;margin-bottom:0;" @click="saveConstruction" :disabled="constructionSaving">
-              {{ constructionSaving ? '保存中...' : '保存' }}
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="info-card">
@@ -824,6 +728,14 @@ const hasFee = () => order.value.orderAmount !== undefined && order.value.orderA
 const isCompletedOrCallback = () => ['completed', 'callback'].includes(order.value.status)
 const canEditConstruction = () => ['dispatched', 'completed', 'callback'].includes(order.value.status)
 const canEditCallback = () => ['completed', 'callback'].includes(order.value.status)
+const showConstructionForm = computed(() => editingConstruction.value || (!editingConstruction.value && order.value.status === 'dispatched'))
+const constructionFormTitle = computed(() => order.value.status === 'dispatched' ? '完成工单 - 分成结算' : '编辑施工信息')
+const constructionSubmitText = computed(() => order.value.status === 'dispatched' ? '完成工单' : '保存')
+const constructionSavingText = computed(() => order.value.status === 'dispatched' ? '提交中...' : '保存中...')
+const selectedTechnicianName = computed(() => {
+  const tech = availableTechnicians.value.find(item => item.id === constructionEditForm.value.technicianId)
+  return tech?.name || order.value.technicianName || '-'
+})
 
 function isStepDone(status) {
   const currentIdx = statusOrder.indexOf(order.value.status)
@@ -903,6 +815,46 @@ function getCollectionPartyText(value) {
 function getSettlementStatusText(value) {
   return value === 'settled' ? '已结' : '未结'
 }
+
+const settlementRows = computed(() => {
+  const rows = [
+    {
+      type: 'technician',
+      label: '师傅',
+      name: order.value.technicianName || '-',
+      rate: formatShareRate(order.value.technicianRate),
+      amount: order.value.technicianAmount || 0,
+      status: order.value.technicianSettlementStatus || 'unsettled'
+    }
+  ]
+
+  if (order.value.propertyName || toNumber(order.value.propertyAmount) > 0) {
+    rows.push({
+      type: 'property',
+      label: '物业',
+      name: order.value.propertyName || '-',
+      rate: formatShareRate(order.value.propertyRate),
+      amount: order.value.propertyAmount || 0,
+      status: order.value.propertySettlementStatus || 'unsettled'
+    })
+  }
+
+  if (order.value.buildingManagerName || toNumber(order.value.buildingManagerAmount) > 0) {
+    rows.push({
+      type: 'buildingManager',
+      label: '楼管',
+      name: order.value.buildingManagerName || '-',
+      rate: formatShareRate(order.value.buildingManagerRate),
+      amount: order.value.buildingManagerAmount || 0,
+      status: order.value.buildingManagerSettlementStatus || 'unsettled'
+    })
+  }
+
+  return rows.map(item => ({
+    ...item,
+    statusText: getSettlementStatusText(item.status)
+  }))
+})
 
 function getSourceSelectionValue(source) {
   if (source.sourceType === 'property' && source.sourcePropertyId) {
@@ -1804,6 +1756,104 @@ onMounted(() => {
   margin-top: 8px;
 }
 
+.construction-form-section {
+  padding: 14px 0;
+  border-top: 1px solid rgba(222,216,207,0.55);
+}
+
+.construction-form-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.construction-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--fg);
+  margin-bottom: 12px;
+}
+
+.construction-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+}
+
+.construction-form-grid .full-span {
+  grid-column: 1 / -1;
+}
+
+.readonly-field {
+  opacity: 0.66;
+  cursor: not-allowed;
+  background: rgba(245, 242, 236, 0.72);
+}
+
+.share-edit-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.share-edit-table th {
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted-fg);
+  border-bottom: 1px solid rgba(222,216,207,0.7);
+}
+
+.share-edit-table td {
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--fg);
+  border-bottom: 1px solid rgba(222,216,207,0.35);
+  vertical-align: middle;
+}
+
+.share-edit-table th:first-child,
+.share-edit-table td:first-child {
+  padding-left: 0;
+  width: 64px;
+  color: var(--muted-fg);
+  font-weight: 600;
+}
+
+.share-edit-table th:last-child,
+.share-edit-table td:last-child {
+  padding-right: 0;
+}
+
+.table-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.65);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(74,127,181,0.12);
+}
+
+.table-select-el {
+  width: 100%;
+}
+
+.settlement-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .cost-table {
   width: 100%;
   border-collapse: collapse;
@@ -1831,6 +1881,91 @@ onMounted(() => {
   color: var(--primary);
   font-weight: 700;
 }
+
+.settlement-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.settlement-summary-item {
+  border: 1px solid rgba(222,216,207,0.5);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(253,252,248,0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settlement-summary-item span {
+  font-size: 12px;
+  color: var(--muted-fg);
+}
+
+.settlement-summary-item strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--fg);
+}
+
+.settlement-summary-item.primary strong {
+  color: var(--primary);
+  font-size: 22px;
+}
+
+.settlement-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+}
+
+.settlement-table th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted-fg);
+  font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(222,216,207,0.65);
+}
+
+.settlement-table td {
+  padding: 9px 0;
+  font-size: 13px;
+  color: var(--fg);
+  border-bottom: 1px solid rgba(222,216,207,0.35);
+}
+
+.settlement-name {
+  display: block;
+  font-weight: 600;
+}
+
+.settlement-type {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-fg);
+}
+
+.settlement-status {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(180, 84, 74, 0.1);
+  color: var(--destructive);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.settlement-status.settled {
+  background: rgba(91, 168, 130, 0.12);
+  color: #4C8F6D;
+}
+
 .worker-link {
   color: var(--primary);
   font-weight: 600;

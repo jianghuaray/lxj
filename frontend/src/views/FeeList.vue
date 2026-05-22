@@ -48,6 +48,18 @@
       <button class="btn-reset" @click="resetFilters">重置</button>
     </div>
 
+    <div class="settlement-tabs">
+      <button
+        v-for="tab in settlementTabs"
+        :key="tab.value"
+        class="settlement-tab"
+        :class="{ active: activeView === tab.value }"
+        @click="switchView(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
     <!-- Summary Cards (6 small) -->
     <div class="summary-grid">
       <div class="summary-card">
@@ -93,8 +105,63 @@
       </div>
     </div>
 
+    <div class="table-container" v-if="activeView !== 'orders'">
+      <table class="data-table settlement-overview-table">
+        <thead>
+          <tr>
+            <th style="width:26%">结算对象</th>
+            <th style="width:12%">涉及订单</th>
+            <th style="width:16%">应结金额</th>
+            <th style="width:16%">已结金额</th>
+            <th style="width:16%">未结金额</th>
+            <th style="width:10%">状态</th>
+            <th style="width:10%">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in currentSettlementRows" :key="`${item.type}-${item.id}`" @click="openSettlementOrders(item)">
+            <td>
+              <span class="settlement-name">{{ item.name }}</span>
+              <span class="settlement-subtitle">{{ getSettlementTypeText(item.type) }}</span>
+            </td>
+            <td>{{ item.orderCount }} 单</td>
+            <td><span class="amount">¥{{ formatNumber(item.payableAmount) }}</span></td>
+            <td><span class="amount">¥{{ formatNumber(item.settledAmount) }}</span></td>
+            <td><span class="amount red">¥{{ formatNumber(item.unsettledAmount) }}</span></td>
+            <td><span class="overview-status" :class="item.status">{{ getOverviewStatusText(item.status) }}</span></td>
+            <td>
+              <button class="table-action-btn" :disabled="item.unsettledAmount <= 0 || settling" @click.stop="settleGroup(item)">
+                标记已结
+              </button>
+            </td>
+          </tr>
+          <tr v-if="!loading && currentSettlementRows.length === 0">
+            <td colspan="7" class="empty-cell">
+              <div class="empty-state">
+                <p>暂无结算对象</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <!-- Data Table -->
-    <div class="table-container">
+    <div class="settlement-context" v-if="activeView === 'orders' && selectedSettlementTarget">
+      <div>
+        正在查看
+        <strong>{{ selectedSettlementTarget.name }}</strong>
+        的{{ getSettlementTypeText(selectedSettlementTarget.type) }}订单：
+        未结 <span class="amount red">¥{{ formatNumber(selectedSettlementTarget.unsettledAmount) }}</span>
+      </div>
+      <div class="settlement-context-actions">
+        <button class="btn-reset" @click="backToSettlementSummary">返回汇总</button>
+        <button class="btn-query" :disabled="selectedSettlementTarget.unsettledAmount <= 0 || settling" @click="settleGroup(selectedSettlementTarget)">
+          标记当前未结订单已结
+        </button>
+      </div>
+    </div>
+    <div class="table-container" v-if="activeView === 'orders'">
       <table class="data-table">
         <thead>
           <tr>
@@ -110,6 +177,8 @@
             <th style="width:8%">材料成本</th>
             <th style="width:8%">公司实得</th>
             <th style="width:8%">实收金额</th>
+            <th v-if="selectedSettlementTarget" style="width:8%">结算状态</th>
+            <th v-if="selectedSettlementTarget" style="width:8%">应结金额</th>
             <th style="width:10%">完成时间</th>
           </tr>
         </thead>
@@ -127,10 +196,16 @@
             <td><span class="amount">¥{{ formatNumber(item.materialCost) }}</span></td>
             <td><span class="amount">¥{{ formatNumber(item.companyAmount) }}</span></td>
             <td><span class="amount">¥{{ formatNumber(item.receivedAmount) }}</span></td>
+            <td v-if="selectedSettlementTarget">
+              <span class="overview-status" :class="getOrderSettlementStatus(item)">
+                {{ getOverviewStatusText(getOrderSettlementStatus(item)) }}
+              </span>
+            </td>
+            <td v-if="selectedSettlementTarget"><span class="amount">¥{{ formatNumber(getOrderSettlementAmount(item)) }}</span></td>
             <td>{{ formatDate(item.completedAt) }}</td>
           </tr>
           <tr v-if="!loading && feeList.length === 0">
-            <td colspan="13" class="empty-cell">
+            <td :colspan="selectedSettlementTarget ? 15 : 13" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -157,6 +232,8 @@
             <td><span class="total-amount">¥{{ formatNumber(summary.materialCost) }}</span></td>
             <td><span class="total-amount">¥{{ formatNumber(summary.companyAmount) }}</span></td>
             <td><span class="total-amount">¥{{ formatNumber(summary.receivedAmount) }}</span></td>
+            <td v-if="selectedSettlementTarget"></td>
+            <td v-if="selectedSettlementTarget"><span class="total-amount">¥{{ formatNumber(selectedSettlementTarget.payableAmount) }}</span></td>
             <td></td>
           </tr>
         </tfoot>
@@ -195,7 +272,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
 import { useSettingsStore } from '@/stores/settings'
 import * as XLSX from 'xlsx'
@@ -212,6 +289,14 @@ const channelFilter = ref('')
 const propertyFilter = ref('')
 const buildingManagerFilter = ref('')
 const technicians = ref([])
+const activeView = ref('properties')
+const selectedSettlementTarget = ref(null)
+const settling = ref(false)
+const settlementGroups = ref({
+  properties: [],
+  technicians: [],
+  buildingManagers: []
+})
 
 const pagination = ref({ page: 1, pageSize: 20, total: 0 })
 
@@ -231,6 +316,17 @@ const summary = ref({
 
 const filteredBuildingManagers = computed(() => {
   return settingsStore.buildingManagers
+})
+
+const settlementTabs = [
+  { label: '物业结算', value: 'properties' },
+  { label: '师傅结算', value: 'technicians' },
+  { label: '楼管结算', value: 'buildingManagers' },
+  { label: '订单流水', value: 'orders' }
+]
+
+const currentSettlementRows = computed(() => {
+  return settlementGroups.value[activeView.value] || []
 })
 
 const sourceChannelOptions = computed(() => {
@@ -279,6 +375,59 @@ function viewOrderDetail(orderId) {
   router.push(`/orders/${orderId}`)
 }
 
+function switchView(view) {
+  activeView.value = view
+  if (view !== 'orders') {
+    selectedSettlementTarget.value = null
+  }
+}
+
+function getSettlementTypeText(type) {
+  const map = {
+    property: '物业',
+    technician: '师傅',
+    building_manager: '楼管'
+  }
+  return map[type] || '-'
+}
+
+function getOverviewStatusText(status) {
+  const map = {
+    settled: '已结清',
+    partial: '部分结清',
+    unsettled: '未结清'
+  }
+  return map[status] || '未结清'
+}
+
+function openSettlementOrders(item) {
+  selectedSettlementTarget.value = { ...item }
+  if (item.type === 'property') {
+    propertyFilter.value = item.id
+    buildingManagerFilter.value = ''
+  } else if (item.type === 'building_manager') {
+    buildingManagerFilter.value = item.id
+    propertyFilter.value = ''
+  } else if (item.type === 'technician') {
+    technicianFilter.value = item.id
+  }
+  activeView.value = 'orders'
+  pagination.value.page = 1
+  fetchData()
+}
+
+function backToSettlementSummary() {
+  if (!selectedSettlementTarget.value) return
+  const viewMap = {
+    property: 'properties',
+    technician: 'technicians',
+    building_manager: 'buildingManagers'
+  }
+  activeView.value = viewMap[selectedSettlementTarget.value.type] || 'properties'
+  selectedSettlementTarget.value = null
+  fetchData()
+}
+
 function resetFilters() {
   dateRange.value = []
   technicianFilter.value = ''
@@ -286,6 +435,7 @@ function resetFilters() {
   channelFilter.value = ''
   propertyFilter.value = ''
   buildingManagerFilter.value = ''
+  selectedSettlementTarget.value = null
   pagination.value.page = 1
   // Set default to current month
   const now = new Date()
@@ -296,6 +446,92 @@ function resetFilters() {
     endDate.toISOString().split('T')[0]
   ]
   fetchData()
+}
+
+function buildCurrentFilterPayload() {
+  const filters = {
+    statuses: ['completed', 'callback']
+  }
+
+  if (dateRange.value && dateRange.value.length === 2) {
+    filters.startDate = dateRange.value[0]
+    filters.endDate = dateRange.value[1]
+  }
+  if (technicianFilter.value) filters.technicianId = technicianFilter.value
+  if (areaFilter.value) filters.area = areaFilter.value
+  if (propertyFilter.value) filters.propertyId = propertyFilter.value
+  if (buildingManagerFilter.value) filters.buildingManagerId = buildingManagerFilter.value
+  applySourceFilterParams(filters)
+  return filters
+}
+
+function getOrderSettlementStatus(item) {
+  if (!selectedSettlementTarget.value) return 'unsettled'
+  const map = {
+    property: item.propertySettlementStatus,
+    technician: item.technicianSettlementStatus,
+    building_manager: item.buildingManagerSettlementStatus
+  }
+  return map[selectedSettlementTarget.value.type] || 'unsettled'
+}
+
+function getOrderSettlementAmount(item) {
+  if (!selectedSettlementTarget.value) return 0
+  const map = {
+    property: item.propertyAmount,
+    technician: item.technicianAmount,
+    building_manager: item.buildingManagerAmount
+  }
+  return map[selectedSettlementTarget.value.type] || 0
+}
+
+function findSettlementRow(type, id) {
+  const groupMap = {
+    property: settlementGroups.value.properties,
+    technician: settlementGroups.value.technicians,
+    building_manager: settlementGroups.value.buildingManagers
+  }
+  return (groupMap[type] || []).find(row => row.id === id)
+}
+
+async function settleGroup(item) {
+  if (!item || item.unsettledAmount <= 0) {
+    ElMessage.info('当前没有未结金额')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定将「${item.name}」当前筛选范围内的未结订单标记为已结吗？`,
+      '确认结算',
+      {
+        confirmButtonText: '确认已结',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    settling.value = true
+    const response = await api.post('/construction/fees/settle', {
+      type: item.type,
+      targetId: item.id,
+      status: 'settled',
+      filters: buildCurrentFilterPayload()
+    })
+    ElMessage.success(`已更新 ${response.data.updatedCount || 0} 条订单`)
+    await fetchData()
+    if (selectedSettlementTarget.value && selectedSettlementTarget.value.type === item.type && selectedSettlementTarget.value.id === item.id) {
+      const refreshed = findSettlementRow(item.type, item.id)
+      selectedSettlementTarget.value = refreshed ? { ...refreshed } : { ...selectedSettlementTarget.value, unsettledAmount: 0, status: 'settled' }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('结算状态更新失败', error)
+      ElMessage.error('结算状态更新失败')
+    }
+  } finally {
+    settling.value = false
+  }
 }
 
 function syncBuildingManagerFilter() {
@@ -359,10 +595,14 @@ async function fetchData() {
     if (response.data.summary) {
       summary.value = response.data.summary
     }
+    if (response.data.settlementGroups) {
+      settlementGroups.value = response.data.settlementGroups
+    }
   } catch (error) {
     console.error('获取费用数据失败', error)
     feeList.value = []
     summary.value = {}
+    settlementGroups.value = { properties: [], technicians: [], buildingManagers: [] }
   } finally {
     loading.value = false
   }
@@ -613,6 +853,14 @@ watch(propertyFilter, () => {
   transform: scale(0.95);
 }
 
+.btn-query:disabled,
+.btn-reset:disabled,
+.table-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-reset {
   height: 40px;
   padding: 0 20px;
@@ -635,6 +883,33 @@ watch(propertyFilter, () => {
 
 .btn-reset:active {
   transform: scale(0.95);
+}
+
+.settlement-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.settlement-tab {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(222,216,207,0.7);
+  background: rgba(253,252,248,0.65);
+  color: var(--muted-fg);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settlement-tab.active,
+.settlement-tab:hover {
+  background: rgba(74,127,181,0.1);
+  color: var(--primary);
+  border-color: rgba(74,127,181,0.28);
 }
 
 /* Summary Cards */
@@ -756,6 +1031,27 @@ watch(propertyFilter, () => {
   margin-bottom: 16px;
 }
 
+.settlement-context {
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border: 1px solid rgba(74,127,181,0.18);
+  border-radius: 18px;
+  background: rgba(74,127,181,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.settlement-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -824,6 +1120,61 @@ watch(propertyFilter, () => {
 
 .amount.red {
   color: var(--destructive);
+}
+
+.settlement-overview-table tbody tr {
+  cursor: pointer;
+}
+
+.settlement-name {
+  display: block;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.settlement-subtitle {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-fg);
+}
+
+.overview-status {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(180, 84, 74, 0.1);
+  color: var(--destructive);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.overview-status.partial {
+  background: rgba(232,184,75,0.18);
+  color: #9A6A18;
+}
+
+.overview-status.settled {
+  background: rgba(91,168,130,0.12);
+  color: #4C8F6D;
+}
+
+.table-action-btn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(74,127,181,0.22);
+  background: rgba(74,127,181,0.08);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-action-btn:not(:disabled):hover {
+  background: rgba(74,127,181,0.14);
 }
 
 /* Total row */

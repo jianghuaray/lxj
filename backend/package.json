@@ -7,7 +7,8 @@
     "start": "node src/app.js",
     "start:prod": "NODE_ENV=production node src/app.js",
     "dev": "nodemon src/app.js",
-    "init:db": "node src/scripts/initDB.js"
+    "init:db": "node src/scripts/initDB.js",
+    "seed:settlement": "node src/scripts/seedSettlementTestData.js"
   },
   "keywords": [],
   "author": "",
