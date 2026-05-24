@@ -579,6 +579,9 @@ async function handleAssign(req, res) {
     const sourceProperty = order.source_property_id
       ? await Property.findByPk(order.source_property_id, { transaction })
       : null;
+    const sourceBuildingManager = order.source_building_manager_id
+      ? await BuildingManager.findByPk(order.source_building_manager_id, { transaction })
+      : null;
 
     order.status = 'dispatched';
     await order.save({ transaction });
@@ -588,8 +591,10 @@ async function handleAssign(req, res) {
       technician_id: technicianId,
       property_id: order.source_property_id || null,
       property_name: order.source_property_name || null,
+      property_rate: sourceProperty?.default_rate || 0,
       building_manager_id: order.source_building_manager_id || null,
       building_manager_name: order.source_building_manager_name || null,
+      building_manager_rate: sourceBuildingManager?.default_rate || 0,
       dispatch_remark: remark || dispatchRemark,
       dispatched_at: new Date(),
       commission_rate: technician.commission_rate,

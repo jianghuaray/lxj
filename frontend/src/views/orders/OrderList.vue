@@ -121,12 +121,12 @@
             :key="order.id"
             :class="{ overdue: isOverdue(order) }"
           >
-            <td><span class="order-id" @click="viewDetail(order.id)">{{ order.orderNo }}</span></td>
-            <td>{{ order.customerName }}</td>
-            <td>{{ order.area }}</td>
-            <td>{{ order.sourceChannel || '-' }}</td>
-            <td>{{ order.problemCategory }}</td>
-            <td>{{ order.technicianName || '-' }}</td>
+            <td><CellText class="order-id" :value="order.orderNo" @click="viewDetail(order.id)" /></td>
+            <td><CellText :value="order.customerName" /></td>
+            <td><CellText :value="order.area" /></td>
+            <td><CellText :value="order.sourceChannel" /></td>
+            <td><CellText :value="order.problemCategory" /></td>
+            <td><CellText :value="order.technicianName" /></td>
             <td>
               <span class="status-badge" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
@@ -136,7 +136,7 @@
               <span v-if="['completed', 'callback'].includes(order.status) && (order.totalFee || order.construction?.totalFee)" class="fee-amount">¥{{ order.totalFee || order.construction?.totalFee }}</span>
               <span v-else>-</span>
             </td>
-            <td>{{ formatTime(order.createdAt) }}</td>
+            <td><CellText :value="formatTime(order.createdAt)" /></td>
           </tr>
           <tr v-if="!loading && orders.length === 0">
             <td colspan="9" class="empty-cell">
@@ -196,6 +196,7 @@ import { debounce } from '@/utils/debounce'
 import { formatTime } from '@/utils/format'
 import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
 import { useSettingsStore } from '@/stores/settings'
+import CellText from '@/components/CellText.vue'
 
 const settingsStore = useSettingsStore()
 

@@ -66,19 +66,22 @@
         </thead>
         <tbody>
           <tr v-for="customer in customers" :key="customer.id" @click="viewDetail(customer.id)" style="cursor:pointer;">
-            <td>{{ customer.name }}</td>
-            <td>{{ customer.phone }}</td>
-            <td>{{ customer.area }}</td>
-            <td :title="customer.address">{{ customer.address || '-' }}</td>
+            <td><CellText :value="customer.name" /></td>
+            <td><CellText :value="customer.phone" /></td>
+            <td><CellText :value="customer.area" /></td>
+            <td><CellText :value="customer.address" :lines="2" /></td>
             <td>
-              <div class="tags-cell">
-                <span v-for="(tag, i) in (customer.tags || []).slice(0, 3)" :key="tag" :class="['tag-badge', getTagClass(i)]">{{ tag }}</span>
-                <span v-if="(customer.tags || []).length > 3" class="tag-badge tag-weekend">+{{ customer.tags.length - 3 }}</span>
-              </div>
+              <el-tooltip :content="formatTags(customer.tags)" :disabled="!(customer.tags || []).length" placement="top" :show-after="250">
+                <div class="tags-cell">
+                  <span v-for="(tag, i) in (customer.tags || []).slice(0, 3)" :key="tag" :class="['tag-badge', getTagClass(i)]">{{ tag }}</span>
+                  <span v-if="(customer.tags || []).length > 3" class="tag-badge tag-weekend">+{{ customer.tags.length - 3 }}</span>
+                  <span v-if="!(customer.tags || []).length" class="muted-cell">-</span>
+                </div>
+              </el-tooltip>
             </td>
             <td>{{ customer.totalOrders || 0 }}</td>
             <td>¥{{ customer.totalAmount || 0 }}</td>
-            <td>{{ formatDate(customer.lastOrderAt) }}</td>
+            <td><CellText :value="formatDate(customer.lastOrderAt)" /></td>
             <td>
               <button class="action-btn" @click.stop="viewDetail(customer.id)">查看</button>
               <button class="action-btn" @click.stop="$router.push(`/customers/edit/${customer.id}`)">编辑</button>
@@ -135,11 +138,14 @@ import { ElMessage } from 'element-plus'
 import { debounce } from '@/utils/debounce'
 import { formatDate } from '@/utils/format'
 import { exportToExcel, formatDateForExport } from '@/utils/exportExcel'
+import CellText from '@/components/CellText.vue'
 
 const router = useRouter()
 const loading = ref(false)
 let fetchCustomersCancel = null
 const customers = ref([])
+
+const formatTags = (tags = []) => (tags || []).length ? tags.join('、') : '-'
 const searchQuery = ref('')
 const areaFilter = ref('')
 const activeCard = ref('all')

@@ -990,6 +990,15 @@ function onBuildingManagerChange(buildingManagerId) {
   constructionEditForm.value.buildingManagerRatePercent = buildingManager ? roundMoney(toNumber(buildingManager.defaultRate) * 100) : 0
 }
 
+function applyParticipantRateFallbacks(source = {}) {
+  if (constructionEditForm.value.propertyId && !toNumber(source.propertyRate)) {
+    onPropertyChange(constructionEditForm.value.propertyId)
+  }
+  if (constructionEditForm.value.buildingManagerId && !toNumber(source.buildingManagerRate)) {
+    onBuildingManagerChange(constructionEditForm.value.buildingManagerId)
+  }
+}
+
 function startEditCustomer() {
   customerEditForm.value = {
     customerName: order.value.customerName || '',
@@ -1061,12 +1070,7 @@ function startEditConstruction() {
     actualWork: order.value.actualWork,
     completedAt: order.value.completedAt
   })
-  if (constructionEditForm.value.propertyId && !toNumber(order.value.propertyRate)) {
-    onPropertyChange(constructionEditForm.value.propertyId)
-  }
-  if (constructionEditForm.value.buildingManagerId && !toNumber(order.value.buildingManagerRate)) {
-    onBuildingManagerChange(constructionEditForm.value.buildingManagerId)
-  }
+  applyParticipantRateFallbacks(order.value)
   recalculateConstructionForm()
   editingConstruction.value = true
 }
@@ -1189,6 +1193,7 @@ async function fetchOrderDetail() {
       actualWork: order.value.actualWork,
       completedAt: order.value.completedAt
     })
+    applyParticipantRateFallbacks(order.value)
     recalculateConstructionForm()
     if (order.value.customerId || order.value.customerPhone) {
       fetchCustomerOrders()
@@ -1300,9 +1305,12 @@ watch(
   }
 )
 
-onMounted(() => {
-  if (!settingsStore.loaded) settingsStore.fetchAll()
-  fetchTechnicians().then(fetchOrderDetail)
+onMounted(async () => {
+  if (!settingsStore.loaded) {
+    await settingsStore.fetchAll()
+  }
+  await fetchTechnicians()
+  await fetchOrderDetail()
 })
 </script>
 

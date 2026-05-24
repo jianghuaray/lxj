@@ -121,7 +121,7 @@
         <tbody>
           <tr v-for="item in currentSettlementRows" :key="`${item.type}-${item.id}`" @click="openSettlementOrders(item)">
             <td>
-              <span class="settlement-name">{{ item.name }}</span>
+              <CellText class="settlement-name" :value="item.name" />
               <span class="settlement-subtitle">{{ getSettlementTypeText(item.type) }}</span>
             </td>
             <td>{{ item.orderCount }} 单</td>
@@ -184,10 +184,10 @@
         </thead>
         <tbody>
           <tr v-for="item in feeList" :key="item.id">
-            <td><span class="order-id" @click="viewOrderDetail(item.orderId)">{{ item.orderNo }}</span></td>
-            <td>{{ item.customerName }}</td>
-            <td>{{ item.technicianName }}</td>
-            <td>{{ item.sourceChannel || '-' }}</td>
+            <td><CellText class="order-id" :value="item.orderNo" @click="viewOrderDetail(item.orderId)" /></td>
+            <td><CellText :value="item.customerName" /></td>
+            <td><CellText :value="item.technicianName" /></td>
+            <td><CellText :value="item.sourceChannel" /></td>
             <td><span class="amount">¥{{ formatNumber(item.orderAmount) }}</span></td>
             <td><span class="amount">¥{{ formatNumber(item.shareBaseAmount) }}</span></td>
             <td><span class="amount">¥{{ formatNumber(item.technicianAmount) }}</span></td>
@@ -202,7 +202,7 @@
               </span>
             </td>
             <td v-if="selectedSettlementTarget"><span class="amount">¥{{ formatNumber(getOrderSettlementAmount(item)) }}</span></td>
-            <td>{{ formatDate(item.completedAt) }}</td>
+            <td><CellText :value="formatDate(item.completedAt)" /></td>
           </tr>
           <tr v-if="!loading && feeList.length === 0">
             <td :colspan="selectedSettlementTarget ? 15 : 13" class="empty-cell">
@@ -276,6 +276,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
 import { useSettingsStore } from '@/stores/settings'
 import * as XLSX from 'xlsx'
+import CellText from '@/components/CellText.vue'
 
 const settingsStore = useSettingsStore()
 
