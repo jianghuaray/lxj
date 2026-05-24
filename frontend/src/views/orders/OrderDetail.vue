@@ -86,7 +86,7 @@
     </div>
 
     <div class="info-cards-grid">
-      <div class="info-card">
+      <div class="info-card customer-info-card">
         <div class="card-title" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
@@ -214,7 +214,7 @@
         </div>
       </div>
 
-      <div class="info-card">
+      <div class="info-card construction-info-card">
         <div class="card-title" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
@@ -294,72 +294,80 @@
           </section>
 
           <section class="construction-form-section">
-            <div class="construction-section-title">分成对象</div>
+            <div class="construction-section-title">分成与结算</div>
             <table class="share-edit-table">
               <thead>
                 <tr>
-                  <th>对象</th>
-                  <th>名称</th>
+                  <th>参与方</th>
                   <th>比例（%）</th>
                   <th>金额（元）</th>
+                  <th>结算状态</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>师傅</td>
-                  <td>{{ selectedTechnicianName }}</td>
+                  <td>
+                    <div class="share-party-cell">
+                      <span class="share-party-name">{{ selectedTechnicianName }}</span>
+                    </div>
+                  </td>
                   <td><input type="number" class="table-input" v-model.number="constructionEditForm.technicianRatePercent" min="0" step="0.01" /></td>
-                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.technicianAmount || 0).toFixed(2)" disabled /></td>
+                  <td><span class="share-amount-text">{{ (constructionEditForm.technicianAmount || 0).toFixed(2) }}</span></td>
+                  <td>
+                    <div class="settlement-switch-cell">
+                      <el-switch v-model="constructionEditForm.technicianSettlementStatus" active-value="settled" inactive-value="unsettled" class="settlement-switch" />
+                      <span class="settlement-switch-label" :class="{ settled: constructionEditForm.technicianSettlementStatus === 'settled' }">
+                        {{ constructionEditForm.technicianSettlementStatus === 'settled' ? '已结' : '未结' }}
+                      </span>
+                    </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>物业</td>
                   <td>
-                    <el-select v-model="constructionEditForm.propertyId" class="table-select-el" placeholder="无物业参与" clearable @change="onPropertyChange">
-                      <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
-                    </el-select>
+                    <div class="share-party-cell">
+                      <el-select v-model="constructionEditForm.propertyId" class="table-select-el share-party-select" placeholder="无物业参与" clearable @change="onPropertyChange">
+                        <el-option v-for="item in activeProperties" :key="item.id" :label="item.name" :value="item.id" />
+                      </el-select>
+                    </div>
                   </td>
                   <td><input type="number" class="table-input" v-model.number="constructionEditForm.propertyRatePercent" min="0" step="0.01" /></td>
-                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.propertyAmount || 0).toFixed(2)" disabled /></td>
+                  <td><span class="share-amount-text">{{ (constructionEditForm.propertyAmount || 0).toFixed(2) }}</span></td>
+                  <td>
+                    <div class="settlement-switch-cell">
+                      <template v-if="constructionEditForm.propertyId">
+                        <el-switch v-model="constructionEditForm.propertySettlementStatus" active-value="settled" inactive-value="unsettled" class="settlement-switch" />
+                        <span class="settlement-switch-label" :class="{ settled: constructionEditForm.propertySettlementStatus === 'settled' }">
+                          {{ constructionEditForm.propertySettlementStatus === 'settled' ? '已结' : '未结' }}
+                        </span>
+                      </template>
+                      <span v-else class="settlement-not-applicable">未参与</span>
+                    </div>
+                  </td>
                 </tr>
                 <tr>
-                  <td>楼管</td>
                   <td>
-                    <el-select v-model="constructionEditForm.buildingManagerId" class="table-select-el" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
-                      <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
-                    </el-select>
+                    <div class="share-party-cell">
+                      <el-select v-model="constructionEditForm.buildingManagerId" class="table-select-el share-party-select" placeholder="无楼管参与" clearable @change="onBuildingManagerChange">
+                        <el-option v-for="item in filteredBuildingManagers" :key="item.id" :label="item.name" :value="item.id" />
+                      </el-select>
+                    </div>
                   </td>
                   <td><input type="number" class="table-input" v-model.number="constructionEditForm.buildingManagerRatePercent" min="0" step="0.01" /></td>
-                  <td><input type="number" class="table-input readonly-field" :value="(constructionEditForm.buildingManagerAmount || 0).toFixed(2)" disabled /></td>
+                  <td><span class="share-amount-text">{{ (constructionEditForm.buildingManagerAmount || 0).toFixed(2) }}</span></td>
+                  <td>
+                    <div class="settlement-switch-cell">
+                      <template v-if="constructionEditForm.buildingManagerId">
+                        <el-switch v-model="constructionEditForm.buildingManagerSettlementStatus" active-value="settled" inactive-value="unsettled" class="settlement-switch" />
+                        <span class="settlement-switch-label" :class="{ settled: constructionEditForm.buildingManagerSettlementStatus === 'settled' }">
+                          {{ constructionEditForm.buildingManagerSettlementStatus === 'settled' ? '已结' : '未结' }}
+                        </span>
+                      </template>
+                      <span v-else class="settlement-not-applicable">未参与</span>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
-          </section>
-
-          <section class="construction-form-section">
-            <div class="construction-section-title">结算状态</div>
-            <div class="settlement-status-grid">
-              <div class="form-group">
-                <label class="form-label">师傅结算</label>
-                <el-select v-model="constructionEditForm.technicianSettlementStatus" class="pill-select-el">
-                  <el-option label="未结算" value="unsettled" />
-                  <el-option label="已结算" value="settled" />
-                </el-select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">物业结算</label>
-                <el-select v-model="constructionEditForm.propertySettlementStatus" class="pill-select-el">
-                  <el-option label="未结算" value="unsettled" />
-                  <el-option label="已结算" value="settled" />
-                </el-select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">楼管结算</label>
-                <el-select v-model="constructionEditForm.buildingManagerSettlementStatus" class="pill-select-el">
-                  <el-option label="未结算" value="unsettled" />
-                  <el-option label="已结算" value="settled" />
-                </el-select>
-              </div>
-            </div>
           </section>
 
           <div class="complete-order-actions">
@@ -449,7 +457,7 @@
 
       </div>
 
-      <div class="info-card">
+      <div class="info-card callback-info-card">
         <div class="card-title" style="justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -473,42 +481,42 @@
             </div>
           </template>
 
-          <div v-if="order.callbackRecord" class="field-list">
-            <div class="field-row">
-              <span class="field-label">是否满意</span>
-              <span class="field-value">{{ order.callbackRecord.isSatisfied ? '满意' : '不满意' }}</span>
+          <div v-if="order.callbackRecord" class="callback-summary-grid">
+            <div class="callback-summary-item primary">
+              <span class="callback-summary-label">满意度</span>
+              <strong>{{ order.callbackRecord.isSatisfied ? '满意' : '不满意' }}</strong>
             </div>
-            <div class="field-row">
-              <span class="field-label">满意度评分</span>
-              <span class="field-value">
+            <div class="callback-summary-item">
+              <span class="callback-summary-label">评分</span>
+              <span class="callback-summary-value">
                 <span class="stars">{{ '\u2605'.repeat(order.callbackRecord.satisfactionScore) }}<span class="stars-gray">{{ '\u2605'.repeat(5 - order.callbackRecord.satisfactionScore) }}</span></span>
                 <span class="rating-score">{{ order.callbackRecord.satisfactionScore }}.0</span>
               </span>
             </div>
-            <div class="field-row">
-              <span class="field-label">费用是否一致</span>
-              <span class="field-value">{{ order.callbackRecord.feeConsistent ? '一致' : '不一致' }}</span>
+            <div class="callback-summary-item">
+              <span class="callback-summary-label">费用</span>
+              <strong>{{ order.callbackRecord.feeConsistent ? '一致' : '不一致' }}</strong>
             </div>
-            <div class="field-row">
-              <span class="field-label">回访方式</span>
-              <span class="field-value">{{ getCallbackMethod(order.callbackRecord.callbackMethod) }}</span>
+            <div class="callback-summary-item">
+              <span class="callback-summary-label">方式</span>
+              <strong>{{ getCallbackMethod(order.callbackRecord.callbackMethod) }}</strong>
             </div>
-            <div class="field-row">
-              <span class="field-label">回访人</span>
-              <span class="field-value">{{ order.callbackRecord.callbackByName || '-' }}</span>
+            <div class="callback-summary-item">
+              <span class="callback-summary-label">回访人</span>
+              <strong>{{ order.callbackRecord.callbackByName || '-' }}</strong>
             </div>
-            <div class="field-row">
-              <span class="field-label">回访时间</span>
-              <span class="field-value">{{ formatTime(order.callbackRecord.callbackAt) }}</span>
+            <div class="callback-summary-item">
+              <span class="callback-summary-label">时间</span>
+              <strong>{{ formatTime(order.callbackRecord.callbackAt) }}</strong>
             </div>
-            <div class="field-row" v-if="order.callbackRecord.otherFeedback">
-              <span class="field-label">其他评价</span>
-              <span class="field-value">{{ order.callbackRecord.otherFeedback }}</span>
+            <div class="callback-summary-note" v-if="order.callbackRecord.otherFeedback">
+              <span class="callback-summary-label">其他评价</span>
+              <p>{{ order.callbackRecord.otherFeedback }}</p>
             </div>
           </div>
         </template>
 
-        <div class="edit-form" v-if="editingCallback">
+        <div class="edit-form callback-edit-form" v-if="editingCallback">
           <div class="form-group">
             <label class="form-label">是否满意</label>
             <el-select v-model="callbackEditForm.isSatisfied" class="pill-select-el" placeholder="请选择" clearable>
@@ -1543,12 +1551,13 @@ onMounted(() => {
 
 .info-cards-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
   margin-bottom: 24px;
+  align-items: stretch;
 }
 @media (max-width: 1100px) {
-  .info-cards-grid { grid-template-columns: 1fr 1fr; }
+  .info-cards-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .info-cards-grid { grid-template-columns: 1fr; }
@@ -1560,6 +1569,8 @@ onMounted(() => {
   box-shadow: var(--shadow-soft);
   padding: 24px;
   transition: all 0.3s ease;
+  height: 100%;
+  box-sizing: border-box;
 }
 .info-card:hover {
   transform: translateY(-2px);
@@ -1568,6 +1579,10 @@ onMounted(() => {
 .info-card:nth-child(1) { border-radius: 24px 16px 24px 16px; }
 .info-card:nth-child(2) { border-radius: 16px 24px 16px 24px; }
 .info-card:nth-child(3) { border-radius: 24px 24px 16px 16px; }
+.callback-info-card {
+  grid-column: 1 / -1;
+  padding-bottom: 22px;
+}
 .card-title {
   font-family: var(--font-display);
   font-weight: 600;
@@ -1797,7 +1812,7 @@ onMounted(() => {
 
 .share-edit-table th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 8px;
   font-size: 12px;
   font-weight: 600;
   color: var(--muted-fg);
@@ -1805,7 +1820,7 @@ onMounted(() => {
 }
 
 .share-edit-table td {
-  padding: 9px 10px;
+  padding: 9px 8px;
   font-size: 13px;
   color: var(--fg);
   border-bottom: 1px solid rgba(222,216,207,0.35);
@@ -1815,9 +1830,25 @@ onMounted(() => {
 .share-edit-table th:first-child,
 .share-edit-table td:first-child {
   padding-left: 0;
-  width: 64px;
-  color: var(--muted-fg);
-  font-weight: 600;
+  width: 38%;
+}
+
+.share-edit-table th:nth-child(2),
+.share-edit-table td:nth-child(2) {
+  width: 22%;
+  text-align: left;
+}
+
+.share-edit-table th:nth-child(3),
+.share-edit-table td:nth-child(3) {
+  width: 16%;
+  text-align: center;
+}
+
+.share-edit-table th:nth-child(4),
+.share-edit-table td:nth-child(4) {
+  width: 24%;
+  text-align: center;
 }
 
 .share-edit-table th:last-child,
@@ -1848,10 +1879,69 @@ onMounted(() => {
   width: 100%;
 }
 
-.settlement-status-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+.share-party-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.share-party-name {
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.share-party-select :deep(.el-select__wrapper) {
+  min-height: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  background: rgba(255,255,255,0.65) !important;
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+}
+
+.share-amount-text {
+  display: block;
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.settlement-switch-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+}
+
+.settlement-switch {
+  flex: 0 0 auto;
+}
+
+.settlement-switch-label {
+  min-width: 28px;
+  color: var(--muted-fg);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.settlement-switch-label.settled {
+  color: #4c8f6d;
+}
+
+.settlement-not-applicable {
+  color: rgba(142, 132, 116, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .cost-table {
@@ -2016,7 +2106,7 @@ onMounted(() => {
 
 .callback-empty-state {
   text-align: center;
-  padding: 24px 0;
+  padding: 18px 0 8px;
   color: var(--muted-fg);
   font-size: 13px;
 }
@@ -2024,6 +2114,69 @@ onMounted(() => {
   display: block;
   margin: 0 auto 8px;
   opacity: 0.3;
+}
+
+.callback-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.callback-summary-item,
+.callback-summary-note {
+  border: 1px solid rgba(222,216,207,0.5);
+  border-radius: 12px;
+  background: rgba(253,252,248,0.58);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.callback-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.callback-summary-item.primary {
+  background: rgba(91,168,130,0.1);
+  border-color: rgba(91,168,130,0.2);
+}
+
+.callback-summary-label {
+  font-size: 12px;
+  color: var(--muted-fg);
+  font-weight: 600;
+}
+
+.callback-summary-item strong,
+.callback-summary-value {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.callback-summary-note {
+  grid-column: 1 / -1;
+}
+
+.callback-summary-note p {
+  margin: 6px 0 0;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.callback-edit-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.callback-edit-form .form-group:last-of-type,
+.callback-edit-form .edit-actions {
+  grid-column: 1 / -1;
 }
 
 .no-data {
@@ -2095,6 +2248,19 @@ onMounted(() => {
   box-shadow: var(--shadow-soft);
   padding: 24px;
   overflow: hidden;
+}
+
+@media (max-width: 1200px) {
+  .callback-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .callback-summary-grid,
+  .callback-edit-form {
+    grid-template-columns: 1fr;
+  }
 }
 .history-header {
   display: flex;

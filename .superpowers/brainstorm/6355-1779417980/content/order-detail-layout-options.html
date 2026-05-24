@@ -1,0 +1,140 @@
+<h2>工单详情页结构方案</h2>
+<p class="subtitle">目标状态：已派单。重点比较“查看信息 + 完工录费”的阅读顺序和操作压力。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#fefefa;border:1px solid #ded8cf;border-radius:20px;padding:18px;min-height:360px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+          <div>
+            <div style="font-size:12px;color:#9a9a8e;margin-bottom:6px;">方案 A</div>
+            <div style="font-size:18px;font-weight:700;color:#3d3d35;">顶部操作带 + 双列详情</div>
+          </div>
+          <div style="padding:6px 12px;border-radius:999px;background:rgba(232,184,75,0.12);color:#b8922e;font-size:12px;font-weight:700;">已派单</div>
+        </div>
+        <div style="height:46px;border-radius:14px;background:linear-gradient(90deg, rgba(74,127,181,0.12), rgba(74,127,181,0.04));margin-bottom:14px;padding:12px 14px;color:#4a7fb5;font-size:12px;">工单编号 / 当前状态 / 操作按钮固定在顶部</div>
+        <div style="display:grid;grid-template-columns:1.05fr 0.95fr;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+              <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">客户信息</div>
+              <div style="height:110px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+            </div>
+            <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+              <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">客户历史订单</div>
+              <div style="height:70px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="border:1px solid rgba(74,127,181,0.3);border-radius:16px;padding:14px;background:rgba(74,127,181,0.06);">
+              <div style="font-weight:700;color:#3d6a9a;margin-bottom:10px;">施工信息 / 完成工单表单</div>
+              <div style="height:180px;border-radius:12px;background:#fff;border:1px dashed rgba(74,127,181,0.22);"></div>
+            </div>
+            <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+              <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">回访信息</div>
+              <div style="height:44px;border-radius:12px;background:rgba(240,235,229,0.4);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 A：双列聚焦</h3>
+      <p>左侧看客户和历史，右侧集中处理施工与完工录费，最像“操作中心”。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#fefefa;border:1px solid #ded8cf;border-radius:20px;padding:18px;min-height:360px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+          <div>
+            <div style="font-size:12px;color:#9a9a8e;margin-bottom:6px;">方案 B</div>
+            <div style="font-size:18px;font-weight:700;color:#3d3d35;">单列流程式详情</div>
+          </div>
+          <div style="padding:6px 12px;border-radius:999px;background:rgba(232,184,75,0.12);color:#b8922e;font-size:12px;font-weight:700;">已派单</div>
+        </div>
+        <div style="height:46px;border-radius:14px;background:linear-gradient(90deg, rgba(74,127,181,0.12), rgba(74,127,181,0.04));margin-bottom:14px;padding:12px 14px;color:#4a7fb5;font-size:12px;">头部状态条 + 时间线</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+            <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">客户信息</div>
+            <div style="height:72px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+          </div>
+          <div style="border:1px solid rgba(74,127,181,0.3);border-radius:16px;padding:14px;background:rgba(74,127,181,0.06);">
+            <div style="font-weight:700;color:#3d6a9a;margin-bottom:10px;">施工信息 / 完成工单表单</div>
+            <div style="height:150px;border-radius:12px;background:#fff;border:1px dashed rgba(74,127,181,0.22);"></div>
+          </div>
+          <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+            <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">客户历史订单</div>
+            <div style="height:56px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+          </div>
+          <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+            <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">回访信息</div>
+            <div style="height:40px;border-radius:12px;background:rgba(240,235,229,0.4);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 B：单列流程</h3>
+      <p>按阅读顺序从上到下展开，最稳，但完工表单会显得更长。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#fefefa;border:1px solid #ded8cf;border-radius:20px;padding:18px;min-height:360px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+          <div>
+            <div style="font-size:12px;color:#9a9a8e;margin-bottom:6px;">方案 C</div>
+            <div style="font-size:18px;font-weight:700;color:#3d3d35;">摘要先行 + 内嵌编辑区</div>
+          </div>
+          <div style="padding:6px 12px;border-radius:999px;background:rgba(232,184,75,0.12);color:#b8922e;font-size:12px;font-weight:700;">已派单</div>
+        </div>
+        <div style="height:46px;border-radius:14px;background:linear-gradient(90deg, rgba(74,127,181,0.12), rgba(74,127,181,0.04));margin-bottom:14px;padding:12px 14px;color:#4a7fb5;font-size:12px;">顶部摘要条：客户 / 师傅 / 当前动作</div>
+        <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+          <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+            <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">工单概览摘要</div>
+            <div style="height:54px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+              <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">客户信息</div>
+              <div style="height:120px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+            </div>
+            <div style="border:1px solid #ded8cf;border-radius:16px;padding:14px;background:#fff;">
+              <div style="font-weight:700;color:#3d3d35;margin-bottom:10px;">派单信息</div>
+              <div style="height:120px;border-radius:12px;background:rgba(240,235,229,0.55);"></div>
+            </div>
+          </div>
+          <div style="border:1px solid rgba(74,127,181,0.3);border-radius:16px;padding:14px;background:rgba(74,127,181,0.06);">
+            <div style="font-weight:700;color:#3d6a9a;margin-bottom:10px;">下方完整展开：完成工单表单</div>
+            <div style="height:92px;border-radius:12px;background:#fff;border:1px dashed rgba(74,127,181,0.22);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 C：摘要驱动</h3>
+      <p>先让人快速建立全局认知，再进入完工录费，但页面更偏“管理视图”。</p>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons" style="margin-top:20px;">
+  <div class="pros">
+    <h4>我的建议</h4>
+    <ul>
+      <li>优先推荐方案 A。</li>
+      <li>它最符合“详情页是操作中心”的需求定位。</li>
+      <li>右侧可以把“完成工单”当作当前主任务，减少用户来回扫视。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>需要注意</h4>
+    <ul>
+      <li>如果右侧表单过长，必须做好分组标题和留白。</li>
+      <li>左侧信息不能过满，否则会削弱右侧操作焦点。</li>
+      <li>回访信息在已派单状态下应弱化成占位提示，不应抢主操作。</li>
+    </ul>
+  </div>
+</div>
