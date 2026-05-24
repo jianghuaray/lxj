@@ -120,8 +120,9 @@
             v-for="order in orders"
             :key="order.id"
             :class="{ overdue: isOverdue(order) }"
+            @click="viewDetail(order.id)"
           >
-            <td><CellText class="order-id" :value="order.orderNo" @click="viewDetail(order.id)" /></td>
+            <td><CellText class="order-id" :value="order.orderNo" /></td>
             <td><CellText :value="order.customerName" /></td>
             <td><CellText :value="order.area" /></td>
             <td><CellText :value="order.sourceChannel" /></td>
@@ -893,6 +894,7 @@ async function exportOrders() {
 .data-table tbody tr {
   height: 48px;
   transition: background 0.3s ease;
+  cursor: pointer;
 }
 .data-table tbody tr:hover {
   background: rgba(240, 235, 229, 0.4);
@@ -922,11 +924,7 @@ async function exportOrders() {
 
 .order-id {
   font-weight: 600;
-  color: var(--primary);
-  cursor: pointer;
-}
-.order-id:hover {
-  text-decoration: underline;
+  color: var(--fg);
 }
 
 /* Status Badge */
