@@ -52,7 +52,7 @@
           </el-select>
         </div>
         <div class="form-field">
-          <label class="form-label">来源渠道</label>
+          <label class="form-label">来源渠道<span class="required">*</span></label>
           <el-select v-model="form.sourceChannel" class="form-select-el" placeholder="请选择来源渠道">
             <el-option v-for="item in sourceChannelOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>

@@ -143,15 +143,15 @@
 
         <div class="field-list" v-if="editingCustomer">
           <div class="field-row">
-            <span class="field-label">姓名</span>
+            <span class="field-label">姓名<span class="required-mark">*</span></span>
             <input class="pill-input" v-model="customerEditForm.customerName" placeholder="请输入姓名" />
           </div>
           <div class="field-row">
-            <span class="field-label">联系方式</span>
+            <span class="field-label">联系方式<span class="required-mark">*</span></span>
             <input class="pill-input" v-model="customerEditForm.customerPhone" placeholder="请输入联系方式" />
           </div>
           <div class="field-row">
-            <span class="field-label">区域</span>
+            <span class="field-label">区域<span class="required-mark">*</span></span>
             <el-select v-model="customerEditForm.area" class="pill-select-el" placeholder="请选择" clearable>
               <el-option label="未央区" value="未央区" />
               <el-option label="雁塔区" value="雁塔区" />
@@ -166,23 +166,23 @@
             </el-select>
           </div>
           <div class="field-row">
-            <span class="field-label">住址</span>
+            <span class="field-label">住址<span class="required-mark">*</span></span>
             <input class="pill-input" v-model="customerEditForm.address" placeholder="请输入住址" />
           </div>
           <div class="field-row">
-            <span class="field-label">来源渠道</span>
+            <span class="field-label">来源渠道<span class="required-mark">*</span></span>
             <el-select v-model="customerEditForm.sourceChannel" class="pill-select-el" placeholder="请选择" clearable>
               <el-option v-for="item in sourceChannelOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </div>
           <div class="field-row">
-            <span class="field-label">问题分类</span>
+            <span class="field-label">问题分类<span class="required-mark">*</span></span>
             <el-select v-model="customerEditForm.problemCategory" class="pill-select-el" placeholder="请选择" clearable>
               <el-option v-for="cat in settingsStore.serviceTypes" :key="cat" :label="cat" :value="cat" />
             </el-select>
           </div>
           <div class="field-row">
-            <span class="field-label">问题描述</span>
+            <span class="field-label">问题描述<span class="required-mark">*</span></span>
             <input class="pill-input" v-model="customerEditForm.problemDescription" placeholder="请输入问题描述" />
           </div>
           <div class="field-row">
@@ -1017,7 +1017,28 @@ function cancelEditCustomer() {
   editingCustomer.value = false
 }
 
+function validateCustomerEditForm() {
+  const fields = [
+    ['customerName', '请输入姓名'],
+    ['customerPhone', '请输入联系方式'],
+    ['area', '请选择区域'],
+    ['address', '请输入住址'],
+    ['sourceChannel', '请选择来源渠道'],
+    ['problemCategory', '请选择问题分类'],
+    ['problemDescription', '请输入问题描述']
+  ]
+  for (const [field, message] of fields) {
+    const value = customerEditForm.value[field]
+    if (!String(value || '').trim()) {
+      ElMessage.warning(message)
+      return false
+    }
+  }
+  return true
+}
+
 async function saveCustomer() {
+  if (!validateCustomerEditForm()) return
   customerSaving.value = true
   try {
     const sourcePayload = buildSourcePayload(customerEditForm.value.sourceChannel)
@@ -1639,6 +1660,10 @@ onMounted(async () => {
   font-weight: 500;
   min-width: 72px;
   flex-shrink: 0;
+}
+.required-mark {
+  color: var(--destructive);
+  margin-left: 2px;
 }
 .field-value {
   color: #5C4A32;

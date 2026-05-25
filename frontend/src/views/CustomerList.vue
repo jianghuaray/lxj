@@ -53,15 +53,13 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th style="width:7%">姓名</th>
-            <th style="width:10%">手机号</th>
-            <th style="width:7%">区域</th>
-            <th style="width:16%">地址</th>
-            <th style="width:14%">标签</th>
-            <th style="width:7%">累计工单</th>
-            <th style="width:8%">累计消费</th>
-            <th style="width:9%">最近报修</th>
-            <th style="width:14%">操作</th>
+            <th style="width:14%">姓名</th>
+            <th style="width:15%">手机号</th>
+            <th style="width:10%">区域</th>
+            <th style="width:28%">地址</th>
+            <th style="width:10%">累计工单</th>
+            <th style="width:11%">累计消费</th>
+            <th style="width:12%">最近报修</th>
           </tr>
         </thead>
         <tbody>
@@ -69,26 +67,13 @@
             <td><CellText :value="customer.name" /></td>
             <td><CellText :value="customer.phone" /></td>
             <td><CellText :value="customer.area" /></td>
-            <td><CellText :value="customer.address" :lines="2" /></td>
-            <td>
-              <el-tooltip :content="formatTags(customer.tags)" :disabled="!(customer.tags || []).length" placement="top" :show-after="250">
-                <div class="tags-cell">
-                  <span v-for="(tag, i) in (customer.tags || []).slice(0, 3)" :key="tag" :class="['tag-badge', getTagClass(i)]">{{ tag }}</span>
-                  <span v-if="(customer.tags || []).length > 3" class="tag-badge tag-weekend">+{{ customer.tags.length - 3 }}</span>
-                  <span v-if="!(customer.tags || []).length" class="muted-cell">-</span>
-                </div>
-              </el-tooltip>
-            </td>
+            <td><CellText :value="customer.address" /></td>
             <td>{{ customer.totalOrders || 0 }}</td>
             <td>¥{{ customer.totalAmount || 0 }}</td>
             <td><CellText :value="formatDate(customer.lastOrderAt)" /></td>
-            <td>
-              <button class="action-btn" @click.stop="viewDetail(customer.id)">查看</button>
-              <button class="action-btn" @click.stop="$router.push(`/customers/edit/${customer.id}`)">编辑</button>
-            </td>
           </tr>
           <tr v-if="!loading && customers.length === 0">
-            <td colspan="9" class="empty-cell">
+            <td colspan="7" class="empty-cell">
               <div class="empty-state">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted-fg)" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 <p>暂无客户数据</p>
@@ -145,7 +130,6 @@ const loading = ref(false)
 let fetchCustomersCancel = null
 const customers = ref([])
 
-const formatTags = (tags = []) => (tags || []).length ? tags.join('、') : '-'
 const searchQuery = ref('')
 const areaFilter = ref('')
 const activeCard = ref('all')
@@ -183,11 +167,6 @@ function filterByCard(type) {
   } else if (type === 'new') {
     fetchNewCustomers()
   }
-}
-
-function getTagClass(index) {
-  const classes = ['tag-owner', 'tag-price', 'tag-weekend']
-  return classes[index % 3]
 }
 
 function viewDetail(id) {
@@ -462,26 +441,19 @@ onUnmounted(() => {
 .table-container { background: var(--card-bg); border: 1px solid rgba(222,216,207,0.5); border-radius: 24px; box-shadow: var(--shadow-soft); overflow: hidden; margin-bottom: 16px; }
 .data-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .data-table thead th { padding: 14px 16px; font-size: 12px; font-weight: 600; color: var(--muted-fg); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; background: transparent; }
-.data-table thead th:first-child { padding-left: 24px; }
-.data-table thead th:last-child { padding-right: 24px; text-align: center; }
+.data-table thead th:first-child { padding-left: 34px; }
+.data-table thead th:last-child { padding-right: 24px; }
 .data-table tbody tr { height: 48px; transition: background 0.3s ease; }
 .data-table tbody tr:hover { background: rgba(240,235,229,0.4); }
 .data-table tbody td { padding: 0 16px; font-size: 13px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.data-table tbody td:first-child { padding-left: 24px; }
-.data-table tbody td:last-child { padding-right: 24px; text-align: center; }
-
-/* Tag badges */
-.tags-cell { display: flex; gap: 4px; flex-wrap: wrap; }
-.tag-badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; margin: 1px 2px; }
-.tag-badge.tag-owner { background: rgba(74,127,181,0.08); color: #4A7FB5; }
-.tag-badge.tag-price { background: rgba(232,184,75,0.1); color: #B8922E; }
-.tag-badge.tag-weekend { background: rgba(120,120,108,0.08); color: #78786C; }
-.tag-badge.tag-elderly { background: rgba(212,114,106,0.08); color: #D4726A; }
-
-/* Action buttons */
-.action-btn { background: none; border: none; color: var(--primary); font-family: var(--font-body); font-size: 13px; font-weight: 500; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: all 0.3s ease; }
-.action-btn:hover { background: rgba(74,127,181,0.08); color: #3D6A9A; }
-.action-btn + .action-btn { margin-left: 4px; }
+.data-table tbody td:first-child { padding-left: 34px; }
+.data-table thead th:nth-child(2),
+.data-table thead th:nth-child(3),
+.data-table thead th:nth-child(4),
+.data-table tbody td:nth-child(2),
+.data-table tbody td:nth-child(3),
+.data-table tbody td:nth-child(4) { padding-left: 22px; }
+.data-table tbody td:last-child { padding-right: 24px; }
 
 /* Pagination */
 .pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }

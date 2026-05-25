@@ -514,6 +514,20 @@ router.patch('/:id', auth, async (req, res) => {
       problemDescription: 'problem_description',
       receiverRemark: 'receiver_remark'
     };
+    const requiredFieldLabels = {
+      customerName: '姓名',
+      customerPhone: '联系方式',
+      area: '区域',
+      address: '住址',
+      problemCategory: '问题分类',
+      problemDescription: '问题描述'
+    };
+
+    for (const [field, label] of Object.entries(requiredFieldLabels)) {
+      if (hasOwn(req.body, field) && !String(req.body[field] || '').trim()) {
+        return res.status(400).json({ error: `${label}不能为空` });
+      }
+    }
 
     allowedFields.forEach(field => {
       if (!['sourceChannel', 'sourceType', 'sourcePropertyId', 'sourceBuildingManagerId'].includes(field) && req.body[field] !== undefined) {
@@ -531,8 +545,12 @@ router.patch('/:id', auth, async (req, res) => {
         sourceType: hasOwn(req.body, 'sourceType') ? req.body.sourceType : order.source_type,
         sourcePropertyId: hasOwn(req.body, 'sourcePropertyId') ? req.body.sourcePropertyId : order.source_property_id,
         sourceBuildingManagerId: hasOwn(req.body, 'sourceBuildingManagerId') ? req.body.sourceBuildingManagerId : order.source_building_manager_id,
-        fallbackSourceChannel: order.source_channel
+        fallbackSourceChannel: null
       });
+
+      if (!resolvedSource.sourceChannel) {
+        return res.status(400).json({ error: '来源渠道不能为空或已失效' });
+      }
 
       order.source_channel = resolvedSource.sourceChannel;
       order.source_type = resolvedSource.sourceType;
